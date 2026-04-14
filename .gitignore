@@ -1,3 +1,5 @@
+**/.venv
+
 build/
 selfcheckgpt.egg-info
 examples/
