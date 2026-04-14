@@ -10,6 +10,7 @@ Run:
 import sys
 import os
 import json
+import tempfile
 from dataclasses import dataclass
 
 # Make the selfcheckgpt package importable without installing it
@@ -94,12 +95,18 @@ def load_results(path: str) -> list[PassageResult]:
     if not os.path.exists(path):
         return []
     with open(path) as f:
-        return [PassageResult.from_dict(d) for d in json.load(f)]
+        try:
+            return [PassageResult.from_dict(d) for d in json.load(f)]
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Checkpoint file {path} is corrupted: {exc}") from exc
 
 
 def save_results(path: str, results: list[PassageResult]) -> None:
-    with open(path, 'w') as f:
-        json.dump([r.to_dict() for r in results], f, indent=2)
+    dir_ = os.path.dirname(path) or '.'
+    with tempfile.NamedTemporaryFile('w', dir=dir_, delete=False, suffix='.tmp') as tmp:
+        json.dump([r.to_dict() for r in results], tmp, indent=2)
+        tmp_path = tmp.name
+    os.replace(tmp_path, path)
 
 
 # ---------------------------------------------------------------------------
@@ -130,11 +137,15 @@ def main():
             f"{len(passage.sentences)} sentences × {len(passage.sampled_passages)} samples ..."
         )
 
-        sent_scores = checker.predict(
-            sentences        = passage.sentences,
-            sampled_passages = passage.sampled_passages,
-            verbose          = True,
-        )
+        try:
+            sent_scores = checker.predict(
+                sentences        = passage.sentences,
+                sampled_passages = passage.sampled_passages,
+                verbose          = True,
+            )
+        except Exception as exc:
+            print(f"  ERROR on passage {passage.wiki_bio_test_idx}: {exc} — skipping")
+            continue
 
         result = PassageResult(
             wiki_bio_test_idx = passage.wiki_bio_test_idx,
