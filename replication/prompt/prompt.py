@@ -26,15 +26,36 @@ MODEL           = "qwen3.5:9b-q8_0"
 DATA_PATH       = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
 RESULTS_PATH    = os.path.join(os.path.dirname(__file__), 'results.json')
 
-# Prepend /no_think to suppress Qwen3.5's chain-of-thought reasoning.
-# Without this, the model emits <think>...</think> tokens before "Yes"/"No",
-# causing text_postprocessing() to classify the response as "n/a" (score 0.5).
+# Qwen3.5 generates ~300 thinking tokens internally before emitting "Yes"/"No".
+# The thinking content is stripped from the API response, but still counts against
+# max_tokens. The base class uses max_tokens=5 which is exhausted before the answer
+# appears, yielding an empty string → "n/a" (score 0.5) for every call.
+# We subclass to raise the budget. /no_think is kept in case future model versions
+# honour it to skip thinking.
 PROMPT_TEMPLATE = (
     "/no_think\n\n"
     "Context: {context}\n\n"
     "Sentence: {sentence}\n\n"
     "Is the sentence supported by the context above? Answer Yes or No.\n\nAnswer: "
 )
+MAX_TOKENS = 1000  # must exceed Qwen3.5's typical thinking budget (~300 tokens)
+
+
+# ---------------------------------------------------------------------------
+# Qwen3.5-compatible subclass
+# ---------------------------------------------------------------------------
+
+class SelfCheckAPIPromptQwen(SelfCheckAPIPrompt):
+    """Override completion() to use a token budget large enough for Qwen3.5's thinking."""
+
+    def completion(self, prompt: str) -> str:
+        chat_completion = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0,
+            max_tokens=MAX_TOKENS,
+        )
+        return chat_completion.choices[0].message.content
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -120,7 +141,7 @@ def main():
 
     print(f"Dataset: {len(dataset)} passages | Already done: {len(done_ids)}")
 
-    checker = SelfCheckAPIPrompt(
+    checker = SelfCheckAPIPromptQwen(
         client_type="openai",
         base_url=OLLAMA_BASE_URL,
         model=MODEL,
