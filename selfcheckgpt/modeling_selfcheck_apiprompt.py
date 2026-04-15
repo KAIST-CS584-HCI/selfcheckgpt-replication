@@ -17,7 +17,7 @@ class SelfCheckAPIPrompt:
         timeout: float | None = None,
     ):
         if client_type == "openai":
-            self.client = OpenAI(base_url=base_url, api_key="none", timeout=timeout)
+            self.client = OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
             print("Initiate OpenAI client... model = {}".format(model))
         elif client_type == "groq":
             self.client = Groq(api_key=api_key, timeout=timeout)
@@ -33,7 +33,7 @@ class SelfCheckAPIPrompt:
     def set_prompt_template(self, prompt_template: str):
         self.prompt_template = prompt_template
 
-    def completion(self, prompt: str, max_tokens: int = 1000):
+    def completion(self, prompt: str, max_tokens: int = 10000):
         if self.client_type == "openai" or self.client_type == "groq":
             chat_completion = self.client.chat.completions.create(
                 model=self.model,

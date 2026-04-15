@@ -17,15 +17,17 @@ from replication.entity import PassageInput, PassageResult
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-OLLAMA_BASE_URL  = "https://ollama.makinteract.com/v1/"
-MODEL            = "qwen3.5:9b-q8_0"
+BASE_URL         = "https://openrouter.ai/api/v1"
+API_KEY          = "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"
+MODEL            = "qwen/qwen3.5-9b"
 DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
-RESULTS_PATH     = os.path.join(os.path.dirname(__file__), 'results.json')
+RESULTS_PATH     = os.path.join(os.path.dirname(__file__), 'results-230-240.json')
 PROMPT_TEMPLATE  = (
     "Context: {context}\n\n"
     "Sentence: {sentence}\n\n"
     "Is the sentence supported by the context above? Answer Yes or No.\n\nAnswer: "
 )
+
 MAX_TOKENS       = 5  # only "Yes" or "No" needed; thinking is disabled via extra_body
 REQUEST_TIMEOUT  = 200   # seconds per API call before raising an error
 MAX_RETRIES      = 3     # retry attempts per passage on transient errors
@@ -65,7 +67,7 @@ def save_results(path: str, results: list[PassageResult]) -> None:
 
 def main():
     dataset = load_dataset(DATA_PATH)
-    dataset = dataset[119:]
+    dataset = dataset[230:]
     results = load_results(RESULTS_PATH)
     done_ids = {r.wiki_bio_test_idx for r in results}
 
@@ -73,9 +75,9 @@ def main():
 
     checker = SelfCheckAPIPrompt(
         client_type="openai",
-        base_url=OLLAMA_BASE_URL,
+        base_url=BASE_URL,
         model=MODEL,
-        api_key="none",
+        api_key=API_KEY,
         timeout=REQUEST_TIMEOUT,
     )
     checker.set_prompt_template(PROMPT_TEMPLATE)
