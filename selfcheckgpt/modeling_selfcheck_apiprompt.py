@@ -14,13 +14,12 @@ class SelfCheckAPIPrompt:
         base_url = "https://ollama.makinteract.com/v1/",
         model = "gpt-3.5-turbo",
         api_key = None,
-        timeout: float | None = None,
     ):
         if client_type == "openai":
-            self.client = OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
+            self.client = OpenAI(base_url=base_url, api_key=api_key)
             print("Initiate OpenAI client... model = {}".format(model))
         elif client_type == "groq":
-            self.client = Groq(api_key=api_key, timeout=timeout)
+            self.client = Groq(api_key=api_key)
             print("Initiate Groq client... model = {}".format(model))
         
         self.client_type = client_type
@@ -44,7 +43,7 @@ class SelfCheckAPIPrompt:
                 max_tokens=max_tokens, # max_tokens is the generated one,
                 reasoning_effort=reasoning
             )
-            return chat_completion.choices[0].message.content
+            return chat_completion.choices[0]
 
         else:
             raise ValueError("client_type not implemented")
@@ -69,24 +68,34 @@ class SelfCheckAPIPrompt:
         num_sentences = len(sentences)
         num_samples = len(sampled_passages)
         scores = np.zeros((num_sentences, num_samples))
+        responses = []
         disable = not verbose
+
         for sent_i in tqdm(range(num_sentences), disable=disable):
             sentence = sentences[sent_i]
+            responses.append([])
+
             for sample_i, sample in enumerate(sampled_passages):
                 # this seems to improve performance when using the simple prompt template
                 sample = sample.replace("\n", " ")
                 prompt = self.prompt_template.format(context=sample, sentence=sentence)
-                print(f"Prompt for sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples}:\n{prompt}\n")
+
                 generate_text = self.completion(
                     prompt, 
                     max_tokens=max_tokens, 
                     reasoning=reasoning
                 )
-                score_ = self.text_postprocessing(generate_text)
-                scores[sent_i, sample_i] = score_
-                print(f"  sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples} → {generate_text!r} (score={score_:.1f})")
-        scores_per_sentence = scores.mean(axis=-1)
-        return scores_per_sentence
+                message = generate_text.message.content
+                if message is None:
+                    print(f"[Warning] API None for {prompt}\n -> reason: {generate_text.finish_reason}, refusal: {generate_text.message.refusal}")
+                    
+                responses[sent_i].append(message)
+                scores[sent_i, sample_i] = self.text_postprocessing(message)
+
+                print(f"  sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples} → {message!r} (score={scores[sent_i, sample_i]:.1f})")
+        
+        scores = scores.mean(axis=-1)
+        return scores, responses
 
     def text_postprocessing(
         self,
