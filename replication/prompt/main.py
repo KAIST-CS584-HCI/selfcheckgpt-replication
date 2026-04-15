@@ -22,6 +22,7 @@ from replication.entity import PassageInput, PassageResult
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+
 BASE_URL         = "https://ollama.makinteract.com/v1/"
 API_KEY          = "haha"
 MODEL            = "qwen3.5:9b-q8_0"
@@ -71,20 +72,16 @@ def save_result(result: PassageResult, idx: int) -> None:
 # ---------------------------------------------------------------------------
 
 _parser = argparse.ArgumentParser(description="Run SelfCheckAPIPrompt over a range of WikiBio passages.")
-_parser.add_argument("--start", type=int, required=True, help="Start index (inclusive)")
-_parser.add_argument("--end",   type=int, required=True, help="End index (inclusive)")
-
+_parser.add_argument("--index", type=int, required=True, help="index of the passage to process (wiki_bio_test_idx)")
 
 def main() -> None:
     args = _parser.parse_args()
 
-    idx_start = args.start
-    idx_end   = args.end
+    idx = args.index
 
     dataset  = load_dataset(DATA_PATH)
-    passages = dataset[idx_start:idx_end + 1]
+    passage = dataset[idx]
     done     = load_done_set()
-    print(f"Ordinal range: {idx_start}–{idx_end} | Passages: {len(passages)} | Already done: {len(done)}")
 
     checker = SelfCheckAPIPrompt(
         client_type="openai",
@@ -95,39 +92,38 @@ def main() -> None:
     )
     checker.set_prompt_template(PROMPT_TEMPLATE)
 
-    for i, passage in enumerate(passages, start=idx_start):
-        wiki_idx = passage.wiki_bio_test_idx
-        if wiki_idx in done:
-            print(f"  Skipping [{i}] wiki_bio_test_idx={wiki_idx} (already in results.json)")
-            continue
+    wiki_idx = passage.wiki_bio_test_idx
+    if wiki_idx in done:
+        print(f"  Skipping [wiki_bio_test_idx={wiki_idx} (already in results.json)")
+        return
 
-        print(
-            f"  Processing [{i}] wiki_bio_test_idx={wiki_idx}: "
-            f"{len(passage.sentences)} sentences × {len(passage.sampled_passages)} samples ..."
-        )
+    print(
+        f"  Processing [wiki_bio_test_idx={wiki_idx}]: "
+        f"{len(passage.sentences)} sentences × {len(passage.sampled_passages)} samples ..."
+    )
 
-        for attempt in range(1, MAX_RETRIES + 1):
-            try:
-                sent_scores = checker.predict(
-                    sentences        = passage.sentences,
-                    sampled_passages = passage.sampled_passages,
-                    verbose          = True,
-                )
-                break
-            except Exception as exc:
-                print(f"    attempt {attempt}/{MAX_RETRIES} failed: {exc}")
-                if attempt < MAX_RETRIES:
-                    print(f"    retrying in {RETRY_DELAY}s ...")
-                    time.sleep(RETRY_DELAY)
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            sent_scores = checker.predict(
+                sentences        = passage.sentences,
+                sampled_passages = passage.sampled_passages,
+                verbose          = True,
+            )
+            break
+        except Exception as exc:
+            print(f"    attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+            if attempt < MAX_RETRIES:
+                print(f"    retrying in {RETRY_DELAY}s ...")
+                time.sleep(RETRY_DELAY)
 
-        result = PassageResult(
-            wiki_bio_test_idx = wiki_idx,
-            sent_scores       = sent_scores.tolist(),
-            annotation        = passage.annotation,
-        )
-        save_result(result, i)
-        print(f"    scores: {[round(s, 3) for s in result.sent_scores]}")
-        print(f"    saved → {os.path.join(RESULTS_DIR, f'{i}.json')}")
+    result = PassageResult(
+        wiki_bio_test_idx = wiki_idx,
+        sent_scores       = sent_scores.tolist(),
+        annotation        = passage.annotation,
+    )
+    save_result(result, idx)
+    print(f"    scores: {[round(s, 3) for s in result.sent_scores]}")
+    print(f"    saved → {os.path.join(RESULTS_DIR, f'{idx}.json')}")
 
     print(f"\nDone.")
 
