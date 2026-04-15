@@ -117,6 +117,55 @@ def passage_correlations(results: list[PassageResult]) -> tuple[float, float]:
 
 
 # ---------------------------------------------------------------------------
+# Response distribution
+# ---------------------------------------------------------------------------
+
+def response_distribution(results: list[PassageResult]) -> dict:
+    """Count raw API responses across all (sentence, sample) pairs."""
+    counts: dict[str, int] = {}
+    total = 0
+    for r in results:
+        for sent_responses in r.raw_responses:
+            for msg in sent_responses:
+                total += 1
+                if msg is None:
+                    key = "null"
+                else:
+                    text = msg.lower().strip()
+                    if text[:3] == "yes":
+                        key = "Yes"
+                    elif text[:2] == "no":
+                        key = "No"
+                    else:
+                        key = msg.strip() if msg.strip() else "(empty)"
+                counts[key] = counts.get(key, 0) + 1
+    return {"total": total, "counts": counts}
+
+
+def print_response_distribution(dist: dict) -> None:
+    total = dist["total"]
+    counts = dist["counts"]
+    if total == 0:
+        print("No raw_responses recorded (re-run with updated predict()).")
+        return
+
+    yes = counts.get("Yes", 0)
+    no  = counts.get("No",  0)
+    yn  = yes + no
+    other_counts = {k: v for k, v in counts.items() if k not in ("Yes", "No")}
+
+    print(f"Response distribution (N={total:,} total API calls):")
+    print(f"  Yes   : {yes:>6,}  ({100 * yes / total:5.1f}%)")
+    print(f"  No    : {no:>6,}  ({100 * no  / total:5.1f}%)")
+    print(f"  Yes+No: {yn:>6,}  ({100 * yn  / total:5.1f}%)")
+    if other_counts:
+        print(f"  Other :")
+        for k, v in sorted(other_counts.items(), key=lambda x: -x[1]):
+            print(f"    {k!r:<20} {v:>6,}  ({100 * v / total:5.1f}%)")
+    print()
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 
@@ -163,6 +212,8 @@ _parser.add_argument("--results", type=str, default=RESULTS_PATH, help="Path to 
 def main() -> None:
     args    = _parser.parse_args()
     results = load_results(args.results)
+    dist    = response_distribution(results)
+    print_response_distribution(dist)
     metrics = evaluate(results)
     print_summary(metrics)
 
