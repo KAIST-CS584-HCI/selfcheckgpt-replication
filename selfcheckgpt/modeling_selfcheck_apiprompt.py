@@ -33,7 +33,7 @@ class SelfCheckAPIPrompt:
     def set_prompt_template(self, prompt_template: str):
         self.prompt_template = prompt_template
 
-    def completion(self, prompt: str, max_tokens: int = 10000):
+    def completion(self, prompt: str, max_tokens: int = 10000, reasoning="none"):
         if self.client_type == "openai" or self.client_type == "groq":
             chat_completion = self.client.chat.completions.create(
                 model=self.model,
@@ -42,7 +42,7 @@ class SelfCheckAPIPrompt:
                 ],
                 temperature=0.0, # 0.0 = deterministic,
                 max_tokens=max_tokens, # max_tokens is the generated one,
-                extra_body={"think": False},  # disable Qwen3 thinking mode (Ollama-specific)
+                reasoning_effort=reasoning
             )
             return chat_completion.choices[0].message.content
 
@@ -53,13 +53,17 @@ class SelfCheckAPIPrompt:
         self,
         sentences: List[str],
         sampled_passages: List[str],
+        max_tokens: int = 10000,
+        reasoning="none",
         verbose: bool = False,
     ):
         """
         This function takes sentences (to be evaluated) with sampled passages (evidence), and return sent-level scores
         :param sentences: list[str] -- sentences to be evaluated, e.g. GPT text response spilt by spacy
         :param sampled_passages: list[str] -- stochastically generated responses (without sentence splitting)
-        :param verson: bool -- if True tqdm progress bar will be shown
+        :param max_tokens: int -- maximum number of tokens to generate
+        :param reasoning: str -- reasoning effort level
+        :param verbose: bool -- if True tqdm progress bar will be shown
         :return sent_scores: sentence-level scores
         """
         num_sentences = len(sentences)
@@ -73,7 +77,11 @@ class SelfCheckAPIPrompt:
                 sample = sample.replace("\n", " ")
                 prompt = self.prompt_template.format(context=sample, sentence=sentence)
                 print(f"Prompt for sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples}:\n{prompt}\n")
-                generate_text = self.completion(prompt)
+                generate_text = self.completion(
+                    prompt, 
+                    max_tokens=max_tokens, 
+                    reasoning=reasoning
+                )
                 score_ = self.text_postprocessing(generate_text)
                 scores[sent_i, sample_i] = score_
                 print(f"  sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples} → {generate_text!r} (score={score_:.1f})")
