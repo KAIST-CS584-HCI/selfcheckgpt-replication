@@ -1,12 +1,17 @@
 """
 SelfCheckGPT Prompt Method Replication
 ---------------------------------------
-Runs SelfCheckAPIPrompt over all 238 WikiBio passages using a local Ollama endpoint.
-Results are saved to results.json (one entry per passage) for later metrics evaluation.
+Runs SelfCheckAPIPrompt over a range of WikiBio passages.
+Each result is saved as <idx>.json in the same directory.
 
 Run:
-    python3 -m replication.prompt.main
+    python3 -m replication.prompt.main --start <start_idx> --end <end_idx>
+
+Example:
+    python3 -m replication.prompt.main --start 119 --end 120
+    → processes dataset indices 119 and 120, saves 119.json and 120.json
 """
+import argparse
 import os
 import json
 import tempfile
@@ -17,11 +22,11 @@ from replication.entity import PassageInput, PassageResult
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-BASE_URL         = "https://openrouter.ai/api/v1"
-API_KEY          = "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"
-MODEL            = "qwen/qwen3.5-9b"
+BASE_URL         = "https://ollama.makinteract.com/v1/"
+API_KEY          = "haha"
+MODEL            = "qwen3.5:9b-q8_0"
 DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
-RESULTS_PATH     = os.path.join(os.path.dirname(__file__), 'results-230-240.json')
+RESULTS_DIR      = os.path.dirname(__file__)
 PROMPT_TEMPLATE  = (
     "Context: {context}\n\n"
     "Sentence: {sentence}\n\n"
@@ -42,21 +47,21 @@ def load_dataset(path: str) -> list[PassageInput]:
         return [PassageInput.from_dict(item) for item in json.load(f)]
 
 
-def load_results(path: str) -> list[PassageResult]:
-    """Load existing results for checkpoint/resume. Returns [] if file absent."""
-    if not os.path.exists(path):
-        return []
-    with open(path) as f:
-        try:
-            return [PassageResult.from_dict(d) for d in json.load(f)]
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(f"Checkpoint file {path} is corrupted: {exc}") from exc
+RESULTS_PATH = os.path.join(RESULTS_DIR, "results.json")
 
 
-def save_results(path: str, results: list[PassageResult]) -> None:
+def load_done_set() -> set[int]:
+    if not os.path.exists(RESULTS_PATH):
+        return set()
+    with open(RESULTS_PATH) as f:
+        return {r["wiki_bio_test_idx"] for r in json.load(f)}
+
+
+def save_result(result: PassageResult, idx: int) -> None:
+    path = os.path.join(RESULTS_DIR, f"{idx}.json")
     dir_ = os.path.dirname(path) or '.'
     with tempfile.NamedTemporaryFile('w', dir=dir_, delete=False, suffix='.tmp') as tmp:
-        json.dump([r.to_dict() for r in results], tmp, indent=2)
+        json.dump(result.to_dict(), tmp, indent=2)
         tmp_path = tmp.name
     os.replace(tmp_path, path)
 
@@ -65,13 +70,21 @@ def save_results(path: str, results: list[PassageResult]) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
-    dataset = load_dataset(DATA_PATH)
-    dataset = dataset[230:]
-    results = load_results(RESULTS_PATH)
-    done_ids = {r.wiki_bio_test_idx for r in results}
+_parser = argparse.ArgumentParser(description="Run SelfCheckAPIPrompt over a range of WikiBio passages.")
+_parser.add_argument("--start", type=int, required=True, help="Start index (inclusive)")
+_parser.add_argument("--end",   type=int, required=True, help="End index (inclusive)")
 
-    print(f"Dataset: {len(dataset)} passages | Already done: {len(done_ids)}")
+
+def main() -> None:
+    args = _parser.parse_args()
+
+    idx_start = args.start
+    idx_end   = args.end
+
+    dataset  = load_dataset(DATA_PATH)
+    passages = dataset[idx_start:idx_end + 1]
+    done     = load_done_set()
+    print(f"Ordinal range: {idx_start}–{idx_end} | Passages: {len(passages)} | Already done: {len(done)}")
 
     checker = SelfCheckAPIPrompt(
         client_type="openai",
@@ -82,17 +95,17 @@ def main():
     )
     checker.set_prompt_template(PROMPT_TEMPLATE)
 
-    for i, passage in enumerate(dataset):
-        if passage.wiki_bio_test_idx in done_ids:
-            print(f"[{i+1}/{len(dataset)}] Skipping {passage.wiki_bio_test_idx} (already done)")
+    for i, passage in enumerate(passages, start=idx_start):
+        wiki_idx = passage.wiki_bio_test_idx
+        if wiki_idx in done:
+            print(f"  Skipping [{i}] wiki_bio_test_idx={wiki_idx} (already in results.json)")
             continue
 
         print(
-            f"[{i+1}/{len(dataset)}] Passage {passage.wiki_bio_test_idx}: "
+            f"  Processing [{i}] wiki_bio_test_idx={wiki_idx}: "
             f"{len(passage.sentences)} sentences × {len(passage.sampled_passages)} samples ..."
         )
 
-        sent_scores = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 sent_scores = checker.predict(
@@ -102,25 +115,21 @@ def main():
                 )
                 break
             except Exception as exc:
-                print(f"  attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+                print(f"    attempt {attempt}/{MAX_RETRIES} failed: {exc}")
                 if attempt < MAX_RETRIES:
-                    print(f"  retrying in {RETRY_DELAY}s ...")
+                    print(f"    retrying in {RETRY_DELAY}s ...")
                     time.sleep(RETRY_DELAY)
 
-        if sent_scores is None:
-            print(f"  giving up on passage {passage.wiki_bio_test_idx} — skipping")
-            continue
-
         result = PassageResult(
-            wiki_bio_test_idx = passage.wiki_bio_test_idx,
+            wiki_bio_test_idx = wiki_idx,
             sent_scores       = sent_scores.tolist(),
             annotation        = passage.annotation,
         )
-        results.append(result)
-        save_results(RESULTS_PATH, results)
-        print(f"  scores: {[round(s, 3) for s in result.sent_scores]}")
+        save_result(result, i)
+        print(f"    scores: {[round(s, 3) for s in result.sent_scores]}")
+        print(f"    saved → {os.path.join(RESULTS_DIR, f'{i}.json')}")
 
-    print(f"\nDone. {len(results)} passages saved to {RESULTS_PATH}")
+    print(f"\nDone.")
 
 
 if __name__ == '__main__':

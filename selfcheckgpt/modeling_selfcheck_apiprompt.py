@@ -90,6 +90,8 @@ class SelfCheckAPIPrompt:
         No  -> 1.0
         everything else -> 0.5
         """
+        if text is None:
+            return self.text_mapping['n/a']
         text = text.lower().strip()
         if text[:3] == 'yes':
             text = 'yes'
