@@ -14,12 +14,13 @@ class SelfCheckAPIPrompt:
         base_url = "https://ollama.makinteract.com/v1/",
         model = "gpt-3.5-turbo",
         api_key = None,
+        timeout: float | None = None,
     ):
         if client_type == "openai":
-            self.client = OpenAI(base_url=base_url, api_key="none")
-            print("Initiate OpenAI client... model = {}".format(model)) 
+            self.client = OpenAI(base_url=base_url, api_key="none", timeout=timeout)
+            print("Initiate OpenAI client... model = {}".format(model))
         elif client_type == "groq":
-            self.client = Groq(api_key=api_key)
+            self.client = Groq(api_key=api_key, timeout=timeout)
             print("Initiate Groq client... model = {}".format(model))
         
         self.client_type = client_type
@@ -41,6 +42,7 @@ class SelfCheckAPIPrompt:
                 ],
                 temperature=0.0, # 0.0 = deterministic,
                 max_tokens=max_tokens, # max_tokens is the generated one,
+                extra_body={"think": False},  # disable Qwen3 thinking mode (Ollama-specific)
             )
             return chat_completion.choices[0].message.content
 
@@ -68,11 +70,13 @@ class SelfCheckAPIPrompt:
             sentence = sentences[sent_i]
             for sample_i, sample in enumerate(sampled_passages):
                 # this seems to improve performance when using the simple prompt template
-                sample = sample.replace("\n", " ") 
+                sample = sample.replace("\n", " ")
                 prompt = self.prompt_template.format(context=sample, sentence=sentence)
+                print(f"Prompt for sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples}:\n{prompt}\n")
                 generate_text = self.completion(prompt)
                 score_ = self.text_postprocessing(generate_text)
                 scores[sent_i, sample_i] = score_
+                print(f"  sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples} → {generate_text!r} (score={score_:.1f})")
         scores_per_sentence = scores.mean(axis=-1)
         return scores_per_sentence
 

@@ -5,28 +5,31 @@ Runs SelfCheckAPIPrompt over all 238 WikiBio passages using a local Ollama endpo
 Results are saved to results.json (one entry per passage) for later metrics evaluation.
 
 Run:
-    python3 -m replication.prompt.prompt
+    python3 -m replication.prompt.main
 """
-import sys
 import os
 import json
 import tempfile
+import time
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
 from replication.entity import PassageInput, PassageResult
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-OLLAMA_BASE_URL = "https://ollama.makinteract.com/v1/"
-MODEL           = "qwen3.5:9b-q8_0"
-DATA_PATH       = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
-RESULTS_PATH    = os.path.join(os.path.dirname(__file__), 'results.json')
-PROMPT_TEMPLATE = (
+OLLAMA_BASE_URL  = "https://ollama.makinteract.com/v1/"
+MODEL            = "qwen3.5:9b-q8_0"
+DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
+RESULTS_PATH     = os.path.join(os.path.dirname(__file__), 'results.json')
+PROMPT_TEMPLATE  = (
     "Context: {context}\n\n"
     "Sentence: {sentence}\n\n"
     "Is the sentence supported by the context above? Answer Yes or No.\n\nAnswer: "
 )
-MAX_TOKENS = 1000  # must exceed Qwen3.5's typical thinking budget (~300 tokens)
+MAX_TOKENS       = 5  # only "Yes" or "No" needed; thinking is disabled via extra_body
+REQUEST_TIMEOUT  = 200   # seconds per API call before raising an error
+MAX_RETRIES      = 3     # retry attempts per passage on transient errors
+RETRY_DELAY      = 10    # seconds to wait between retries
 
 # ---------------------------------------------------------------------------
 # I/O helpers
@@ -62,6 +65,7 @@ def save_results(path: str, results: list[PassageResult]) -> None:
 
 def main():
     dataset = load_dataset(DATA_PATH)
+    dataset = dataset[119:]
     results = load_results(RESULTS_PATH)
     done_ids = {r.wiki_bio_test_idx for r in results}
 
@@ -71,7 +75,8 @@ def main():
         client_type="openai",
         base_url=OLLAMA_BASE_URL,
         model=MODEL,
-        api_key="none"
+        api_key="none",
+        timeout=REQUEST_TIMEOUT,
     )
     checker.set_prompt_template(PROMPT_TEMPLATE)
 
@@ -85,14 +90,23 @@ def main():
             f"{len(passage.sentences)} sentences × {len(passage.sampled_passages)} samples ..."
         )
 
-        try:
-            sent_scores = checker.predict(
-                sentences        = passage.sentences,
-                sampled_passages = passage.sampled_passages,
-                verbose          = True,
-            )
-        except Exception as exc:
-            print(f"  ERROR on passage {passage.wiki_bio_test_idx}: {exc} — skipping")
+        sent_scores = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                sent_scores = checker.predict(
+                    sentences        = passage.sentences,
+                    sampled_passages = passage.sampled_passages,
+                    verbose          = True,
+                )
+                break
+            except Exception as exc:
+                print(f"  attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+                if attempt < MAX_RETRIES:
+                    print(f"  retrying in {RETRY_DELAY}s ...")
+                    time.sleep(RETRY_DELAY)
+
+        if sent_scores is None:
+            print(f"  giving up on passage {passage.wiki_bio_test_idx} — skipping")
             continue
 
         result = PassageResult(
