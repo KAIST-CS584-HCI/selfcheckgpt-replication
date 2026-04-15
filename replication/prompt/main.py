@@ -73,11 +73,14 @@ def save_result(result: PassageResult, idx: int) -> None:
 
 _parser = argparse.ArgumentParser(description="Run SelfCheckAPIPrompt over a range of WikiBio passages.")
 _parser.add_argument("--index", type=int, required=True, help="index of the passage to process (wiki_bio_test_idx)")
+_parser.add_argument("--think", type=bool, required=True, help="whether to use reasoning effort in API calls")
+
 
 def main() -> None:
     args = _parser.parse_args()
 
     idx = args.index
+    think = "medium" if args.think else "none"
 
     dataset  = load_dataset(DATA_PATH)
     passage = dataset[idx]
@@ -108,6 +111,8 @@ def main() -> None:
                 sentences        = passage.sentences,
                 sampled_passages = passage.sampled_passages,
                 verbose          = True,
+                max_tokens       = MAX_TOKENS,
+                reasoning        = think,
             )
             break
         except Exception as exc:
