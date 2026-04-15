@@ -11,14 +11,12 @@ class SelfCheckAPIPrompt:
     def __init__(
         self,
         client_type = "openai",
+        base_url = "https://ollama.makinteract.com/v1/",
         model = "gpt-3.5-turbo",
         api_key = None,
     ):
         if client_type == "openai":
-            # using default keys
-            # os.environ.get("OPENAI_ORGANIZATION")
-            # os.environ.get("OPENAI_API_KEY")
-            self.client = OpenAI()
+            self.client = OpenAI(base_url=base_url, api_key="none")
             print("Initiate OpenAI client... model = {}".format(model)) 
         elif client_type == "groq":
             self.client = Groq(api_key=api_key)
@@ -34,16 +32,15 @@ class SelfCheckAPIPrompt:
     def set_prompt_template(self, prompt_template: str):
         self.prompt_template = prompt_template
 
-    def completion(self, prompt: str):
+    def completion(self, prompt: str, max_tokens: int = 1000):
         if self.client_type == "openai" or self.client_type == "groq":
             chat_completion = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    # {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.0, # 0.0 = deterministic,
-                max_tokens=5, # max_tokens is the generated one,
+                max_tokens=max_tokens, # max_tokens is the generated one,
             )
             return chat_completion.choices[0].message.content
 
