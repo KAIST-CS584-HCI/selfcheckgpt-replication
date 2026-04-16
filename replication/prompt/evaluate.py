@@ -23,7 +23,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import average_precision_score
+from sklearn.metrics import auc, precision_recall_curve
 
 from replication.entity import PassageResult
 
@@ -82,7 +82,8 @@ def flatten(results: list[PassageResult]) -> Flattened:
 def auc_pr_nonfact(f: Flattened) -> float:
     """Positive class = non-factual (label > 0)."""
     y_true = (f.labels > 0).astype(int)
-    return float(average_precision_score(y_true, f.scores))
+    precision, recall, _ = precision_recall_curve(y_true, f.scores)
+    return float(auc(recall, precision))
 
 
 def auc_pr_nonfact_star(f: Flattened) -> float:
@@ -91,8 +92,11 @@ def auc_pr_nonfact_star(f: Flattened) -> float:
     restricted to passages that are NOT total hallucination (passage_mean < 1.0).
     """
     mask = f.passage_mean < 1.0
-    y_true = (f.labels[mask] == 1.0).astype(int)
-    return float(average_precision_score(y_true, f.scores[mask]))
+    labels = f.labels[mask]
+    scores = f.scores[mask]
+    y_true = (labels == 1.0).astype(int)
+    precision, recall, _ = precision_recall_curve(y_true, scores)
+    return float(auc(recall, precision))
 
 
 def auc_pr_factual(f: Flattened) -> float:
@@ -101,7 +105,8 @@ def auc_pr_factual(f: Flattened) -> float:
     Higher predicted score = more hallucinated, so we flip the sign.
     """
     y_true = (f.labels == 0.0).astype(int)
-    return float(average_precision_score(y_true, -f.scores))
+    precision, recall, _ = precision_recall_curve(y_true, -f.scores)
+    return float(auc(recall, precision))
 
 
 # ---------------------------------------------------------------------------
