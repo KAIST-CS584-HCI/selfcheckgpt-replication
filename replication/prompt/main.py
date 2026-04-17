@@ -15,7 +15,6 @@ import argparse
 import os
 import json
 import tempfile
-import time
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
 from replication.entity import PassageInstance, PassageResult
 
@@ -100,9 +99,12 @@ def main() -> None:
         return
 
     result = PassageResult(
+        dataset_idx       = idx,
         wiki_bio_test_idx = wiki_idx,
-        sentence_scores       = sent_scores.tolist(),
-        annotations        = passage.annotation,
+        gpt3_text         = passage.gpt3_text,
+        sentences         = passage.sentences,
+        sentence_scores   = sent_scores.tolist(),
+        annotations       = passage.annotation,
         raw_responses     = raw_responses,
     )
 
