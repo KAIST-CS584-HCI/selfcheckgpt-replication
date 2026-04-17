@@ -26,7 +26,7 @@ from replication.entity import GeneratedTextInstance
 # ---------------------------------------------------------------------------
 
 DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated-gpt-3.5-turbo-no-think.json')
-RESULTS_DIR = os.path.join(os.path.dirname(__file__), 'nli')
+RESULTS_DIR = os.path.join(os.path.dirname(__file__))
 
 
 # ---------------------------------------------------------------------------
