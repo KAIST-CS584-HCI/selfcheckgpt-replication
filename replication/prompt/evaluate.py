@@ -63,11 +63,11 @@ class Flattened:
 def flatten(results: list[PassageResult]) -> Flattened:
     scores, labels, passage_mean = [], [], []
     for r in results:
-        gold = np.array([LABEL_SCORE[a] for a in r.annotation])
+        gold = np.array([LABEL_SCORE[a] for a in r.annotations])
         pm   = float(gold.mean())
-        scores.extend(r.sent_scores)
+        scores.extend(r.sentence_scores)
         labels.extend(gold.tolist())
-        passage_mean.extend([pm] * len(r.sent_scores))
+        passage_mean.extend([pm] * len(r.sentence_scores))
     return Flattened(
         scores       = np.asarray(scores),
         labels       = np.asarray(labels),
@@ -114,8 +114,8 @@ def auc_pr_factual(f: Flattened) -> float:
 # ---------------------------------------------------------------------------
 
 def passage_correlations(results: list[PassageResult]) -> tuple[float, float]:
-    pred = np.array([float(np.mean(r.sent_scores)) for r in results])
-    gold = np.array([float(np.mean([LABEL_SCORE[a] for a in r.annotation])) for r in results])
+    pred = np.array([float(np.mean(r.sentence_scores)) for r in results])
+    gold = np.array([float(np.mean([LABEL_SCORE[a] for a in r.annotations])) for r in results])
     pearson  = float(pearsonr(pred, gold).statistic)
     spearman = float(spearmanr(pred, gold).statistic)
     return pearson, spearman
