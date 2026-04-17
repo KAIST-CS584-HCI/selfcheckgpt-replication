@@ -6,6 +6,8 @@ transformers>=4.35
 spacy
 nltk
 bert-score
+sentencepiece
+protobuf
 openai
 groq
 
