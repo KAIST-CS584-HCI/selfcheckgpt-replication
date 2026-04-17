@@ -1,5 +1,6 @@
 from openai import OpenAI
 from groq import Groq
+import ollama
 from tqdm import tqdm
 from typing import Dict, List, Set, Tuple, Union
 import numpy as np
@@ -18,7 +19,10 @@ class SelfCheckAPIPrompt:
         if client_type == "openai":
             self.client = OpenAI(base_url=base_url, api_key=api_key)
             print("Initiate OpenAI client... model = {}".format(model))
-        elif client_type == "groq":
+        if client_type == "ollama":
+            self.client = ollama.Client(host=base_url)
+            print("Initiate Ollama client... model = {}".format(model))
+        if client_type == "groq":
             self.client = Groq(api_key=api_key)
             print("Initiate Groq client... model = {}".format(model))
         
@@ -33,17 +37,24 @@ class SelfCheckAPIPrompt:
         self.prompt_template = prompt_template
 
     def completion(self, prompt: str, max_tokens: int = 10000, reasoning="none"):
-        if self.client_type == "openai" or self.client_type == "groq":
+        if self.client_type in ("openai", "groq"):
             chat_completion = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.0, # 0.0 = deterministic,
-                max_tokens=max_tokens, # max_tokens is the generated one,
-                reasoning_effort=reasoning
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0,
+                max_tokens=max_tokens,
+                reasoning_effort=reasoning,
             )
             return chat_completion.choices[0]
+
+        elif self.client_type == "ollama":
+            response = self.client.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                options={"temperature": 0.0, "num_predict": max_tokens},
+                think=reasoning != "none",
+            )
+            return response
 
         else:
             raise ValueError("client_type not implemented")
@@ -87,7 +98,9 @@ class SelfCheckAPIPrompt:
                 )
                 message = generate_text.message.content
                 if message is None:
-                    print(f"[Warning] API None for {prompt}\n -> reason: {generate_text.finish_reason}, refusal: {generate_text.message.refusal}")
+                    finish_reason = getattr(generate_text, 'finish_reason', None) or getattr(generate_text, 'done_reason', None)
+                    refusal = getattr(generate_text.message, 'refusal', None)
+                    print(f"[Warning] API None for {prompt}\n -> reason: {finish_reason}, refusal: {refusal}")
                     
                 responses[sent_i].append(message)
                 scores[sent_i, sample_i] = self.text_postprocessing(message)
