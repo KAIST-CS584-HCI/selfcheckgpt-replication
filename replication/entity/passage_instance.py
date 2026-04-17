@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class PassageInput:
+class PassageInstance:
     """One passage from dataset.json."""
     wiki_bio_test_idx: int
     sentences:         list[str]   # gpt3_sentences — the text to be evaluated
@@ -12,7 +12,7 @@ class PassageInput:
     wiki_bio_text:     str         # ground-truth Wikipedia biography text
 
     @classmethod
-    def from_dict(cls, item: dict) -> "PassageInput":
+    def from_dict(cls, item: dict) -> "PassageInstance":
         return cls(
             wiki_bio_test_idx = item['wiki_bio_test_idx'],
             sentences         = item['gpt3_sentences'],

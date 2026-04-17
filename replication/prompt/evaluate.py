@@ -212,11 +212,18 @@ def print_summary(m: dict) -> None:
 
 _parser = argparse.ArgumentParser(description="Evaluate SelfCheckGPT-Prompt replication results.")
 _parser.add_argument("--results", type=str, default=RESULTS_PATH, help="Path to results.json")
+_parser.add_argument("--start", type=int, default=None, help="First index to include (inclusive, default: 0)")
+_parser.add_argument("--end", type=int, default=None, help="Last index to include (inclusive, default: last)")
 
 
 def main() -> None:
     args    = _parser.parse_args()
     results = load_results(args.results)
+
+    start = args.start if args.start is not None else 0
+    end   = args.end   if args.end   is not None else len(results) - 1
+    results = results[start:end + 1]
+
     dist    = response_distribution(results)
     print_response_distribution(dist)
     metrics = evaluate(results)

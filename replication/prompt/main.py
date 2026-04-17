@@ -17,18 +17,18 @@ import json
 import tempfile
 import time
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
-from replication.entity import PassageInput, PassageResult
+from replication.entity import PassageInstance, PassageResult
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-BASE_URL         = "https://openrouter.ai/api/v1"
-API_KEY          = "Our API"
-MODEL            = "qwen/qwen3.5-9b"
-# BASE_URL         = "https://ollama.makinteract.com/v1/"
-# API_KEY          = "haha"
-# MODEL            = "qwen3.5:9b-q8_0"
+# BASE_URL         = "https://openrouter.ai/api/v1"
+# API_KEY          = "your API"
+# MODEL            = "google/gemma-4-31b-it"
+BASE_URL         = "https://ollama.makinteract.com/v1/"
+API_KEY          = "haha"
+MODEL            = "qwen3.5:9b-q8_0"
 DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
 RESULTS_DIR      = os.path.dirname(__file__)
 RESULTS_PATH     = os.path.join(RESULTS_DIR, "results.json")
@@ -42,9 +42,9 @@ PROMPT_TEMPLATE  = (
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[PassageInput]:
+def load_dataset(path: str) -> list[PassageInstance]:
     with open(path) as f:
-        return [PassageInput.from_dict(item) for item in json.load(f)]
+        return [PassageInstance.from_dict(item) for item in json.load(f)]
 
 def save_result(result: PassageResult, idx: int) -> None:
     path = os.path.join(RESULTS_DIR, f"{idx}.json")
@@ -61,7 +61,6 @@ def save_result(result: PassageResult, idx: int) -> None:
 _parser = argparse.ArgumentParser(description="Run SelfCheckAPIPrompt over a range of WikiBio passages.")
 _parser.add_argument("--index", type=int, required=True, help="index of the passage to process (wiki_bio_test_idx)")
 _parser.add_argument("--think", action="store_true", default=False, help="enable reasoning effort in API calls")
-
 
 def main() -> None:
     args = _parser.parse_args()
@@ -102,13 +101,13 @@ def main() -> None:
 
     result = PassageResult(
         wiki_bio_test_idx = wiki_idx,
-        sent_scores       = sent_scores.tolist(),
-        annotation        = passage.annotation,
+        sentence_scores       = sent_scores.tolist(),
+        annotations        = passage.annotation,
         raw_responses     = raw_responses,
     )
 
     save_result(result, idx)
-    print(f"    scores: {[round(s, 3) for s in result.sent_scores]}")
+    print(f"    scores: {[round(s, 3) for s in result.sentence_scores]}")
     print(f"    saved → {os.path.join(RESULTS_DIR, f'{idx}.json')}")
 
     print(f"\nDone.")
