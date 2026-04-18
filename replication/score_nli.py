@@ -1,12 +1,13 @@
 """
-SelfCheckGPT — NLI scoring for pre-generated data.
+SelfCheckGPT — NLI scoring for wiki_bio dataset.
 
-Loads entries by index range from the generated-text dataset JSON, scores each
-sentence with SelfCheck-NLI, and saves the result as nli_<index>.json.
+Loads entries by index range from dataset-generated-samples-gpt-3.5-turbo.json
+using PassageGeneratedInstance, scores each sentence with SelfCheck-NLI, and
+saves the result as <index>.json.
 
 Usage:
-    python3 -m replication.bert.score_nli --start 0 --end 119
-    python3 -m replication.bert.score_nli --start 0 --end 40 --skip-existing
+    python3 -m replication.score_nli --start 0 --end 119
+    python3 -m replication.score_nli --start 0 --end 119 --skip-existing
 """
 
 import argparse
@@ -14,18 +15,17 @@ import json
 import os
 import tempfile
 
-import spacy
 import torch
 from tqdm import tqdm
 
 from selfcheckgpt.modeling_selfcheck import SelfCheckNLI
-from replication.entity import GeneratedTextInstance
+from replication.entity import PassageGeneratedInstance
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated-gpt-3.5-turbo-no-think.json')
+DATA_PATH   = os.path.join(os.path.dirname(__file__), 'data', 'dataset-generated-samples-gpt-3.5-turbo.json')
 RESULTS_DIR = os.path.join(os.path.dirname(__file__))
 
 
@@ -46,9 +46,9 @@ def _patch_nli_tokenizer(selfcheck_nli: SelfCheckNLI) -> SelfCheckNLI:
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[GeneratedTextInstance]:
+def load_dataset(path: str) -> list[PassageGeneratedInstance]:
     with open(path) as f:
-        return [GeneratedTextInstance.from_dict(item) for item in json.load(f)]
+        return [PassageGeneratedInstance.from_dict(item) for item in json.load(f)]
 
 
 def result_path(index: int) -> str:
@@ -68,7 +68,7 @@ def save_result(result: dict, index: int) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-_parser = argparse.ArgumentParser(description="Score generated-text entries with SelfCheck-NLI.")
+_parser = argparse.ArgumentParser(description="Score wiki_bio dataset entries with SelfCheck-NLI.")
 _parser.add_argument("--start", type=int, required=True, help="start index (inclusive)")
 _parser.add_argument("--end",   type=int, required=True, help="end index (exclusive)")
 
@@ -83,35 +83,29 @@ def main() -> None:
     dataset = load_dataset(DATA_PATH)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Loading spaCy + SelfCheck-NLI on {device} ...")
-    
-    nlp = spacy.load("en_core_web_sm")
-    selfcheck_nli = SelfCheckNLI(device=device)
-    selfcheck_nli = _patch_nli_tokenizer(selfcheck_nli)
+    print(f"Loading SelfCheck-NLI on {device} ...")
+    selfcheck_nli = _patch_nli_tokenizer(SelfCheckNLI(device=device))
 
     for idx in tqdm(indices, desc="NLI scoring"):
         instance = dataset[idx]
-        sentences = [sent.text.strip() for sent in nlp(instance.main_response).sents if sent.text.strip()]
-
-        print(
-            f"  Processing [#{idx} example_id={instance.example_id}]: "
-            f"{len(sentences)} sentences × {len(instance.sampled_passages)} samples ..."
-        )
 
         nli_scores = selfcheck_nli.predict(
-            sentences        = sentences,
-            sampled_passages = instance.sampled_passages,
+            sentences        = instance.main_sentences,
+            sampled_passages = instance.sample_passages,
         )
 
         result = {
-            **instance.to_dict(),
-            "sentences":  sentences,
-            "nli_scores": nli_scores.tolist() if hasattr(nli_scores, "tolist") else list(nli_scores),
+            "dataset_idx":       idx,
+            "wiki_bio_test_idx": instance.wiki_bio_test_idx,
+            "main_passage":      instance.main_passage,
+            "main_sentences":    instance.main_sentences,
+            "annotation":        instance.annotation,
+            "sample_passages":   instance.sample_passages,
+            "wiki_bio_text":     instance.wiki_bio_text,
+            "nli_scores":        nli_scores.tolist() if hasattr(nli_scores, "tolist") else list(nli_scores),
         }
 
         save_result(result, idx)
-        print(f"    nli_scores: {[round(s, 3) for s in result['nli_scores']]}")
-        print(f"    saved → {result_path(idx)}")
 
     print(f"\nDone: {len(indices)} entries.")
 
