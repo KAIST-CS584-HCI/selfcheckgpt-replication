@@ -25,7 +25,7 @@ import numpy as np
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import auc, precision_recall_curve
 
-from replication.entity import PassageResult
+from replication.entity import PassagePromptResult
 
 # ---------------------------------------------------------------------------
 # Config
@@ -43,9 +43,9 @@ LABEL_SCORE = {
 # Loading
 # ---------------------------------------------------------------------------
 
-def load_results(path: str) -> list[PassageResult]:
+def load_results(path: str) -> list[PassagePromptResult]:
     with open(path) as f:
-        return [PassageResult.from_dict(d) for d in json.load(f)]
+        return [PassagePromptResult.from_dict(d) for d in json.load(f)]
 
 
 # ---------------------------------------------------------------------------
@@ -60,10 +60,10 @@ class Flattened:
     passage_mean:  np.ndarray  # gold passage-mean label broadcast to each sentence
 
 
-def flatten(results: list[PassageResult]) -> Flattened:
+def flatten(results: list[PassagePromptResult]) -> Flattened:
     scores, labels, passage_mean = [], [], []
     for r in results:
-        gold = np.array([LABEL_SCORE[a] for a in r.annotations])
+        gold = np.array([LABEL_SCORE[a] for a in r.annotation])
         pm   = float(gold.mean())
         scores.extend(r.sentence_scores)
         labels.extend(gold.tolist())
@@ -113,9 +113,9 @@ def auc_pr_factual(f: Flattened) -> float:
 # Passage-level correlations
 # ---------------------------------------------------------------------------
 
-def passage_correlations(results: list[PassageResult]) -> tuple[float, float]:
+def passage_correlations(results: list[PassagePromptResult]) -> tuple[float, float]:
     pred = np.array([float(np.mean(r.sentence_scores)) for r in results])
-    gold = np.array([float(np.mean([LABEL_SCORE[a] for a in r.annotations])) for r in results])
+    gold = np.array([float(np.mean([LABEL_SCORE[a] for a in r.annotation])) for r in results])
     pearson  = float(pearsonr(pred, gold).statistic)
     spearman = float(spearmanr(pred, gold).statistic)
     return pearson, spearman
@@ -125,7 +125,7 @@ def passage_correlations(results: list[PassageResult]) -> tuple[float, float]:
 # Response distribution
 # ---------------------------------------------------------------------------
 
-def response_distribution(results: list[PassageResult]) -> dict:
+def response_distribution(results: list[PassagePromptResult]) -> dict:
     """Count raw API responses across all (sentence, sample) pairs."""
     counts: dict[str, int] = {}
     total = 0
@@ -174,7 +174,7 @@ def print_response_distribution(dist: dict) -> None:
 # Summary
 # ---------------------------------------------------------------------------
 
-def evaluate(results: list[PassageResult]) -> dict:
+def evaluate(results: list[PassagePromptResult]) -> dict:
     f = flatten(results)
     pearson, spearman = passage_correlations(results)
     return {

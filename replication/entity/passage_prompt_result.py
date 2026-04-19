@@ -9,7 +9,7 @@ class PassagePromptResult:
     main_passage:      str
     sample_passages:   list[str]
     sentences:         list[str]
-    annotations:       list[str]                 # carried from PassageInput for later eval
+    annotation:       list[str]                 # carried from PassageInput for later eval
     sentence_scores:   list[float]               # one per sentence; 0.0 = factual, 1.0 = hallucinated
     raw_responses:     list[list[str | None]] = field(default_factory=list)
 
@@ -20,7 +20,7 @@ class PassagePromptResult:
             'main_passage':      self.main_passage,
             'sample_passages':   self.sample_passages,
             'sentences':         self.sentences,
-            'annotations':       self.annotations,
+            'annotation':       self.annotation,
             'sentence_scores':   self.sentence_scores,
             'raw_responses':     self.raw_responses,
         }
@@ -33,7 +33,7 @@ class PassagePromptResult:
             main_passage      = d['main_passage'],
             sample_passages   = d['sample_passages'],
             sentences         = d['sentences'],
-            annotations       = d['annotations'],
+            annotation       = d['annotation'],
             sentence_scores   = d['sentence_scores'],
             raw_responses     = d.get('raw_responses', []),
         )

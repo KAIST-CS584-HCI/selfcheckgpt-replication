@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 from groq import Groq
 import ollama
@@ -86,26 +87,28 @@ class SelfCheckAPIPrompt:
             sentence = sentences[sent_i]
             responses.append([])
 
-            for sample_i, sample in enumerate(sampled_passages):
-                # this seems to improve performance when using the simple prompt template
+            def _call(sample_i: int, sample: str) -> tuple[int, str | None]:
                 sample = sample.replace("\n", " ")
                 prompt = self.prompt_template.format(context=sample, sentence=sentence)
-
-                generate_text = self.completion(
-                    prompt, 
-                    max_tokens=max_tokens, 
-                    reasoning=reasoning
-                )
+                generate_text = self.completion(prompt, max_tokens=max_tokens, reasoning=reasoning)
                 message = generate_text.message.content
                 if message is None:
                     finish_reason = getattr(generate_text, 'finish_reason', None) or getattr(generate_text, 'done_reason', None)
                     refusal = getattr(generate_text.message, 'refusal', None)
                     print(f"[Warning] API None for {prompt}\n -> reason: {finish_reason}, refusal: {refusal}")
-                    
-                responses[sent_i].append(message)
-                scores[sent_i, sample_i] = self.text_postprocessing(message)
+                return sample_i, message
 
-                print(f"  sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples} → {message!r} (score={scores[sent_i, sample_i]:.1f})")
+            with ThreadPoolExecutor(max_workers=num_samples+10) as executor:
+                futures = {executor.submit(_call, i, s): i for i, s in enumerate(sampled_passages)}
+                sample_results = [None] * num_samples
+                for future in as_completed(futures):
+                    sample_i, message = future.result()
+                    sample_results[sample_i] = message
+                    score = self.text_postprocessing(message)
+                    scores[sent_i, sample_i] = score
+                    print(f"  sent {sent_i+1}/{num_sentences} sample {sample_i+1}/{num_samples} → {message!r} (score={score:.1f})")
+
+            responses[sent_i].extend(sample_results)
         
         scores = scores.mean(axis=-1)
         return scores, responses
