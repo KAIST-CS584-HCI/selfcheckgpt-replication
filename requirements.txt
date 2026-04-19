@@ -1,0 +1,16 @@
+# Core package dependencies
+numpy
+tqdm
+torch>=1.12
+transformers>=4.35
+spacy
+nltk
+bert-score
+sentencepiece
+protobuf
+openai
+groq
+
+# Repository demos / experiments
+datasets
+scipy

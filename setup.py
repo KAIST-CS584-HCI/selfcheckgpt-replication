@@ -13,6 +13,7 @@ REQUIREMENTS = [
     "nltk",
     "openai",
     "groq",
+    "ollama",
 ]
 
 # some more details
