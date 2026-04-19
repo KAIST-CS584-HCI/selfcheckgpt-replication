@@ -23,7 +23,7 @@ from replication.entity import PassageInstance, PassagePromptResult
 # ---------------------------------------------------------------------------
 
 BASE_URL         = "https://openrouter.ai/api/v1"
-API_KEY          = "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"
+API_KEY          = "Your API Key"
 MODEL            = "qwen/qwen3.5-9b"
 # BASE_URL         = "https://ollama.makinteract.com/v1/"
 # API_KEY          = "haha"
