@@ -16,7 +16,7 @@ import os
 import json
 import tempfile
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
-from replication.entity import PassageInstance, PassagePromptResult
+from replication.entity import PassageInstance, PassageResult
 
 # ---------------------------------------------------------------------------
 # Config
@@ -49,7 +49,7 @@ def load_dataset(path: str, original: bool = True) -> list[PassageInstance]:
 def result_exists(idx: int) -> bool:
     return os.path.exists(os.path.join(RESULTS_DIR, f"{idx}.json"))
 
-def save_result(result: PassagePromptResult, idx: int) -> None:
+def save_result(result: PassageResult, idx: int) -> None:
     path = os.path.join(RESULTS_DIR, f"{idx}.json")
     dir_ = os.path.dirname(path) or '.'
     with tempfile.NamedTemporaryFile('w', dir=dir_, delete=False, suffix='.tmp') as tmp:
@@ -107,19 +107,19 @@ def main() -> None:
         print(f"  Error processing index {idx} (wiki_bio_test_idx={wiki_idx}): {exc}")
         return
 
-    result = PassagePromptResult(
+    result = PassageResult(
         dataset_idx       = idx,
         wiki_bio_test_idx = wiki_idx,
         main_passage      = passage.main_passage,
         sample_passages   = passage.sample_passages,
-        sentences         = passage.main_sentences,
-        annotations       = passage.annotation,
-        sentence_scores   = sent_scores.tolist(),
-        raw_responses     = raw_responses,
+        main_sentences    = passage.main_sentences,
+        annotation        = passage.annotation,
+        prompt_scores     = sent_scores.tolist(),
+        prompt_responses  = raw_responses,
     )
 
     save_result(result, idx)
-    print(f"    scores: {[round(s, 3) for s in result.sentence_scores]}")
+    print(f"    scores: {[round(s, 3) for s in result.prompt_scores]}")
     print(f"    saved → {os.path.join(RESULTS_DIR, f'{idx}.json')}")
 
     print(f"\nDone.")
