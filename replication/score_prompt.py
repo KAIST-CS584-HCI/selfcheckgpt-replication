@@ -16,19 +16,19 @@ import os
 import json
 import tempfile
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
-from replication.entity import PassageInstance, PassageResult
+from replication.entity import PassageOriginalInstance, PassagePromptResult
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-# BASE_URL         = "https://openrouter.ai/api/v1"
-# API_KEY          = "your API"
-# MODEL            = "google/gemma-4-31b-it"
-BASE_URL         = "https://ollama.makinteract.com/v1/"
-API_KEY          = "haha"
-MODEL            = "qwen3.5:9b-q8_0"
-DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
+BASE_URL         = "https://openrouter.ai/api/v1"
+API_KEY          = "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"
+MODEL            = "qwen/qwen3.5-9b"
+# BASE_URL         = "https://ollama.makinteract.com/v1/"
+# API_KEY          = "haha"
+# MODEL            = "qwen3.5:9b-q8_0"
+DATA_PATH        = os.path.join(os.path.dirname(__file__), 'data', 'dataset.json')
 RESULTS_DIR      = os.path.dirname(__file__)
 RESULTS_PATH     = os.path.join(RESULTS_DIR, "results.json")
 PROMPT_TEMPLATE  = (
@@ -41,11 +41,11 @@ PROMPT_TEMPLATE  = (
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[PassageInstance]:
+def load_dataset(path: str) -> list[PassageOriginalInstance]:
     with open(path) as f:
-        return [PassageInstance.from_dict(item) for item in json.load(f)]
+        return [PassageOriginalInstance.from_dict(item) for item in json.load(f)]
 
-def save_result(result: PassageResult, idx: int) -> None:
+def save_result(result: PassagePromptResult, idx: int) -> None:
     path = os.path.join(RESULTS_DIR, f"{idx}.json")
     dir_ = os.path.dirname(path) or '.'
     with tempfile.NamedTemporaryFile('w', dir=dir_, delete=False, suffix='.tmp') as tmp:
@@ -82,13 +82,13 @@ def main() -> None:
     wiki_idx = passage.wiki_bio_test_idx
     print(
         f"  Processing [wiki_bio_test_idx={wiki_idx}]: "
-        f"{len(passage.sentences)} sentences × {len(passage.sampled_passages)} samples ..."
+        f"{len(passage.gpt3_sentences)} sentences × {len(passage.gpt3_text_samples)} samples ..."
     )
 
     try:
         sent_scores, raw_responses = checker.predict(
-            sentences        = passage.sentences,
-            sampled_passages = passage.sampled_passages,
+            sentences        = passage.gpt3_sentences,
+            sampled_passages = passage.gpt3_text_samples,
             verbose          = True,
             max_tokens       = max_token,
             reasoning        = think,
@@ -98,13 +98,14 @@ def main() -> None:
         print(f"  Error processing index {idx} (wiki_bio_test_idx={wiki_idx}): {exc}")
         return
 
-    result = PassageResult(
+    result = PassagePromptResult(
         dataset_idx       = idx,
         wiki_bio_test_idx = wiki_idx,
-        gpt3_text         = passage.gpt3_text,
-        sentences         = passage.sentences,
-        sentence_scores   = sent_scores.tolist(),
+        main_passage      = passage.gpt3_text,
+        sample_passages   = passage.gpt3_text_samples,
+        sentences         = passage.gpt3_sentences,
         annotations       = passage.annotation,
+        sentence_scores   = sent_scores.tolist(),
         raw_responses     = raw_responses,
     )
 
