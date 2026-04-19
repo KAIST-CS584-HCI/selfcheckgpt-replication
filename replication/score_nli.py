@@ -2,7 +2,7 @@
 SelfCheckGPT — NLI scoring for wiki_bio dataset.
 
 Loads entries by index range from dataset-generated-samples-gpt-3.5-turbo.json
-using PassageGeneratedInstance, scores each sentence with SelfCheck-NLI, and
+using PassageInstance, scores each sentence with SelfCheck-NLI, and
 saves the result as <index>.json.
 
 Usage:
@@ -19,7 +19,7 @@ import torch
 from tqdm import tqdm
 
 from selfcheckgpt.modeling_selfcheck import SelfCheckNLI
-from replication.entity import PassageGeneratedInstance
+from replication.entity import PassageInstance
 
 # ---------------------------------------------------------------------------
 # Config
@@ -46,9 +46,9 @@ def _patch_nli_tokenizer(selfcheck_nli: SelfCheckNLI) -> SelfCheckNLI:
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[PassageGeneratedInstance]:
+def load_dataset(path: str) -> list[PassageInstance]:
     with open(path) as f:
-        return [PassageGeneratedInstance.from_dict(item) for item in json.load(f)]
+        return [PassageInstance.from_dict(item) for item in json.load(f)]
 
 
 def result_path(index: int) -> str:

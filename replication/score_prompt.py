@@ -16,7 +16,7 @@ import os
 import json
 import tempfile
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
-from replication.entity import PassageOriginalInstance, PassagePromptResult
+from replication.entity import PassageInstance, PassagePromptResult
 
 # ---------------------------------------------------------------------------
 # Config
@@ -41,9 +41,13 @@ PROMPT_TEMPLATE  = (
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[PassageOriginalInstance]:
+def load_dataset(path: str, original: bool = True) -> list[PassageInstance]:
+    loader = PassageInstance.from_original_dict if original else PassageInstance.from_dict
     with open(path) as f:
-        return [PassageOriginalInstance.from_dict(item) for item in json.load(f)]
+        return [loader(item) for item in json.load(f)]
+
+def result_exists(idx: int) -> bool:
+    return os.path.exists(os.path.join(RESULTS_DIR, f"{idx}.json"))
 
 def save_result(result: PassagePromptResult, idx: int) -> None:
     path = os.path.join(RESULTS_DIR, f"{idx}.json")
@@ -65,6 +69,11 @@ def main() -> None:
     args = _parser.parse_args()
 
     idx = args.index
+
+    if result_exists(idx):
+        print(f"  Skipping {idx} (already exists)")
+        return
+
     think = "medium" if args.think else "none"
     max_token = 10000 if args.think else 5
 
@@ -82,13 +91,13 @@ def main() -> None:
     wiki_idx = passage.wiki_bio_test_idx
     print(
         f"  Processing [wiki_bio_test_idx={wiki_idx}]: "
-        f"{len(passage.gpt3_sentences)} sentences × {len(passage.gpt3_text_samples)} samples ..."
+        f"{len(passage.main_sentences)} sentences × {len(passage.sample_passages)} samples ..."
     )
 
     try:
         sent_scores, raw_responses = checker.predict(
-            sentences        = passage.gpt3_sentences,
-            sampled_passages = passage.gpt3_text_samples,
+            sentences        = passage.main_sentences,
+            sampled_passages = passage.sample_passages,
             verbose          = True,
             max_tokens       = max_token,
             reasoning        = think,
@@ -101,9 +110,9 @@ def main() -> None:
     result = PassagePromptResult(
         dataset_idx       = idx,
         wiki_bio_test_idx = wiki_idx,
-        main_passage      = passage.gpt3_text,
-        sample_passages   = passage.gpt3_text_samples,
-        sentences         = passage.gpt3_sentences,
+        main_passage      = passage.main_passage,
+        sample_passages   = passage.sample_passages,
+        sentences         = passage.main_sentences,
         annotations       = passage.annotation,
         sentence_scores   = sent_scores.tolist(),
         raw_responses     = raw_responses,

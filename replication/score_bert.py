@@ -17,7 +17,7 @@ import tempfile
 from tqdm import tqdm
 
 from selfcheckgpt.modeling_selfcheck import SelfCheckBERTScore
-from replication.entity import PassageGeneratedInstance
+from replication.entity import PassageInstance
 
 # ---------------------------------------------------------------------------
 # Config
@@ -31,9 +31,9 @@ RESULTS_DIR = os.path.join(os.path.dirname(__file__))
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[PassageGeneratedInstance]:
+def load_dataset(path: str) -> list[PassageInstance]:
     with open(path) as f:
-        return [PassageGeneratedInstance.from_dict(item) for item in json.load(f)]
+        return [PassageInstance.from_dict(item) for item in json.load(f)]
 
 
 def result_path(index: int) -> str:
