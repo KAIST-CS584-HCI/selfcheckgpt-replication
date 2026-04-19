@@ -14,27 +14,26 @@ import json
 import os
 import tempfile
 
-import spacy
 from tqdm import tqdm
 
 from selfcheckgpt.modeling_selfcheck import SelfCheckBERTScore
-from replication.entity import GeneratedTextInstance
+from replication.entity import PassageGeneratedInstance
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated-gpt-3.5-turbo-no-think.json')
-RESULTS_DIR = os.path.join(os.path.dirname(__file__), 'bert')
+DATA_PATH   = os.path.join(os.path.dirname(__file__), 'data', 'dataset-generated-samples-gpt-3.5-turbo.json')
+RESULTS_DIR = os.path.join(os.path.dirname(__file__))
 
 
 # ---------------------------------------------------------------------------
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[GeneratedTextInstance]:
+def load_dataset(path: str) -> list[PassageGeneratedInstance]:
     with open(path) as f:
-        return [GeneratedTextInstance.from_dict(item) for item in json.load(f)]
+        return [PassageGeneratedInstance.from_dict(item) for item in json.load(f)]
 
 
 def result_path(index: int) -> str:
@@ -69,23 +68,26 @@ def main() -> None:
 
     dataset = load_dataset(DATA_PATH)
 
-    print("Loading spaCy + SelfCheck-BERTScore ...")
-    nlp = spacy.load("en_core_web_sm")
+    print("Loading SelfCheck-BERTScore ...")
     selfcheck_bert = SelfCheckBERTScore()
 
     for idx in tqdm(indices, desc="BERTScore scoring"):
         instance = dataset[idx]
-        sentences = [sent.text.strip() for sent in nlp(instance.main_response).sents if sent.text.strip()]
 
         bert_scores = selfcheck_bert.predict(
-            sentences        = sentences,
-            sampled_passages = instance.sampled_passages,
+            sentences        = instance.main_sentences,
+            sampled_passages = instance.sample_passages,
         )
 
         result = {
-            **instance.to_dict(),
-            "sentences":   sentences,
-            "bert_scores": bert_scores.tolist() if hasattr(bert_scores, "tolist") else list(bert_scores),
+            "dataset_idx":       idx,
+            "wiki_bio_test_idx": instance.wiki_bio_test_idx,
+            "main_passage":      instance.main_passage,
+            "main_sentences":    instance.main_sentences,
+            "annotation":        instance.annotation,
+            "sample_passages":   instance.sample_passages,
+            "wiki_bio_text":     instance.wiki_bio_text,
+            "bert_scores":       bert_scores.tolist() if hasattr(bert_scores, "tolist") else list(bert_scores),
         }
 
         save_result(result, idx)
