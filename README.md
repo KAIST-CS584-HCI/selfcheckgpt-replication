@@ -123,10 +123,10 @@ The `data/` directory contains normalized WikiBio hallucination datasets and sco
 
 | File | Rows | Description | Generation / scoring source |
 | --- | ---: | --- | --- |
-| `data/dataset-original.json` | 238 | Normalized original SelfCheckGPT WikiBio hallucination dataset. | GPT-3 generated the main passages and original sampled passages. |
-| `data/dataset-generated.json` | 119 | Subset with regenerated sampled passages for comparison experiments. | GPT-3 generated the main passages; GPT-3.5 generated the sampled passages. |
-| `data/result-original-samples.json` | 119 | Scored result snapshot using original sampled passages. | Prompt scores use Qwen 3.5 9B; BERTScore and NLI use the provided SelfCheckGPT implementations. |
-| `data/result-generated-samples.json` | 119 | Scored result snapshot using GPT-3.5 sampled passages. | Prompt scores use Qwen 3.5 9B; BERTScore and NLI use the provided SelfCheckGPT implementations. |
+| `dataset-original.json` | 238 | Normalized original SelfCheckGPT WikiBio hallucination dataset. | GPT-3 generated the main passages and original sampled passages. |
+| `dataset-generated.json` | 119 | Subset with regenerated sampled passages for comparison experiments. | GPT-3 generated the main passages; GPT-3.5 generated the sampled passages. |
+| `result-original-samples.json` | 119 | Scored result snapshot using original sampled passages. | Prompt scores use Qwen 3.5 9B; BERTScore and NLI use the provided SelfCheckGPT implementations. |
+| `result-generated-samples.json` | 119 | Scored result snapshot using GPT-3.5 sampled passages. | Prompt scores use Qwen 3.5 9B; BERTScore and NLI use the provided SelfCheckGPT implementations. |
 
 Dataset rows use a shared normalized schema:
 
