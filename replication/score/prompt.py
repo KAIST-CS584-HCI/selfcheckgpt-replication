@@ -1,17 +1,39 @@
+import os
+from dataclasses import dataclass
+
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
 
 from replication.entity import PassageInstance, PassageResponses, PassageResult, PassageScores
 from replication.score.base import BaseScorer, REPO_ROOT
 
 
-BASE_URL = "https://openrouter.ai/api/v1"
-API_KEY = "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"
-MODEL = "qwen/qwen3.5-9b"
+DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_OPENROUTER_MODEL = "qwen/qwen3.5-9b"
 PROMPT_TEMPLATE = (
     "Context: {context}\n\n"
     "Sentence: {sentence}\n\n"
     "Is the sentence supported by the context above? Answer Yes or No.\n\nAnswer: "
 )
+
+
+@dataclass(frozen=True)
+class PromptScorerConfig:
+    api_key: str
+    model: str = DEFAULT_OPENROUTER_MODEL
+    base_url: str = DEFAULT_OPENROUTER_BASE_URL
+
+
+def get_openrouter_config() -> PromptScorerConfig:
+    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError(
+            "Missing OPENROUTER_API_KEY. Create .env from .env.example or set it in the environment."
+        )
+
+    model = os.environ.get("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL).strip() or DEFAULT_OPENROUTER_MODEL
+    base_url = os.environ.get("OPENROUTER_BASE_URL", DEFAULT_OPENROUTER_BASE_URL).strip()
+    base_url = base_url or DEFAULT_OPENROUTER_BASE_URL
+    return PromptScorerConfig(api_key=api_key, model=model, base_url=base_url)
 
 
 class PromptScorer(BaseScorer):
@@ -22,11 +44,12 @@ class PromptScorer(BaseScorer):
         self.think = think
         self.reasoning = "medium" if think else "none"
         self.max_tokens = 10000 if think else 5
+        config = get_openrouter_config()
         self.selfcheck = SelfCheckAPIPrompt(
             client_type="openai",
-            base_url=BASE_URL,
-            model=MODEL,
-            api_key=API_KEY,
+            base_url=config.base_url,
+            model=config.model,
+            api_key=config.api_key,
         )
         self.selfcheck.set_prompt_template(PROMPT_TEMPLATE)
 

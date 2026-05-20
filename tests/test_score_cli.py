@@ -1,7 +1,9 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from replication.entity import PassageInstance, PassageResponses, PassageResult, PassageScores
 
@@ -162,6 +164,66 @@ class ScoreCliTest(unittest.TestCase):
         self.assertEqual(args.output, "out.json")
         self.assertTrue(args.overwrite)
         self.assertTrue(args.think)
+
+
+class ScoreEnvironmentTest(unittest.TestCase):
+    def test_load_environment_reads_env_file_without_overriding_existing_values(self) -> None:
+        from score import load_environment
+
+        with tempfile.TemporaryDirectory() as tmp:
+            env_path = Path(tmp) / ".env"
+            env_path.write_text(
+                "OPENROUTER_API_KEY=from-file\n"
+                "OPENROUTER_MODEL=from-file-model\n"
+                "OPENROUTER_BASE_URL='https://example.test/api'\n"
+            )
+
+            with mock.patch.dict(os.environ, {"OPENROUTER_MODEL": "already-set"}, clear=False):
+                for key in ("OPENROUTER_API_KEY", "OPENROUTER_BASE_URL"):
+                    os.environ.pop(key, None)
+
+                load_environment(env_path)
+
+                self.assertEqual(os.environ["OPENROUTER_API_KEY"], "from-file")
+                self.assertEqual(os.environ["OPENROUTER_MODEL"], "already-set")
+                self.assertEqual(os.environ["OPENROUTER_BASE_URL"], "https://example.test/api")
+
+
+class PromptConfigTest(unittest.TestCase):
+    def test_openrouter_config_uses_env_values(self) -> None:
+        from replication.score.prompt import get_openrouter_config
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "OPENROUTER_API_KEY": "key",
+                "OPENROUTER_MODEL": "model",
+                "OPENROUTER_BASE_URL": "https://example.test/api",
+            },
+            clear=True,
+        ):
+            config = get_openrouter_config()
+
+        self.assertEqual(config.api_key, "key")
+        self.assertEqual(config.model, "model")
+        self.assertEqual(config.base_url, "https://example.test/api")
+
+    def test_openrouter_config_defaults_optional_values(self) -> None:
+        from replication.score.prompt import DEFAULT_OPENROUTER_BASE_URL, DEFAULT_OPENROUTER_MODEL, get_openrouter_config
+
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}, clear=True):
+            config = get_openrouter_config()
+
+        self.assertEqual(config.api_key, "key")
+        self.assertEqual(config.model, DEFAULT_OPENROUTER_MODEL)
+        self.assertEqual(config.base_url, DEFAULT_OPENROUTER_BASE_URL)
+
+    def test_openrouter_config_requires_api_key(self) -> None:
+        from replication.score.prompt import get_openrouter_config
+
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "OPENROUTER_API_KEY"):
+                get_openrouter_config()
 
 
 if __name__ == "__main__":

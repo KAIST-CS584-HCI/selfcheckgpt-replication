@@ -12,6 +12,7 @@ protobuf
 openai
 groq
 ollama
+python-dotenv
 
 # Repository demos / experiments
 datasets

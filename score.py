@@ -1,4 +1,5 @@
 import argparse
+import os
 from pathlib import Path
 
 from replication.score.base import DEFAULT_RESULTS_ROOT, REPO_ROOT, ScoreIO, ScoreRunner
@@ -10,6 +11,28 @@ DEFAULT_DATASET_PATHS = {
     "nli": REPO_ROOT / "data" / "dataset-generated.json",
     "prompt": REPO_ROOT / "data" / "dataset-original.json",
 }
+
+
+def _load_env_file(env_path: Path) -> None:
+    if not env_path.exists():
+        return
+
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+def load_environment(env_path: Path | None = None) -> None:
+    env_path = env_path or REPO_ROOT / ".env"
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        _load_env_file(env_path)
+    else:
+        load_dotenv(env_path)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -52,6 +75,7 @@ def build_score_io(args: argparse.Namespace) -> ScoreIO:
 
 
 def main(argv: list[str] | None = None) -> None:
+    load_environment()
     parser = build_parser()
     args = parser.parse_args(argv)
     score_io = build_score_io(args)
