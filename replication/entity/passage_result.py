@@ -11,7 +11,8 @@ class PassageResult:
     main_sentences:    list[str]
     annotation:        list[str]
     sample_passages:   list[str]
-    result:            dict[str, dict]
+    scores:            dict[str, list[float]]
+    responses:         dict[str, object]
 
     def to_dict(self) -> dict:
         return {
@@ -22,7 +23,8 @@ class PassageResult:
             'main_sentences':    self.main_sentences,
             'annotation':        self.annotation,
             'sample_passages':   self.sample_passages,
-            'result':            self.result,
+            'scores':            self.scores,
+            'responses':         self.responses,
         }
 
     @classmethod
@@ -35,5 +37,6 @@ class PassageResult:
             main_sentences    = d['main_sentences'],
             annotation        = d['annotation'],
             sample_passages   = d['sample_passages'],
-            result            = d['result'],
+            scores            = d['scores'],
+            responses         = d['responses'],
         )

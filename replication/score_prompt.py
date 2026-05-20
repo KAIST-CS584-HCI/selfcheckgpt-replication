@@ -114,16 +114,12 @@ def main() -> None:
         main_sentences    = passage.main_sentences,
         annotation        = passage.annotation,
         sample_passages   = passage.sample_passages,
-        result            = {
-            "prompt": {
-                "scores": sent_scores.tolist(),
-                "responses": raw_responses,
-            },
-        },
+        scores            = {"prompt": sent_scores.tolist()},
+        responses         = {"prompt": raw_responses},
     )
 
     save_result(result, idx)
-    print(f"    scores: {[round(s, 3) for s in result.result['prompt']['scores']]}")
+    print(f"    scores: {[round(s, 3) for s in result.scores['prompt']]}")
     print(f"    saved → {os.path.join(RESULTS_DIR, f'{idx}.json')}")
 
     print(f"\nDone.")

@@ -72,10 +72,7 @@ def load_results(path: str) -> list[PassageResult]:
 
 
 def scores_for_variant(result: PassageResult, variant: str) -> list[float] | None:
-    method_result = result.result.get(variant)
-    if method_result is None:
-        return None
-    return method_result["scores"]
+    return result.scores.get(variant)
 
 
 def active_variants(results: list[PassageResult], requested: list[str]) -> list[str]:
@@ -179,10 +176,7 @@ def response_distribution(results: list[PassageResult]) -> dict:
     counts: dict[str, int] = {}
     total = 0
     for r in results:
-        prompt_result = r.result.get("prompt")
-        if prompt_result is None:
-            continue
-        for sent_responses in prompt_result.get("responses", []):
+        for sent_responses in r.responses.get("prompt", []):
             for msg in sent_responses:
                 total += 1
                 if msg is None:

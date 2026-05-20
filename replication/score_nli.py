@@ -102,11 +102,10 @@ def main() -> None:
             "main_sentences":    instance.main_sentences,
             "annotation":        instance.annotation,
             "sample_passages":   instance.sample_passages,
-            "result": {
-                "nli": {
-                    "scores": nli_scores.tolist() if hasattr(nli_scores, "tolist") else list(nli_scores),
-                },
+            "scores": {
+                "nli": nli_scores.tolist() if hasattr(nli_scores, "tolist") else list(nli_scores),
             },
+            "responses": {},
         }
 
         save_result(result, idx)
