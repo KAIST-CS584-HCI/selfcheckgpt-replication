@@ -10,6 +10,7 @@ sentencepiece
 protobuf
 openai
 groq
+ollama
 
 # Repository demos / experiments
 datasets
