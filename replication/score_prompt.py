@@ -41,10 +41,9 @@ PROMPT_TEMPLATE  = (
 # I/O helpers
 # ---------------------------------------------------------------------------
 
-def load_dataset(path: str, original: bool = True) -> list[PassageInstance]:
-    loader = PassageInstance.from_original_dict if original else PassageInstance.from_dict
+def load_dataset(path: str) -> list[PassageInstance]:
     with open(path) as f:
-        return [loader(item) for item in json.load(f)]
+        return [PassageInstance.from_dict(item) for item in json.load(f)]
 
 def result_exists(idx: int) -> bool:
     return os.path.exists(os.path.join(RESULTS_DIR, f"{idx}.json"))

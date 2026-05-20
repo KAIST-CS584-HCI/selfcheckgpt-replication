@@ -1,9 +1,9 @@
 """
 Generate text and stochastic samples for a single passage in the dataset.
 
-Output structure mirrors potsawee/wiki_bio_gpt3_hallucination:
-  gpt3_text, wiki_bio_text, gpt3_sentences, annotation,
-  wiki_bio_test_idx, gpt3_text_samples
+Output structure uses the normalized replication dataset fields:
+  wiki_bio_test_idx, wiki_bio_text, main_passage, main_sentences,
+  annotation, sample_passages
 
 Usage
 -----
@@ -91,22 +91,22 @@ def main() -> None:
     prompt = make_generation_prompt(concept)
 
     print("Generating main passage (T=0.0)...")
-    gpt3_text = generate_text(client, prompt, temperature=0.0)
-    gpt3_sentences = [s.text.strip() for s in nlp(gpt3_text).sents if s.text.strip()]
+    main_passage = generate_text(client, prompt, temperature=0.0)
+    main_sentences = [s.text.strip() for s in nlp(main_passage).sents if s.text.strip()]
 
-    gpt3_text_samples = []
+    sample_passages = []
     for i in range(args.samples):
         text = generate_text(client, prompt, temperature=1.0)
-        gpt3_text_samples.append(text)
+        sample_passages.append(text)
         print(f"  sample {i + 1}/{args.samples} done")
 
     result = {
-        "gpt3_text": gpt3_text,
-        "wiki_bio_text": ex.wiki_bio_text,
-        "gpt3_sentences": gpt3_sentences,
-        "annotation": ex.annotation,
         "wiki_bio_test_idx": ex.wiki_bio_test_idx,
-        "gpt3_text_samples": gpt3_text_samples,
+        "wiki_bio_text": ex.wiki_bio_text,
+        "main_passage": main_passage,
+        "main_sentences": main_sentences,
+        "annotation": ex.annotation,
+        "sample_passages": sample_passages,
     }
 
     with open(out_path, "w") as f:
