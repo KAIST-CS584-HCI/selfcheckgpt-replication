@@ -16,8 +16,8 @@ def build_parser() -> argparse.ArgumentParser:
         subparser.add_argument("--start", type=int, required=True, help="start index (inclusive)")
         subparser.add_argument("--end", type=int, required=True, help="end index (exclusive)")
         subparser.add_argument("--dataset", type=str, default=None, help="dataset JSON path")
-        subparser.add_argument("--output-dir", type=str, default=None, help="directory for per-index result JSON files")
-        subparser.add_argument("--overwrite", action="store_true", help="overwrite existing per-index outputs")
+        subparser.add_argument("--output", type=str, default=None, help="aggregate result JSON path")
+        subparser.add_argument("--overwrite", action="store_true", help="overwrite existing aggregate output")
         if method == "prompt":
             subparser.add_argument("--think", action="store_true", default=False, help="enable reasoning effort")
 
@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> None:
         start=args.start,
         end=args.end,
         dataset_path=Path(args.dataset) if args.dataset is not None else None,
-        output_dir=Path(args.output_dir) if args.output_dir is not None else None,
+        output_path=Path(args.output) if args.output is not None else None,
         overwrite=args.overwrite,
     )
 

@@ -28,26 +28,23 @@ class ScoreIO:
     def __init__(
         self,
         dataset_path: str | os.PathLike[str],
-        output_dir: str | os.PathLike[str],
+        output_path: str | os.PathLike[str],
     ) -> None:
         self.dataset_path = Path(dataset_path)
-        self.output_dir = Path(output_dir)
+        self.output_path = Path(output_path)
 
     def load_dataset(self) -> list[PassageInstance]:
         with open(self.dataset_path) as f:
             return [PassageInstance.from_dict(item) for item in json.load(f)]
 
-    def result_path(self, index: int) -> Path:
-        return self.output_dir / f"{index}.json"
+    def output_exists(self) -> bool:
+        return self.output_path.exists()
 
-    def result_exists(self, index: int) -> bool:
-        return self.result_path(index).exists()
-
-    def save_result(self, index: int, result: PassageResult) -> None:
-        path = self.result_path(index)
+    def save_results(self, results: list[PassageResult]) -> None:
+        path = self.output_path
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False, suffix=".tmp") as tmp:
-            json.dump(result.to_dict(), tmp, indent=2)
+            json.dump([result.to_dict() for result in results], tmp, indent=2)
             tmp_path = tmp.name
         os.replace(tmp_path, path)
 
@@ -57,17 +54,17 @@ class ScoreRunner:
         self.scorer = scorer
         self.score_io = score_io
 
-    def default_output_dir(self) -> Path:
-        return DEFAULT_RESULTS_ROOT / self.scorer.method_name
+    def default_output_path(self) -> Path:
+        return DEFAULT_RESULTS_ROOT / f"{self.scorer.method_name}.json"
 
     def run(
         self,
         start: int,
         end: int,
         dataset_path: str | os.PathLike[str] | None = None,
-        output_dir: str | os.PathLike[str] | None = None,
+        output_path: str | os.PathLike[str] | None = None,
         overwrite: bool = False,
-    ) -> list[int]:
+    ) -> list[PassageResult]:
         indices = list(range(start, end))
         if not indices:
             print("Nothing to do.")
@@ -75,19 +72,19 @@ class ScoreRunner:
 
         score_io = self.score_io or ScoreIO(
             dataset_path=dataset_path or self.scorer.default_dataset_path,
-            output_dir=output_dir or self.default_output_dir(),
+            output_path=output_path or self.default_output_path(),
         )
+        if score_io.output_exists() and not overwrite:
+            print(f"Skipping {score_io.output_path} (already exists)")
+            return []
+
         dataset = score_io.load_dataset()
 
-        written: list[int] = []
+        results: list[PassageResult] = []
         for idx in tqdm(indices, desc=f"{self.scorer.method_name} scoring"):
-            if score_io.result_exists(idx) and not overwrite:
-                print(f"  Skipping {idx} (already exists)")
-                continue
-
             result = self.scorer.score(idx, dataset[idx])
-            score_io.save_result(idx, result)
-            written.append(idx)
+            results.append(result)
 
-        print(f"\nDone: {len(written)} entries.")
-        return written
+        score_io.save_results(results)
+        print(f"\nDone: {len(results)} entries.")
+        return results
