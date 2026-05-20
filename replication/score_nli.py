@@ -25,7 +25,7 @@ from replication.entity import PassageInstance
 # Config
 # ---------------------------------------------------------------------------
 
-DATA_PATH   = os.path.join(os.path.dirname(__file__), 'data', 'dataset-generated-samples-gpt-3.5-turbo.json')
+DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated-samples-gpt-3.5-turbo.json')
 RESULTS_DIR = os.path.join(os.path.dirname(__file__))
 
 
