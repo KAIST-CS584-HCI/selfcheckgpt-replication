@@ -41,7 +41,7 @@ def dataset_item(idx: int) -> dict:
 
 class ScoreRunnerTest(unittest.TestCase):
     def test_runner_writes_one_aggregate_output_file(self) -> None:
-        from replication.score.base import ScoreRunner
+        from replication.score.base import ScoreIO, ScoreRunner
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -50,13 +50,8 @@ class ScoreRunnerTest(unittest.TestCase):
             dataset_path.write_text(json.dumps([dataset_item(0), dataset_item(1)]))
 
             scorer = FakeScorer()
-            results = ScoreRunner(scorer).run(
-                start=0,
-                end=2,
-                dataset_path=dataset_path,
-                output_path=output_path,
-                overwrite=False,
-            )
+            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path)
+            results = ScoreRunner(scorer, score_io).run(start=0, end=2)
 
             self.assertEqual([result.dataset_idx for result in results], [0, 1])
             self.assertEqual(scorer.calls, [0, 1])
@@ -67,7 +62,7 @@ class ScoreRunnerTest(unittest.TestCase):
             self.assertEqual(saved[1]["scores"]["prompt"], [1.0])
 
     def test_runner_skips_existing_aggregate_output_by_default(self) -> None:
-        from replication.score.base import ScoreRunner
+        from replication.score.base import ScoreIO, ScoreRunner
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -77,20 +72,15 @@ class ScoreRunnerTest(unittest.TestCase):
             output_path.write_text('[{"existing": true}]')
 
             scorer = FakeScorer()
-            results = ScoreRunner(scorer).run(
-                start=0,
-                end=2,
-                dataset_path=dataset_path,
-                output_path=output_path,
-                overwrite=False,
-            )
+            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path)
+            results = ScoreRunner(scorer, score_io).run(start=0, end=2)
 
             self.assertEqual(results, [])
             self.assertEqual(scorer.calls, [])
             self.assertEqual(json.loads(output_path.read_text()), [{"existing": True}])
 
     def test_runner_overwrites_existing_aggregate_output_when_requested(self) -> None:
-        from replication.score.base import ScoreRunner
+        from replication.score.base import ScoreIO, ScoreRunner
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -100,13 +90,8 @@ class ScoreRunnerTest(unittest.TestCase):
             output_path.write_text('[{"existing": true}]')
 
             scorer = FakeScorer()
-            results = ScoreRunner(scorer).run(
-                start=0,
-                end=1,
-                dataset_path=dataset_path,
-                output_path=output_path,
-                overwrite=True,
-            )
+            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path, overwrite=True)
+            results = ScoreRunner(scorer, score_io).run(start=0, end=1)
 
             self.assertEqual([result.dataset_idx for result in results], [0])
             self.assertEqual(scorer.calls, [0])
@@ -128,12 +113,27 @@ class ScoreIOTest(unittest.TestCase):
             result = FakeScorer().score(0, dataset[0])
 
             self.assertFalse(score_io.output_exists())
+            self.assertFalse(score_io.should_skip())
             score_io.save_results([result])
 
             self.assertTrue(score_io.output_exists())
+            self.assertTrue(score_io.should_skip())
             saved = json.loads(output_path.read_text())
             self.assertEqual(saved[0]["wiki_bio_test_idx"], 100)
             self.assertEqual(saved[0]["scores"]["prompt"], [0.0])
+
+    def test_score_io_does_not_skip_existing_output_when_overwrite_is_enabled(self) -> None:
+        from replication.score.base import ScoreIO
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / "dataset.json"
+            output_path = tmp_path / "fake.json"
+            output_path.write_text('[{"existing": true}]')
+
+            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path, overwrite=True)
+
+            self.assertFalse(score_io.should_skip())
 
 
 class ScoreCliTest(unittest.TestCase):

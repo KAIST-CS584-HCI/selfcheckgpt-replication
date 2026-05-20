@@ -29,9 +29,11 @@ class ScoreIO:
         self,
         dataset_path: str | os.PathLike[str],
         output_path: str | os.PathLike[str],
+        overwrite: bool = False,
     ) -> None:
         self.dataset_path = Path(dataset_path)
         self.output_path = Path(output_path)
+        self.overwrite = overwrite
 
     def load_dataset(self) -> list[PassageInstance]:
         with open(self.dataset_path) as f:
@@ -39,6 +41,9 @@ class ScoreIO:
 
     def output_exists(self) -> bool:
         return self.output_path.exists()
+
+    def should_skip(self) -> bool:
+        return self.output_exists() and not self.overwrite
 
     def save_results(self, results: list[PassageResult]) -> None:
         path = self.output_path
@@ -50,41 +55,27 @@ class ScoreIO:
 
 
 class ScoreRunner:
-    def __init__(self, scorer: BaseScorer, score_io: ScoreIO | None = None) -> None:
+    def __init__(self, scorer: BaseScorer, score_io: ScoreIO) -> None:
         self.scorer = scorer
         self.score_io = score_io
 
-    def default_output_path(self) -> Path:
-        return DEFAULT_RESULTS_ROOT / f"{self.scorer.method_name}.json"
-
-    def run(
-        self,
-        start: int,
-        end: int,
-        dataset_path: str | os.PathLike[str] | None = None,
-        output_path: str | os.PathLike[str] | None = None,
-        overwrite: bool = False,
-    ) -> list[PassageResult]:
+    def run(self, start: int, end: int) -> list[PassageResult]:
         indices = list(range(start, end))
         if not indices:
             print("Nothing to do.")
             return []
 
-        score_io = self.score_io or ScoreIO(
-            dataset_path=dataset_path or self.scorer.default_dataset_path,
-            output_path=output_path or self.default_output_path(),
-        )
-        if score_io.output_exists() and not overwrite:
-            print(f"Skipping {score_io.output_path} (already exists)")
+        if self.score_io.should_skip():
+            print(f"Skipping {self.score_io.output_path} (already exists)")
             return []
 
-        dataset = score_io.load_dataset()
+        dataset = self.score_io.load_dataset()
 
         results: list[PassageResult] = []
         for idx in tqdm(indices, desc=f"{self.scorer.method_name} scoring"):
             result = self.scorer.score(idx, dataset[idx])
             results.append(result)
 
-        score_io.save_results(results)
+        self.score_io.save_results(results)
         print(f"\nDone: {len(results)} entries.")
         return results
