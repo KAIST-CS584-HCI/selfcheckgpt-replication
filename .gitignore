@@ -1,8 +1,39 @@
-**/.venv
-**/__pycache__
+# Local environment
+.env
+.env.*
+!.env.example
 
+# Virtual environments
+.venv/
+venv/
+env/
+**/.venv/
+
+# Python cache and test artifacts
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
 build/
-selfcheckgpt.egg-info
-examples/
 dist/
+*.egg-info/
+selfcheckgpt.egg-info/
+
+# Local tool state
+.serena/
+
+# Generated outputs
+output/
+replication/score/results/
+
+# Notebooks
 *.ipynb_checkpoints/
+
+# Repository-local examples
+examples/

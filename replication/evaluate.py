@@ -72,11 +72,7 @@ def load_results(path: str) -> list[PassageResult]:
 
 
 def scores_for_variant(result: PassageResult, variant: str) -> list[float] | None:
-    return {
-        "prompt": result.prompt_scores,
-        "bert":   result.bert_scores,
-        "nli":    result.nli_scores,
-    }[variant]
+    return result.scores.get(variant)
 
 
 def active_variants(results: list[PassageResult], requested: list[str]) -> list[str]:
@@ -180,7 +176,7 @@ def response_distribution(results: list[PassageResult]) -> dict:
     counts: dict[str, int] = {}
     total = 0
     for r in results:
-        for sent_responses in r.prompt_responses:
+        for sent_responses in r.responses.prompt or []:
             for msg in sent_responses:
                 total += 1
                 if msg is None:

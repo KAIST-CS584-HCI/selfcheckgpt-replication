@@ -1,5 +1,4 @@
 from .passage_instance import PassageInstance
-from .passage_result import PassageResult
-from .generated_text_instance import GeneratedTextInstance
+from .passage_result import PassageResponses, PassageResult, PassageScores
 
-__all__ = ["PassageInstance", "PassageResult", "GeneratedTextInstance"]
+__all__ = ["PassageInstance", "PassageResult", "PassageScores", "PassageResponses"]
