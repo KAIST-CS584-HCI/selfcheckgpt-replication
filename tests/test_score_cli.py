@@ -138,7 +138,7 @@ class ScoreIOTest(unittest.TestCase):
 
 class ScoreCliTest(unittest.TestCase):
     def test_parser_accepts_method_subcommands_with_shared_options(self) -> None:
-        from replication.score.main import build_parser
+        from score import build_parser
 
         parser = build_parser()
         args = parser.parse_args([

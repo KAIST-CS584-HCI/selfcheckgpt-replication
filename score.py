@@ -32,12 +32,15 @@ def build_parser() -> argparse.ArgumentParser:
 def build_scorer(args: argparse.Namespace):
     if args.method == "bert":
         from replication.score.bert import BertScorer
+
         return BertScorer()
     if args.method == "nli":
         from replication.score.nli import NliScorer
+
         return NliScorer()
     if args.method == "prompt":
         from replication.score.prompt import PromptScorer
+
         return PromptScorer(think=args.think)
     raise ValueError(f"Unknown scoring method: {args.method}")
 
