@@ -1,129 +1,55 @@
-"""
-SelfCheckGPT Prompt Method Replication
----------------------------------------
-Runs SelfCheckAPIPrompt over a range of WikiBio passages.
-Each result is saved as <idx>.json in the same directory.
-
-Run:
-    python3 -m replication.score.prompt --index <idx>
-
-Example:
-    python3 -m replication.score.prompt --index 119
-    → processes dataset index 119 and saves 119.json
-"""
-import argparse
-import os
-import json
-import tempfile
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
+
 from replication.entity import PassageInstance, PassageResponses, PassageResult, PassageScores
+from replication.score.base import BaseScorer, REPO_ROOT
 
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
 
-BASE_URL         = "https://openrouter.ai/api/v1"
-API_KEY          = "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"
-MODEL            = "qwen/qwen3.5-9b"
-# BASE_URL         = "https://ollama.makinteract.com/v1/"
-# API_KEY          = "haha"
-# MODEL            = "qwen3.5:9b-q8_0"
-DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'dataset-original.json')
-RESULTS_DIR      = os.path.dirname(__file__)
-RESULTS_PATH     = os.path.join(RESULTS_DIR, "results.json")
-PROMPT_TEMPLATE  = (
+BASE_URL = "https://openrouter.ai/api/v1"
+API_KEY = "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"
+MODEL = "qwen/qwen3.5-9b"
+PROMPT_TEMPLATE = (
     "Context: {context}\n\n"
     "Sentence: {sentence}\n\n"
     "Is the sentence supported by the context above? Answer Yes or No.\n\nAnswer: "
 )
 
-# ---------------------------------------------------------------------------
-# I/O helpers
-# ---------------------------------------------------------------------------
 
-def load_dataset(path: str) -> list[PassageInstance]:
-    with open(path) as f:
-        return [PassageInstance.from_dict(item) for item in json.load(f)]
+class PromptScorer(BaseScorer):
+    method_name = "prompt"
+    default_dataset_path = REPO_ROOT / "data" / "dataset-original.json"
 
-def result_exists(idx: int) -> bool:
-    return os.path.exists(os.path.join(RESULTS_DIR, f"{idx}.json"))
-
-def save_result(result: PassageResult, idx: int) -> None:
-    path = os.path.join(RESULTS_DIR, f"{idx}.json")
-    dir_ = os.path.dirname(path) or '.'
-    with tempfile.NamedTemporaryFile('w', dir=dir_, delete=False, suffix='.tmp') as tmp:
-        json.dump(result.to_dict(), tmp, indent=2)
-        tmp_path = tmp.name
-    os.replace(tmp_path, path)
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-_parser = argparse.ArgumentParser(description="Run SelfCheckAPIPrompt over a range of WikiBio passages.")
-_parser.add_argument("--index", type=int, required=True, help="index of the passage to process (wiki_bio_test_idx)")
-_parser.add_argument("--think", action="store_true", default=False, help="enable reasoning effort in API calls")
-
-def main() -> None:
-    args = _parser.parse_args()
-
-    idx = args.index
-
-    if result_exists(idx):
-        print(f"  Skipping {idx} (already exists)")
-        return
-
-    think = "medium" if args.think else "none"
-    max_token = 10000 if args.think else 5
-
-    dataset  = load_dataset(DATA_PATH)
-    passage = dataset[idx]
-
-    checker = SelfCheckAPIPrompt(
-        client_type="openai",
-        base_url=BASE_URL,
-        model=MODEL,
-        api_key=API_KEY,
-    )
-    checker.set_prompt_template(PROMPT_TEMPLATE)
-
-    wiki_idx = passage.wiki_bio_test_idx
-    print(
-        f"  Processing [wiki_bio_test_idx={wiki_idx}]: "
-        f"{len(passage.main_sentences)} sentences × {len(passage.sample_passages)} samples ..."
-    )
-
-    try:
-        sent_scores, raw_responses = checker.predict(
-            sentences        = passage.main_sentences,
-            sampled_passages = passage.sample_passages,
-            verbose          = True,
-            max_tokens       = max_token,
-            reasoning        = think,
+    def __init__(self, think: bool = False) -> None:
+        self.think = think
+        self.reasoning = "medium" if think else "none"
+        self.max_tokens = 10000 if think else 5
+        self.selfcheck = SelfCheckAPIPrompt(
+            client_type="openai",
+            base_url=BASE_URL,
+            model=MODEL,
+            api_key=API_KEY,
         )
+        self.selfcheck.set_prompt_template(PROMPT_TEMPLATE)
 
-    except Exception as exc:
-        print(f"  Error processing index {idx} (wiki_bio_test_idx={wiki_idx}): {exc}")
-        return
-
-    result = PassageResult(
-        dataset_idx       = idx,
-        wiki_bio_test_idx = wiki_idx,
-        wiki_bio_text     = passage.wiki_bio_text,
-        main_passage      = passage.main_passage,
-        main_sentences    = passage.main_sentences,
-        annotation        = passage.annotation,
-        sample_passages   = passage.sample_passages,
-        scores            = PassageScores(prompt=sent_scores.tolist()),
-        responses         = PassageResponses(prompt=raw_responses),
-    )
-
-    save_result(result, idx)
-    print(f"    scores: {[round(s, 3) for s in result.scores.prompt or []]}")
-    print(f"    saved → {os.path.join(RESULTS_DIR, f'{idx}.json')}")
-
-    print(f"\nDone.")
-
-
-if __name__ == '__main__':
-    main()
+    def score(self, dataset_idx: int, passage: PassageInstance) -> PassageResult:
+        print(
+            f"  Processing [wiki_bio_test_idx={passage.wiki_bio_test_idx}]: "
+            f"{len(passage.main_sentences)} sentences × {len(passage.sample_passages)} samples ..."
+        )
+        scores, raw_responses = self.selfcheck.predict(
+            sentences=passage.main_sentences,
+            sampled_passages=passage.sample_passages,
+            verbose=True,
+            max_tokens=self.max_tokens,
+            reasoning=self.reasoning,
+        )
+        return PassageResult(
+            dataset_idx=dataset_idx,
+            wiki_bio_test_idx=passage.wiki_bio_test_idx,
+            wiki_bio_text=passage.wiki_bio_text,
+            main_passage=passage.main_passage,
+            main_sentences=passage.main_sentences,
+            annotation=passage.annotation,
+            sample_passages=passage.sample_passages,
+            scores=PassageScores(prompt=scores.tolist()),
+            responses=PassageResponses(prompt=raw_responses),
+        )
