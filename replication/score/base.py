@@ -12,7 +12,7 @@ from replication.entity import PassageInstance, PassageResult
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_RESULTS_ROOT = Path(__file__).resolve().parent / "results"
+DEFAULT_RESULTS_ROOT = REPO_ROOT / "output"
 
 
 class BaseScorer(ABC):

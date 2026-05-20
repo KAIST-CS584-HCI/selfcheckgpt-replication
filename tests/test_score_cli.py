@@ -165,6 +165,16 @@ class ScoreCliTest(unittest.TestCase):
         self.assertTrue(args.overwrite)
         self.assertTrue(args.think)
 
+    def test_default_score_output_path_uses_project_output_directory(self) -> None:
+        from replication.score.base import REPO_ROOT
+        from score import build_parser, build_score_io
+
+        parser = build_parser()
+        args = parser.parse_args(["bert", "--start", "0", "--end", "1"])
+        score_io = build_score_io(args)
+
+        self.assertEqual(score_io.output_path, REPO_ROOT / "output" / "bert.json")
+
 
 class ScoreEnvironmentTest(unittest.TestCase):
     def test_load_environment_reads_env_file_without_overriding_existing_values(self) -> None:
