@@ -1,12 +1,12 @@
 """
-SelfCheckGPT — BERTScore scoring for pre-generated data.
+SelfCheckGPT — NLI scoring for wiki_bio dataset.
 
-Loads entries by index range from the generated-text dataset JSON, scores each
-sentence with SelfCheck-BERTScore, and saves the result as bert/<index>.json.
+Loads entries by index range from dataset-generated.json
+using PassageInstance, scores each sentence with SelfCheck-NLI, and
+saves the result as <index>.json.
 
 Usage:
-    python3 -m replication.bert.score_bert --start 0 --end 119
-    python3 -m replication.bert.score_bert --start 0 --end 40 --skip-existing
+    python3 -m replication.score.nli --start 0 --end 119
 """
 
 import argparse
@@ -14,17 +14,31 @@ import json
 import os
 import tempfile
 
+import torch
 from tqdm import tqdm
 
-from selfcheckgpt.modeling_selfcheck import SelfCheckBERTScore
+from selfcheckgpt.modeling_selfcheck import SelfCheckNLI
 from replication.entity import PassageInstance
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated.json')
+DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'dataset-generated.json')
 RESULTS_DIR = os.path.join(os.path.dirname(__file__))
+
+
+# ---------------------------------------------------------------------------
+# NLI tokenizer compat shim
+# ---------------------------------------------------------------------------
+
+def _patch_nli_tokenizer(selfcheck_nli: SelfCheckNLI) -> SelfCheckNLI:
+    """Newer transformers dropped `batch_encode_plus` — route it to __call__."""
+    if not hasattr(selfcheck_nli.tokenizer, "batch_encode_plus"):
+        def _compat(batch_text_or_text_pairs, **kwargs):
+            return selfcheck_nli.tokenizer(batch_text_or_text_pairs, **kwargs)
+        selfcheck_nli.tokenizer.batch_encode_plus = _compat
+    return selfcheck_nli
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +57,6 @@ def result_path(index: int) -> str:
 def save_result(result: dict, index: int) -> None:
     path = result_path(index)
     dir_ = os.path.dirname(path) or '.'
-    os.makedirs(dir_, exist_ok=True)
     with tempfile.NamedTemporaryFile('w', dir=dir_, delete=False, suffix='.tmp') as tmp:
         json.dump(result, tmp, indent=2)
         tmp_path = tmp.name
@@ -54,7 +67,7 @@ def save_result(result: dict, index: int) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-_parser = argparse.ArgumentParser(description="Score generated-text entries with SelfCheck-BERTScore.")
+_parser = argparse.ArgumentParser(description="Score wiki_bio dataset entries with SelfCheck-NLI.")
 _parser.add_argument("--start", type=int, required=True, help="start index (inclusive)")
 _parser.add_argument("--end",   type=int, required=True, help="end index (exclusive)")
 
@@ -68,13 +81,14 @@ def main() -> None:
 
     dataset = load_dataset(DATA_PATH)
 
-    print("Loading SelfCheck-BERTScore ...")
-    selfcheck_bert = SelfCheckBERTScore()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Loading SelfCheck-NLI on {device} ...")
+    selfcheck_nli = _patch_nli_tokenizer(SelfCheckNLI(device=device))
 
-    for idx in tqdm(indices, desc="BERTScore scoring"):
+    for idx in tqdm(indices, desc="NLI scoring"):
         instance = dataset[idx]
 
-        bert_scores = selfcheck_bert.predict(
+        nli_scores = selfcheck_nli.predict(
             sentences        = instance.main_sentences,
             sampled_passages = instance.sample_passages,
         )
@@ -88,7 +102,7 @@ def main() -> None:
             "annotation":        instance.annotation,
             "sample_passages":   instance.sample_passages,
             "scores": {
-                "bert": bert_scores.tolist() if hasattr(bert_scores, "tolist") else list(bert_scores),
+                "nli": nli_scores.tolist() if hasattr(nli_scores, "tolist") else list(nli_scores),
             },
             "responses": {},
         }

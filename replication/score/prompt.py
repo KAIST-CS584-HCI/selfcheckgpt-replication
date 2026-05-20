@@ -5,11 +5,11 @@ Runs SelfCheckAPIPrompt over a range of WikiBio passages.
 Each result is saved as <idx>.json in the same directory.
 
 Run:
-    python3 -m replication.prompt.main --start <start_idx> --end <end_idx>
+    python3 -m replication.score.prompt --index <idx>
 
 Example:
-    python3 -m replication.prompt.main --start 119 --end 120
-    → processes dataset indices 119 and 120, saves 119.json and 120.json
+    python3 -m replication.score.prompt --index 119
+    → processes dataset index 119 and saves 119.json
 """
 import argparse
 import os
@@ -28,7 +28,7 @@ MODEL            = "qwen/qwen3.5-9b"
 # BASE_URL         = "https://ollama.makinteract.com/v1/"
 # API_KEY          = "haha"
 # MODEL            = "qwen3.5:9b-q8_0"
-DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-original.json')
+DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'dataset-original.json')
 RESULTS_DIR      = os.path.dirname(__file__)
 RESULTS_PATH     = os.path.join(RESULTS_DIR, "results.json")
 PROMPT_TEMPLATE  = (
@@ -119,7 +119,7 @@ def main() -> None:
     )
 
     save_result(result, idx)
-    print(f"    scores: {[round(s, 3) for s in result.scores['prompt']]}")
+    print(f"    scores: {[round(s, 3) for s in result.scores.prompt or []]}")
     print(f"    saved → {os.path.join(RESULTS_DIR, f'{idx}.json')}")
 
     print(f"\nDone.")
