@@ -16,7 +16,7 @@ import os
 import json
 import tempfile
 from selfcheckgpt.modeling_selfcheck_apiprompt import SelfCheckAPIPrompt
-from replication.entity import PassageInstance, PassageResult
+from replication.entity import PassageInstance, PassageResponses, PassageResult, PassageScores
 
 # ---------------------------------------------------------------------------
 # Config
@@ -114,8 +114,8 @@ def main() -> None:
         main_sentences    = passage.main_sentences,
         annotation        = passage.annotation,
         sample_passages   = passage.sample_passages,
-        scores            = {"prompt": sent_scores.tolist()},
-        responses         = {"prompt": raw_responses},
+        scores            = PassageScores(prompt=sent_scores.tolist()),
+        responses         = PassageResponses(prompt=raw_responses),
     )
 
     save_result(result, idx)

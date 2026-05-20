@@ -176,7 +176,7 @@ def response_distribution(results: list[PassageResult]) -> dict:
     counts: dict[str, int] = {}
     total = 0
     for r in results:
-        for sent_responses in r.responses.get("prompt", []):
+        for sent_responses in r.responses.prompt or []:
             for msg in sent_responses:
                 total += 1
                 if msg is None:
