@@ -90,6 +90,30 @@ class ScoreRunnerTest(unittest.TestCase):
             self.assertEqual(json.loads((output_dir / "0.json").read_text())["scores"]["prompt"], [0.0])
 
 
+class ScoreIOTest(unittest.TestCase):
+    def test_score_io_loads_dataset_and_saves_result_json(self) -> None:
+        from replication.score.base import ScoreIO
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / "dataset.json"
+            output_dir = tmp_path / "out"
+            dataset_path.write_text(json.dumps([dataset_item(0)]))
+
+            score_io = ScoreIO(dataset_path=dataset_path, output_dir=output_dir)
+            dataset = score_io.load_dataset()
+            result = FakeScorer().score(0, dataset[0])
+
+            self.assertFalse(score_io.result_exists(0))
+            score_io.save_result(0, result)
+
+            self.assertTrue(score_io.result_exists(0))
+            self.assertEqual(score_io.result_path(0), output_dir / "0.json")
+            saved = json.loads((output_dir / "0.json").read_text())
+            self.assertEqual(saved["wiki_bio_test_idx"], 100)
+            self.assertEqual(saved["scores"]["prompt"], [0.0])
+
+
 class ScoreCliTest(unittest.TestCase):
     def test_parser_accepts_method_subcommands_with_shared_options(self) -> None:
         from replication.score.main import build_parser
