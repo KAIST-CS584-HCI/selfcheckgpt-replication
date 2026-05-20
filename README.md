@@ -17,7 +17,7 @@ This repository keeps the original `selfcheckgpt` module from the paper authors 
 - [Getting Started](#getting-started)
 - [Run Scoring](#run-scoring)
 - [Evaluate Results](#evaluate-results)
-- [Project Structure](#project-structure)
+- [Dataset](#dataset)
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
 
@@ -37,10 +37,6 @@ SelfCheckGPT detects hallucinations by checking whether a generated passage is c
 ## Features
 
 - Unified CLI for `bert`, `nli`, and `prompt` scoring.
-- Normalized dataset format with stable field names.
-- Aggregated JSON outputs per scoring method.
-- Typed Python entities for dataset rows and score results.
-- OpenRouter prompt configuration through `.env`.
 - Evaluation script for SelfCheckGPT-style AUC-PR and correlation metrics.
 
 ## Getting Started
@@ -60,8 +56,6 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-The requirements file includes the `en_core_web_sm` spaCy model wheel, so a separate `python -m spacy download en_core_web_sm` step should not be needed after a fresh install.
-
 ### Configure Prompt Scoring
 
 Copy the example environment file and add your OpenRouter key:
@@ -75,9 +69,6 @@ OPENROUTER_API_KEY=sk-or-...
 OPENROUTER_MODEL=qwen/qwen3.5-9b
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
-
-> [!IMPORTANT]
-> `.env` is ignored by git. Keep real API keys there only, and commit changes to `.env.example` when documenting new variables.
 
 ## Run Scoring
 
@@ -104,7 +95,7 @@ python -m score bert \
   --start 0 \
   --end 20 \
   --dataset data/dataset-generated.json \
-  --output output/bert-dev.json \
+  --output output/bert.json \
   --overwrite
 ```
 
@@ -113,9 +104,6 @@ Prompt scoring also supports a higher reasoning setting:
 ```bash
 python -m score prompt --start 0 --end 5 --think
 ```
-
-> [!TIP]
-> Start with a very small range, such as `--start 0 --end 1`, before running a full scoring job. BERTScore and NLI download/load models, and prompt scoring makes external API calls.
 
 ## Evaluate Results
 
@@ -129,9 +117,29 @@ python -m replication.evaluate --results output/prompt.json --variant prompt
 
 The evaluator reports sentence-level AUC-PR metrics and passage-level Pearson/Spearman correlations, alongside the paper baselines for comparison.
 
-## Data Format
+## Dataset
 
-The normalized dataset rows use:
+The `data/` directory contains normalized WikiBio hallucination datasets and scored result snapshots used by this replication.
+
+| File | Rows | Description | Generation / scoring source |
+| --- | ---: | --- | --- |
+| `data/dataset-original.json` | 238 | Normalized original SelfCheckGPT WikiBio hallucination dataset. | GPT-3 generated the main passages and original sampled passages. |
+| `data/dataset-generated.json` | 119 | Subset with regenerated sampled passages for comparison experiments. | GPT-3 generated the main passages; GPT-3.5 generated the sampled passages. |
+| `data/result-original-samples.json` | 119 | Scored result snapshot using original sampled passages. | Prompt scores use Qwen 3.5 9B; BERTScore and NLI use the provided SelfCheckGPT implementations. |
+| `data/result-generated-samples.json` | 119 | Scored result snapshot using GPT-3.5 sampled passages. | Prompt scores use Qwen 3.5 9B; BERTScore and NLI use the provided SelfCheckGPT implementations. |
+
+Dataset rows use a shared normalized schema:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `wiki_bio_test_idx` | `int` | Identifier from the WikiBio test split. |
+| `wiki_bio_text` | `str` | Reference Wikipedia biography passage. |
+| `main_passage` | `str` | Main generated passage to evaluate for hallucination. |
+| `main_sentences` | `list[str]` | Sentence-split version of `main_passage`; scores align to this list. |
+| `annotation` | `list[str]` | Human sentence-level labels: `accurate`, `minor_inaccurate`, or `major_inaccurate`. |
+| `sample_passages` | `list[str]` | Sampled passages used as consistency evidence by SelfCheckGPT. |
+
+Example dataset row:
 
 ```json
 {
@@ -144,7 +152,13 @@ The normalized dataset rows use:
 }
 ```
 
-Score outputs preserve the source row fields and add:
+Result files preserve the dataset fields and add:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `dataset_idx` | `int` | Row index from the scored dataset. |
+| `scores` | `object` | Method-specific sentence scores, keyed by `prompt`, `bert`, or `nli`. |
+| `responses` | `object` | Raw model responses for prompt scoring; empty for score-only methods. |
 
 ```json
 {
@@ -156,20 +170,6 @@ Score outputs preserve the source row fields and add:
 ```
 
 Prompt outputs additionally include raw prompt responses under `responses.prompt`.
-
-## Project Structure
-
-```text
-.
-├── data/                  # Normalized WikiBio datasets and sample data
-├── demo/                  # Original SelfCheckGPT notebooks and assets
-├── replication/           # Replication entities, scoring, evaluation, utilities
-├── selfcheckgpt/          # Paper authors' SelfCheckGPT implementation
-├── tests/                 # CLI and result-format tests
-├── score.py               # Unified scoring CLI
-├── .env.example           # Safe environment template
-└── requirements.txt       # Runtime dependencies
-```
 
 ## Troubleshooting
 
