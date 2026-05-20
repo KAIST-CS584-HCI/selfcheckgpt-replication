@@ -23,7 +23,7 @@ from replication.entity import PassageInstance
 # Config
 # ---------------------------------------------------------------------------
 
-DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated-samples-gpt-3.5-turbo.json')
+DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated.json')
 RESULTS_DIR = os.path.join(os.path.dirname(__file__))
 
 
@@ -82,12 +82,16 @@ def main() -> None:
         result = {
             "dataset_idx":       idx,
             "wiki_bio_test_idx": instance.wiki_bio_test_idx,
+            "wiki_bio_text":     instance.wiki_bio_text,
             "main_passage":      instance.main_passage,
             "main_sentences":    instance.main_sentences,
             "annotation":        instance.annotation,
             "sample_passages":   instance.sample_passages,
-            "wiki_bio_text":     instance.wiki_bio_text,
-            "bert_scores":       bert_scores.tolist() if hasattr(bert_scores, "tolist") else list(bert_scores),
+            "result": {
+                "bert": {
+                    "scores": bert_scores.tolist() if hasattr(bert_scores, "tolist") else list(bert_scores),
+                },
+            },
         }
 
         save_result(result, idx)

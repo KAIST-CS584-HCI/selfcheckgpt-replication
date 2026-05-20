@@ -28,7 +28,7 @@ MODEL            = "qwen/qwen3.5-9b"
 # BASE_URL         = "https://ollama.makinteract.com/v1/"
 # API_KEY          = "haha"
 # MODEL            = "qwen3.5:9b-q8_0"
-DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset.json')
+DATA_PATH        = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-original.json')
 RESULTS_DIR      = os.path.dirname(__file__)
 RESULTS_PATH     = os.path.join(RESULTS_DIR, "results.json")
 PROMPT_TEMPLATE  = (
@@ -109,16 +109,21 @@ def main() -> None:
     result = PassageResult(
         dataset_idx       = idx,
         wiki_bio_test_idx = wiki_idx,
+        wiki_bio_text     = passage.wiki_bio_text,
         main_passage      = passage.main_passage,
-        sample_passages   = passage.sample_passages,
         main_sentences    = passage.main_sentences,
         annotation        = passage.annotation,
-        prompt_scores     = sent_scores.tolist(),
-        prompt_responses  = raw_responses,
+        sample_passages   = passage.sample_passages,
+        result            = {
+            "prompt": {
+                "scores": sent_scores.tolist(),
+                "responses": raw_responses,
+            },
+        },
     )
 
     save_result(result, idx)
-    print(f"    scores: {[round(s, 3) for s in result.prompt_scores]}")
+    print(f"    scores: {[round(s, 3) for s in result.result['prompt']['scores']]}")
     print(f"    saved → {os.path.join(RESULTS_DIR, f'{idx}.json')}")
 
     print(f"\nDone.")

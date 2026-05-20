@@ -25,7 +25,7 @@ from replication.entity import PassageInstance
 
 MODEL_NAME = "openai/gpt-3.5-turbo"
 BASE_URL = "https://openrouter.ai/api/v1"
-DATASET_PATH = "data/dataset.json"
+DATASET_PATH = "data/dataset-original.json"
 
 
 def extract_concept(wiki_text: str) -> str:

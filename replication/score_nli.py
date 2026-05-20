@@ -1,7 +1,7 @@
 """
 SelfCheckGPT — NLI scoring for wiki_bio dataset.
 
-Loads entries by index range from dataset-generated-samples-gpt-3.5-turbo.json
+Loads entries by index range from dataset-generated.json
 using PassageInstance, scores each sentence with SelfCheck-NLI, and
 saves the result as <index>.json.
 
@@ -25,7 +25,7 @@ from replication.entity import PassageInstance
 # Config
 # ---------------------------------------------------------------------------
 
-DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated-samples-gpt-3.5-turbo.json')
+DATA_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'dataset-generated.json')
 RESULTS_DIR = os.path.join(os.path.dirname(__file__))
 
 
@@ -97,12 +97,16 @@ def main() -> None:
         result = {
             "dataset_idx":       idx,
             "wiki_bio_test_idx": instance.wiki_bio_test_idx,
+            "wiki_bio_text":     instance.wiki_bio_text,
             "main_passage":      instance.main_passage,
             "main_sentences":    instance.main_sentences,
             "annotation":        instance.annotation,
             "sample_passages":   instance.sample_passages,
-            "wiki_bio_text":     instance.wiki_bio_text,
-            "nli_scores":        nli_scores.tolist() if hasattr(nli_scores, "tolist") else list(nli_scores),
+            "result": {
+                "nli": {
+                    "scores": nli_scores.tolist() if hasattr(nli_scores, "tolist") else list(nli_scores),
+                },
+            },
         }
 
         save_result(result, idx)
