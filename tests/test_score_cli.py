@@ -2,6 +2,8 @@ import json
 import os
 import tempfile
 import unittest
+import contextlib
+import io
 from pathlib import Path
 from unittest import mock
 
@@ -81,24 +83,6 @@ class ScoreRunnerTest(unittest.TestCase):
             self.assertEqual(scorer.calls, [])
             self.assertEqual(json.loads(output_path.read_text()), [{"existing": True}])
 
-    def test_runner_overwrites_existing_aggregate_output_when_requested(self) -> None:
-        from replication.score.base import ScoreIO, ScoreRunner
-
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            dataset_path = tmp_path / "dataset.json"
-            output_path = tmp_path / "fake.json"
-            dataset_path.write_text(json.dumps([dataset_item(0)]))
-            output_path.write_text('[{"existing": true}]')
-
-            scorer = FakeScorer()
-            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path, overwrite=True)
-            results = ScoreRunner(scorer, score_io).run(start=0, end=1)
-
-            self.assertEqual([result.dataset_idx for result in results], [0])
-            self.assertEqual(scorer.calls, [0])
-            self.assertEqual(json.loads(output_path.read_text())[0]["scores"]["prompt"], [0.0])
-
 
 class ScoreIOTest(unittest.TestCase):
     def test_score_io_loads_dataset_and_saves_aggregate_result_json(self) -> None:
@@ -124,20 +108,6 @@ class ScoreIOTest(unittest.TestCase):
             self.assertEqual(saved[0]["wiki_bio_test_idx"], 100)
             self.assertEqual(saved[0]["scores"]["prompt"], [0.0])
 
-    def test_score_io_does_not_skip_existing_output_when_overwrite_is_enabled(self) -> None:
-        from replication.score.base import ScoreIO
-
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            dataset_path = tmp_path / "dataset.json"
-            output_path = tmp_path / "fake.json"
-            output_path.write_text('[{"existing": true}]')
-
-            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path, overwrite=True)
-
-            self.assertFalse(score_io.should_skip())
-
-
 class ScoreCliTest(unittest.TestCase):
     def test_parser_accepts_method_subcommands_with_shared_options(self) -> None:
         from score import build_parser
@@ -153,7 +123,6 @@ class ScoreCliTest(unittest.TestCase):
             "dataset.json",
             "--output",
             "out.json",
-            "--overwrite",
             "--think",
         ])
 
@@ -162,18 +131,26 @@ class ScoreCliTest(unittest.TestCase):
         self.assertEqual(args.end, 3)
         self.assertEqual(args.dataset, "dataset.json")
         self.assertEqual(args.output, "out.json")
-        self.assertTrue(args.overwrite)
         self.assertTrue(args.think)
 
-    def test_default_score_output_path_uses_project_output_directory(self) -> None:
+    def test_parser_rejects_overwrite_option(self) -> None:
+        from score import build_parser
+
+        parser = build_parser()
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                parser.parse_args(["bert", "--start", "0", "--end", "1", "--overwrite"])
+
+    def test_default_score_output_path_uses_method_and_range(self) -> None:
         from replication.score.base import REPO_ROOT
         from score import build_parser, build_score_io
 
         parser = build_parser()
-        args = parser.parse_args(["bert", "--start", "0", "--end", "1"])
+        args = parser.parse_args(["bert", "--start", "0", "--end", "5"])
         score_io = build_score_io(args)
 
-        self.assertEqual(score_io.output_path, REPO_ROOT / "output" / "bert.json")
+        self.assertEqual(score_io.output_path, REPO_ROOT / "output" / "bert-0-to-5.json")
 
 
 class ScoreEnvironmentTest(unittest.TestCase):

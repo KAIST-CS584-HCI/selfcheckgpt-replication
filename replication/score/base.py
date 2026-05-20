@@ -29,11 +29,9 @@ class ScoreIO:
         self,
         dataset_path: str | os.PathLike[str],
         output_path: str | os.PathLike[str],
-        overwrite: bool = False,
     ) -> None:
         self.dataset_path = Path(dataset_path)
         self.output_path = Path(output_path)
-        self.overwrite = overwrite
 
     def load_dataset(self) -> list[PassageInstance]:
         with open(self.dataset_path) as f:
@@ -43,7 +41,7 @@ class ScoreIO:
         return self.output_path.exists()
 
     def should_skip(self) -> bool:
-        return self.output_exists() and not self.overwrite
+        return self.output_exists()
 
     def save_results(self, results: list[PassageResult]) -> None:
         path = self.output_path

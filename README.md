@@ -27,9 +27,9 @@ SelfCheckGPT detects hallucinations by checking whether a generated passage is c
 
 | Method | Dataset default | Output default |
 | --- | --- | --- |
-| BERTScore | `data/dataset-generated.json` | `output/bert.json` |
-| NLI | `data/dataset-generated.json` | `output/nli.json` |
-| Prompt | `data/dataset-original.json` | `output/prompt.json` |
+| BERTScore | `data/dataset-generated.json` | `output/bert-{start}-to-{end}.json` |
+| NLI | `data/dataset-generated.json` | `output/nli-{start}-to-{end}.json` |
+| Prompt | `data/dataset-original.json` | `output/prompt-{start}-to-{end}.json` |
 
 > [!NOTE]
 > The bundled `selfcheckgpt/` package code comes from the SelfCheckGPT paper authors. The replication-specific code in this repository lives mainly under `replication/` and `score.py`.
@@ -83,9 +83,9 @@ python -m score prompt --start 0 --end 10
 By default, results are written to the root `output/` directory:
 
 ```text
-output/bert.json
-output/nli.json
-output/prompt.json
+output/bert-0-to-10.json
+output/nli-0-to-10.json
+output/prompt-0-to-10.json
 ```
 
 Useful options:
@@ -95,8 +95,7 @@ python -m score bert \
   --start 0 \
   --end 20 \
   --dataset data/dataset-generated.json \
-  --output output/bert.json \
-  --overwrite
+  --output output/custom-bert-range.json
 ```
 
 Prompt scoring also supports a higher reasoning setting:
@@ -110,9 +109,9 @@ python -m score prompt --start 0 --end 5 --think
 Evaluate one score file:
 
 ```bash
-python -m replication.evaluate --results output/bert.json --variant bert
-python -m replication.evaluate --results output/nli.json --variant nli
-python -m replication.evaluate --results output/prompt.json --variant prompt
+python -m evaluate --output output/bert-0-to-10.json --variant bert
+python -m evaluate --output output/nli-0-to-10.json --variant nli
+python -m evaluate --output output/prompt-0-to-10.json --variant prompt
 ```
 
 The evaluator reports sentence-level AUC-PR metrics and passage-level Pearson/Spearman correlations, alongside the paper baselines for comparison.
@@ -180,7 +179,7 @@ Prompt outputs additionally include raw prompt responses under `responses.prompt
 > If spaCy cannot find `en_core_web_sm`, reinstall dependencies with `pip install -r requirements.txt`. The model is declared as a pip dependency.
 
 > [!NOTE]
-> Existing output files are skipped by default. Pass `--overwrite` when you intentionally want to replace an output JSON file.
+> Existing output files are skipped by default. Choose a new range or pass a different `--output` path when you want to keep another scoring run.
 
 ## Resources
 
