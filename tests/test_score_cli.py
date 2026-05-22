@@ -65,6 +65,50 @@ class ScoreRunnerTest(unittest.TestCase):
             self.assertEqual([item["dataset_idx"] for item in saved], [0, 1])
             self.assertEqual(saved[1]["scores"]["prompt"], [1.0])
 
+    def test_runner_saves_partial_results_when_scorer_raises(self) -> None:
+        from replication.score.base import ScoreIO, ScoreRunner
+
+        class FlakyScorer(FakeScorer):
+            def score(self, dataset_idx, passage):
+                if dataset_idx == 2:
+                    raise RuntimeError("boom")
+                return super().score(dataset_idx, passage)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / "dataset.json"
+            output_path = tmp_path / "results" / "fake.json"
+            dataset_path.write_text(json.dumps([dataset_item(i) for i in range(3)]))
+
+            scorer = FlakyScorer()
+            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path)
+
+            with self.assertRaises(RuntimeError):
+                ScoreRunner(scorer, score_io).run(start=0, end=3)
+
+            self.assertTrue(output_path.exists())
+            saved = json.loads(output_path.read_text())
+            self.assertEqual([item["dataset_idx"] for item in saved], [0, 1])
+
+    def test_runner_saves_partial_results_when_dataset_index_out_of_range(self) -> None:
+        from replication.score.base import ScoreIO, ScoreRunner
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / "dataset.json"
+            output_path = tmp_path / "results" / "fake.json"
+            dataset_path.write_text(json.dumps([dataset_item(0), dataset_item(1)]))
+
+            scorer = FakeScorer()
+            score_io = ScoreIO(dataset_path=dataset_path, output_path=output_path)
+
+            with self.assertRaises(IndexError):
+                ScoreRunner(scorer, score_io).run(start=0, end=5)
+
+            self.assertTrue(output_path.exists())
+            saved = json.loads(output_path.read_text())
+            self.assertEqual([item["dataset_idx"] for item in saved], [0, 1])
+
     def test_runner_skips_existing_aggregate_output_by_default(self) -> None:
         from replication.score.base import ScoreIO, ScoreRunner
 

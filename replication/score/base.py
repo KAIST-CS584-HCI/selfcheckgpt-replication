@@ -70,10 +70,16 @@ class ScoreRunner:
         dataset = self.score_io.load_dataset()
 
         results: list[PassageResult] = []
-        for idx in tqdm(indices, desc=f"{self.scorer.method_name} scoring"):
-            result = self.scorer.score(idx, dataset[idx])
-            results.append(result)
-
-        self.score_io.save_results(results)
-        print(f"\nDone: {len(results)} entries.")
+        try:
+            for idx in tqdm(indices, desc=f"{self.scorer.method_name} scoring"):
+                result = self.scorer.score(idx, dataset[idx])
+                results.append(result)
+        finally:
+            if results:
+                self.score_io.save_results(results)
+                completed = [r.dataset_idx for r in results]
+                print(
+                    f"\nSaved {len(results)} entries to {self.score_io.output_path} "
+                    f"(indices {completed[0]}..{completed[-1]})."
+                )
         return results
