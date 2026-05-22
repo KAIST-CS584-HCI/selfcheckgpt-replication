@@ -117,7 +117,7 @@ Normalized WikiBio hallucination data lives in `data/`:
 | --- | ---: | --- |
 | `dataset-original.json` | 238 | Original SelfCheckGPT WikiBio dataset (GPT-3 main + GPT-3 samples). |
 | `dataset-generated.json` | 119 | Subset with GPT-3.5 sampled passages for comparison. |
-| `result-original-samples.json` | 119 | Pre-scored snapshot using the original samples. |
+| `result-original-samples.json` | 238 | Pre-scored snapshot for the full original dataset (all three methods). |
 | `result-generated-samples.json` | 119 | Pre-scored snapshot using the GPT-3.5 samples. |
 
 Each dataset row:
