@@ -16,6 +16,7 @@ This repository keeps the original `selfcheckgpt` module from the paper authors 
 - [Features](#features)
 - [Getting Started](#getting-started)
 - [Run Scoring](#run-scoring)
+- [Aggregate Scores](#aggregate-scores)
 - [Evaluate Results](#evaluate-results)
 - [Dataset](#dataset)
 - [Troubleshooting](#troubleshooting)
@@ -25,18 +26,22 @@ This repository keeps the original `selfcheckgpt` module from the paper authors 
 
 SelfCheckGPT detects hallucinations by checking whether a generated passage is consistent with multiple sampled passages from the same model. This replication focuses on the WikiBio hallucination benchmark and currently supports:
 
-| Method | Dataset default | Output default |
+| Method | Recommended dataset | Output default |
 | --- | --- | --- |
 | BERTScore | `data/dataset-generated.json` | `output/bert-{start}-to-{end}.json` |
 | NLI | `data/dataset-generated.json` | `output/nli-{start}-to-{end}.json` |
 | Prompt | `data/dataset-original.json` | `output/prompt-{start}-to-{end}.json` |
+
+`--dataset` is required for every scoring run — there is no implicit default. The "recommended" column reflects which dataset each method is normally paired with in this replication.
 
 > [!NOTE]
 > The bundled `selfcheckgpt/` package code comes from the SelfCheckGPT paper authors. The replication-specific code in this repository lives mainly under `replication/` and `score.py`.
 
 ## Features
 
-- Unified CLI for `bert`, `nli`, and `prompt` scoring.
+- Unified CLI for `bert`, `nli`, and `prompt` scoring, safe to run in parallel across non-overlapping ranges.
+- Partial scoring results are flushed on interrupt/crash, so long runs are recoverable.
+- `aggregate.py` merges per-slice outputs into a single JSON and reports which dataset indices are still missing per variant.
 - Evaluation script for SelfCheckGPT-style AUC-PR and correlation metrics.
 
 ## Getting Started
@@ -72,12 +77,12 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
 ## Run Scoring
 
-Use the root CLI module:
+Use the root CLI module. `--dataset` is required; `--start` is required; `--end` is optional and defaults to `len(dataset)`.
 
 ```bash
-python -m score bert --start 0 --end 10
-python -m score nli --start 0 --end 10
-python -m score prompt --start 0 --end 10
+python -m score bert   --start 0 --end 10 --dataset data/dataset-generated.json
+python -m score nli    --start 0 --end 10 --dataset data/dataset-generated.json
+python -m score prompt --start 0 --end 10 --dataset data/dataset-original.json
 ```
 
 By default, results are written to the root `output/` directory:
@@ -86,6 +91,17 @@ By default, results are written to the root `output/` directory:
 output/bert-0-to-10.json
 output/nli-0-to-10.json
 output/prompt-0-to-10.json
+```
+
+### Range semantics
+
+`--start` is **inclusive** and `--end` is **exclusive** — the run covers `range(start, end)`, the same half-open `[start, end)` convention used by Python slicing. For example `--start 0 --end 10` scores 10 passages with `dataset_idx` 0..9; the next run should use `--start 10`.
+
+Omitting `--end` scores from `--start` to the end of the dataset (i.e., `end = len(dataset)`), which is reflected in the default output filename:
+
+```bash
+# Scores indices 50..len(dataset)-1 → output/bert-50-to-<len>.json
+python -m score bert --start 50 --dataset data/dataset-generated.json
 ```
 
 Useful options:
@@ -101,16 +117,57 @@ python -m score bert \
 Prompt scoring also supports a higher reasoning setting:
 
 ```bash
-python -m score prompt --start 0 --end 5 --think
+python -m score prompt --start 0 --end 5 --dataset data/dataset-original.json --think
 ```
+
+### Parallel runs and partial saves
+
+Scoring a long range is slow, so it is common to launch several terminals with non-overlapping ranges (e.g. `--start 0 --end 50`, `--start 50 --end 100`, …) in parallel. Each run writes its own `output/{method}-{start}-to-{end}.json` slice file. If a run is interrupted or crashes mid-loop, whatever has been scored so far is still flushed to that slice file before the exception propagates, so progress is not lost.
+
+## Aggregate Scores
+
+Once you have several slice files in `output/`, merge them into a single JSON that holds every variant's scores per passage:
+
+```bash
+python aggregate.py --dataset data/dataset-original.json
+```
+
+`aggregate.py`:
+
+- Scans `output/` for `{bert,nli,prompt}-{start}-to-{end}.json` files (non-matching files are ignored).
+- Merges every passage by `dataset_idx`; one entry can carry `scores.bert`, `scores.nli`, and `scores.prompt` together.
+- **Reuses any existing `output/aggregated.json`** as the starting point, so re-running after dropping more slice files into `output/` is incremental — old entries are not recomputed or discarded.
+- On conflict (same `(dataset_idx, variant)` in multiple slice files), the slice with the newest mtime wins; a `WARN:` line is printed if the scores differ.
+- Prints a coverage report against `--dataset`, listing which indices are still missing per variant. Missing indices are compacted into ranges, so the output is easy to paste back into a follow-up `score.py` run:
+
+```text
+Aggregated 119 passages -> /…/output/aggregated.json
+bert: 0/238 done, missing 0-237
+nli: 119/238 done, missing 0-118
+prompt: 0/238 done, missing 0-237
+```
+
+Options:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--dataset` | *(required)* | Original dataset JSON; defines the total passage count used in the coverage report. |
+| `--inputs-dir` | `output/` | Directory to scan for slice files. |
+| `--output` | `output/aggregated.json` | Destination for the merged JSON; reused as the starting point if it already exists. |
 
 ## Evaluate Results
 
-Evaluate one score file:
+Evaluate the aggregated file across all variants (recommended after running `aggregate.py`):
 
 ```bash
-python -m evaluate --output output/bert-0-to-10.json --variant bert
-python -m evaluate --output output/nli-0-to-10.json --variant nli
+python -m evaluate --output output/aggregated.json --variant all
+```
+
+Or point the evaluator at a single slice file when you only want one variant:
+
+```bash
+python -m evaluate --output output/bert-0-to-10.json   --variant bert
+python -m evaluate --output output/nli-0-to-10.json    --variant nli
 python -m evaluate --output output/prompt-0-to-10.json --variant prompt
 ```
 
