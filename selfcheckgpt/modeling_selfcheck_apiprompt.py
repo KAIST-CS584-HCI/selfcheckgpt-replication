@@ -1,7 +1,7 @@
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import SimpleNamespace
-from openai import OpenAI
+from openai import OpenAI, APIConnectionError, APITimeoutError
 from groq import Groq
 import ollama
 from tqdm import tqdm
@@ -11,6 +11,7 @@ import numpy as np
 
 _EMPTY_CHOICES_RETRIES = 3
 _EMPTY_CHOICES_BACKOFF = 0.5  # seconds; doubles each attempt
+_REQUEST_TIMEOUT_SECONDS = 60.0  # per-request read timeout for OpenAI/OpenRouter calls
 
 
 def _extract_provider_error(chat_completion) -> str:
@@ -43,7 +44,12 @@ class SelfCheckAPIPrompt:
         api_key = None,
     ):
         if client_type == "openai":
-            self.client = OpenAI(base_url=base_url, api_key=api_key)
+            self.client = OpenAI(
+                base_url=base_url,
+                api_key=api_key,
+                timeout=_REQUEST_TIMEOUT_SECONDS,
+                max_retries=0,
+            )
             print("Initiate OpenAI client... model = {}".format(model))
         if client_type == "ollama":
             self.client = ollama.Client(host=base_url)
@@ -66,20 +72,28 @@ class SelfCheckAPIPrompt:
         if self.client_type in ("openai", "groq"):
             last_detail = ""
             for attempt in range(_EMPTY_CHOICES_RETRIES):
-                chat_completion = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.0,
-                    max_tokens=max_tokens,
-                    reasoning_effort=reasoning,
-                )
-                if chat_completion.choices:
-                    return chat_completion.choices[0]
-                last_detail = _extract_provider_error(chat_completion)
-                print(
-                    f"[Warning] provider returned no choices "
-                    f"(attempt {attempt + 1}/{_EMPTY_CHOICES_RETRIES}): {last_detail}"
-                )
+                try:
+                    chat_completion = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.0,
+                        max_tokens=max_tokens,
+                        reasoning_effort=reasoning,
+                    )
+                except (APITimeoutError, APIConnectionError) as exc:
+                    last_detail = f"{type(exc).__name__}: {exc}"
+                    print(
+                        f"[Warning] request failed "
+                        f"(attempt {attempt + 1}/{_EMPTY_CHOICES_RETRIES}): {last_detail}"
+                    )
+                else:
+                    if chat_completion.choices:
+                        return chat_completion.choices[0]
+                    last_detail = _extract_provider_error(chat_completion)
+                    print(
+                        f"[Warning] provider returned no choices "
+                        f"(attempt {attempt + 1}/{_EMPTY_CHOICES_RETRIES}): {last_detail}"
+                    )
                 if attempt + 1 < _EMPTY_CHOICES_RETRIES:
                     time.sleep(_EMPTY_CHOICES_BACKOFF * (2 ** attempt))
             return _empty_choice_stub(last_detail)
