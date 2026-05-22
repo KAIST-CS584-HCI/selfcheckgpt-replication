@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 from pathlib import Path
 
@@ -42,7 +43,12 @@ def build_parser() -> argparse.ArgumentParser:
     for method in METHODS:
         subparser = subparsers.add_parser(method, help=f"run {method} scoring")
         subparser.add_argument("--start", type=int, required=True, help="start index (inclusive)")
-        subparser.add_argument("--end", type=int, required=True, help="end index (exclusive)")
+        subparser.add_argument(
+            "--end",
+            type=int,
+            default=None,
+            help="end index (exclusive); defaults to len(dataset)",
+        )
         subparser.add_argument("--dataset", type=str, default=None, help="dataset JSON path")
         subparser.add_argument("--output", type=str, default=None, help="aggregate result JSON path")
         if method == "prompt":
@@ -67,12 +73,21 @@ def build_scorer(args: argparse.Namespace):
     raise ValueError(f"Unknown scoring method: {args.method}")
 
 
-def build_score_io(args: argparse.Namespace) -> ScoreIO:
-    dataset_path = Path(args.dataset) if args.dataset is not None else DEFAULT_DATASET_PATHS[args.method]
+def resolve_dataset_path(args: argparse.Namespace) -> Path:
+    return Path(args.dataset) if args.dataset is not None else DEFAULT_DATASET_PATHS[args.method]
+
+
+def peek_dataset_length(dataset_path: Path) -> int:
+    with open(dataset_path) as f:
+        return len(json.load(f))
+
+
+def build_score_io(args: argparse.Namespace, end: int) -> ScoreIO:
+    dataset_path = resolve_dataset_path(args)
     output_path = Path(args.output) if args.output is not None else default_output_path(
         method=args.method,
         start=args.start,
-        end=args.end,
+        end=end,
     )
     return ScoreIO(dataset_path=dataset_path, output_path=output_path)
 
@@ -85,11 +100,15 @@ def main(argv: list[str] | None = None) -> None:
     load_environment()
     parser = build_parser()
     args = parser.parse_args(argv)
-    score_io = build_score_io(args)
+
+    dataset_path = resolve_dataset_path(args)
+    end = args.end if args.end is not None else peek_dataset_length(dataset_path)
+
+    score_io = build_score_io(args, end=end)
     scorer = build_scorer(args)
     ScoreRunner(scorer, score_io).run(
         start=args.start,
-        end=args.end,
+        end=end,
     )
 
 

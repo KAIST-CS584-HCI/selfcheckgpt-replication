@@ -148,9 +148,61 @@ class ScoreCliTest(unittest.TestCase):
 
         parser = build_parser()
         args = parser.parse_args(["bert", "--start", "0", "--end", "5"])
-        score_io = build_score_io(args)
+        score_io = build_score_io(args, end=args.end)
 
         self.assertEqual(score_io.output_path, REPO_ROOT / "output" / "bert-0-to-5.json")
+
+    def test_parser_accepts_omitted_end(self) -> None:
+        from score import build_parser
+
+        args = build_parser().parse_args(["bert", "--start", "0"])
+
+        self.assertEqual(args.start, 0)
+        self.assertIsNone(args.end)
+
+    def test_main_defaults_end_to_dataset_length(self) -> None:
+        import score as score_module
+        from replication.score.base import ScoreIO
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / "dataset.json"
+            output_path = tmp_path / "out.json"
+            dataset_path.write_text(json.dumps([dataset_item(i) for i in range(3)]))
+
+            scorer = FakeScorer()
+            with mock.patch.object(score_module, "build_scorer", return_value=scorer), \
+                 mock.patch.object(score_module, "load_environment"):
+                score_module.main([
+                    "bert",
+                    "--start", "0",
+                    "--dataset", str(dataset_path),
+                    "--output", str(output_path),
+                ])
+
+            self.assertEqual(scorer.calls, [0, 1, 2])
+            saved = json.loads(output_path.read_text())
+            self.assertEqual([item["dataset_idx"] for item in saved], [0, 1, 2])
+
+    def test_default_output_path_uses_resolved_end_when_omitted(self) -> None:
+        from replication.score.base import REPO_ROOT
+        from score import build_parser, build_score_io, peek_dataset_length, resolve_dataset_path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / "dataset.json"
+            dataset_path.write_text(json.dumps([dataset_item(i) for i in range(5)]))
+
+            args = build_parser().parse_args([
+                "bert",
+                "--start", "0",
+                "--dataset", str(dataset_path),
+            ])
+            end = args.end if args.end is not None else peek_dataset_length(resolve_dataset_path(args))
+            score_io = build_score_io(args, end=end)
+
+            self.assertEqual(end, 5)
+            self.assertEqual(score_io.output_path, REPO_ROOT / "output" / "bert-0-to-5.json")
 
 
 class ScoreEnvironmentTest(unittest.TestCase):
