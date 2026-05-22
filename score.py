@@ -1,12 +1,22 @@
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 
 from replication.score.base import DEFAULT_RESULTS_ROOT, REPO_ROOT, ScoreIO, ScoreRunner
 
 
 METHODS = ("bert", "nli", "prompt")
+
+
+def _extract_api_error_message(exc: Exception) -> str:
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        inner = body.get("error")
+        if isinstance(inner, dict) and inner.get("message"):
+            return str(inner["message"])
+    return str(exc)
 
 
 def _load_env_file(env_path: Path) -> None:
@@ -100,11 +110,24 @@ def main(argv: list[str] | None = None) -> None:
     end = args.end if args.end is not None else peek_dataset_length(dataset_path)
 
     score_io = build_score_io(args, end=end)
-    scorer = build_scorer(args)
-    ScoreRunner(scorer, score_io).run(
-        start=args.start,
-        end=end,
-    )
+
+    try:
+        scorer = build_scorer(args)
+        ScoreRunner(scorer, score_io).run(start=args.start, end=end)
+    except RuntimeError as exc:
+        sys.exit(f"error: {exc}")
+    except Exception as exc:
+        try:
+            from openai import AuthenticationError
+        except ImportError:
+            raise
+        if isinstance(exc, AuthenticationError):
+            detail = _extract_api_error_message(exc)
+            sys.exit(
+                f"error: OpenRouter rejected the API key (HTTP 401: {detail}).\n"
+                "Update OPENROUTER_API_KEY in .env — manage keys at https://openrouter.ai/keys"
+            )
+        raise
 
 
 if __name__ == "__main__":
