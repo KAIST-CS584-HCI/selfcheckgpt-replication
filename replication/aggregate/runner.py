@@ -154,8 +154,9 @@ class AggregateRunner:
             dir=output_path.parent,
             delete=False,
             suffix=".tmp",
+            encoding="utf-8",
         ) as tmp:
-            json.dump(ordered, tmp, indent=2)
+            json.dump(ordered, tmp, indent=2, ensure_ascii=False)
             tmp_path = tmp.name
         os.replace(tmp_path, output_path)
 

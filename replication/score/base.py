@@ -46,8 +46,10 @@ class ScoreIO:
     def save_results(self, results: list[PassageResult]) -> None:
         path = self.output_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False, suffix=".tmp") as tmp:
-            json.dump([result.to_dict() for result in results], tmp, indent=2)
+        with tempfile.NamedTemporaryFile(
+            "w", dir=path.parent, delete=False, suffix=".tmp", encoding="utf-8"
+        ) as tmp:
+            json.dump([result.to_dict() for result in results], tmp, indent=2, ensure_ascii=False)
             tmp_path = tmp.name
         os.replace(tmp_path, path)
 
