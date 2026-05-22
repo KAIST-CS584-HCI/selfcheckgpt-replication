@@ -1,10 +1,35 @@
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from types import SimpleNamespace
 from openai import OpenAI
 from groq import Groq
 import ollama
 from tqdm import tqdm
 from typing import Dict, List, Set, Tuple, Union
 import numpy as np
+
+
+_EMPTY_CHOICES_RETRIES = 3
+_EMPTY_CHOICES_BACKOFF = 0.5  # seconds; doubles each attempt
+
+
+def _extract_provider_error(chat_completion) -> str:
+    err = getattr(chat_completion, "error", None)
+    if err is None:
+        extra = getattr(chat_completion, "model_extra", None) or {}
+        err = extra.get("error") if isinstance(extra, dict) else None
+    if isinstance(err, dict):
+        return err.get("message") or str(err)
+    if err is not None:
+        return str(err)
+    return "no choices and no error field"
+
+
+def _empty_choice_stub(detail: str):
+    return SimpleNamespace(
+        message=SimpleNamespace(content=None, refusal=None),
+        finish_reason=f"empty_choices: {detail}" if detail else "empty_choices",
+    )
 
 class SelfCheckAPIPrompt:
     """
@@ -39,14 +64,25 @@ class SelfCheckAPIPrompt:
 
     def completion(self, prompt: str, max_tokens: int = 10000, reasoning="none"):
         if self.client_type in ("openai", "groq"):
-            chat_completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.0,
-                max_tokens=max_tokens,
-                reasoning_effort=reasoning,
-            )
-            return chat_completion.choices[0]
+            last_detail = ""
+            for attempt in range(_EMPTY_CHOICES_RETRIES):
+                chat_completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.0,
+                    max_tokens=max_tokens,
+                    reasoning_effort=reasoning,
+                )
+                if chat_completion.choices:
+                    return chat_completion.choices[0]
+                last_detail = _extract_provider_error(chat_completion)
+                print(
+                    f"[Warning] provider returned no choices "
+                    f"(attempt {attempt + 1}/{_EMPTY_CHOICES_RETRIES}): {last_detail}"
+                )
+                if attempt + 1 < _EMPTY_CHOICES_RETRIES:
+                    time.sleep(_EMPTY_CHOICES_BACKOFF * (2 ** attempt))
+            return _empty_choice_stub(last_detail)
 
         elif self.client_type == "ollama":
             response = self.client.chat(
