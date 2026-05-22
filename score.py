@@ -7,11 +7,6 @@ from replication.score.base import DEFAULT_RESULTS_ROOT, REPO_ROOT, ScoreIO, Sco
 
 
 METHODS = ("bert", "nli", "prompt")
-DEFAULT_DATASET_PATHS = {
-    "bert": REPO_ROOT / "data" / "dataset-generated.json",
-    "nli": REPO_ROOT / "data" / "dataset-generated.json",
-    "prompt": REPO_ROOT / "data" / "dataset-original.json",
-}
 
 
 def _load_env_file(env_path: Path) -> None:
@@ -49,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
             default=None,
             help="end index (exclusive); defaults to len(dataset)",
         )
-        subparser.add_argument("--dataset", type=str, default=None, help="dataset JSON path")
+        subparser.add_argument("--dataset", type=str, required=True, help="dataset JSON path")
         subparser.add_argument("--output", type=str, default=None, help="aggregate result JSON path")
         if method == "prompt":
             subparser.add_argument("--think", action="store_true", default=False, help="enable reasoning effort")
@@ -74,7 +69,7 @@ def build_scorer(args: argparse.Namespace):
 
 
 def resolve_dataset_path(args: argparse.Namespace) -> Path:
-    return Path(args.dataset) if args.dataset is not None else DEFAULT_DATASET_PATHS[args.method]
+    return Path(args.dataset)
 
 
 def peek_dataset_length(dataset_path: Path) -> int:

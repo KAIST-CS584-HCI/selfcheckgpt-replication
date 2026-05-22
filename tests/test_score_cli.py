@@ -140,14 +140,28 @@ class ScoreCliTest(unittest.TestCase):
 
         with contextlib.redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit):
-                parser.parse_args(["bert", "--start", "0", "--end", "1", "--overwrite"])
+                parser.parse_args([
+                    "bert", "--start", "0", "--end", "1",
+                    "--dataset", "dataset.json", "--overwrite",
+                ])
+
+    def test_parser_requires_dataset(self) -> None:
+        from score import build_parser
+
+        parser = build_parser()
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                parser.parse_args(["bert", "--start", "0", "--end", "1"])
 
     def test_default_score_output_path_uses_method_and_range(self) -> None:
         from replication.score.base import REPO_ROOT
         from score import build_parser, build_score_io
 
         parser = build_parser()
-        args = parser.parse_args(["bert", "--start", "0", "--end", "5"])
+        args = parser.parse_args([
+            "bert", "--start", "0", "--end", "5", "--dataset", "dataset.json",
+        ])
         score_io = build_score_io(args, end=args.end)
 
         self.assertEqual(score_io.output_path, REPO_ROOT / "output" / "bert-0-to-5.json")
@@ -155,7 +169,9 @@ class ScoreCliTest(unittest.TestCase):
     def test_parser_accepts_omitted_end(self) -> None:
         from score import build_parser
 
-        args = build_parser().parse_args(["bert", "--start", "0"])
+        args = build_parser().parse_args([
+            "bert", "--start", "0", "--dataset", "dataset.json",
+        ])
 
         self.assertEqual(args.start, 0)
         self.assertIsNone(args.end)
