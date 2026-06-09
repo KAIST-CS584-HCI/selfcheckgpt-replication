@@ -51,6 +51,8 @@ early: *do recent models actually hallucinate enough on MBPP+ to give signal?*
 
 ## Iteration 1 — SelfCheck-Exec MVP on MBPP+
 
+> Status: implemented (TDD, all unit tests passing), pending live MBPP+ run.
+
 - **Goal:** prove that behavioral-consistency across sampled implementations
   separates correct code from hallucinated code, and stand up the shared
   generation + execution harness that every later iteration depends on.
