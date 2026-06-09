@@ -86,11 +86,13 @@ original Prompt variant, e.g. Yes→0.0 / No→1.0 / N-A→0.5).
 
 Note: CodeBERT and Code-NLI (earlier proposal candidates) are **not** used.
 
-## Candidate datasets
+## Datasets
 
-From the design notes (confirm exact names before plan phase):
-**CodeHaluEval**, **Collu-Bench**, **MBPP+**. HumanEval remains the baseline
-coding set from the proposal.
+Coding-task datasets under consideration:
+
+- **CodeHaluEval**
+- **Collu-Bench**
+- **MBPP+**
 
 ## Evaluation
 
