@@ -46,5 +46,5 @@ def save_results(results: list[CodeResult], path: str | os.PathLike) -> None:
 
 
 def load_results(path: str | os.PathLike) -> list[CodeResult]:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return [CodeResult.from_dict(item) for item in json.load(f)]
