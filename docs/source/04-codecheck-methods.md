@@ -1,0 +1,99 @@
+# SelfCheckGPT for Code: Consistency Methods (Improvement 2 — Coding Domain)
+
+Status: design, pre-implementation. Feeds the plan phase.
+
+## Goal
+
+Adapt SelfCheckGPT's sample-consistency principle to **code generation**, where
+hallucination = an incorrect implementation. Correctness is auto-verifiable
+(unit tests / execution), so no human annotation is needed — the ground-truth
+label for each generated implementation comes from running it, not from a
+labeler.
+
+## Generation setup
+
+Same sampling scheme as the original paper, applied to code:
+
+- **Main implementation:** 1 response at temperature `T = 0`.
+- **Sample implementations:** `N = 20` responses at temperature `T = 1`.
+
+The unit being scored is the **implementation itself** (one function/program),
+analogous to a "sentence" in the original WikiBio setup.
+
+## Methods
+
+Three variants. Two replace original NL-specific variants with code-aware
+equivalents; one carries over directly.
+
+### 1. SelfCheck-Exec — *replaces BERTScore*
+
+Behavioral consistency via execution.
+
+- Construct a shared set of inputs `(x1, x2, ...)`.
+- Run **every** implementation (main + all N samples) on the same inputs.
+- Compare output values across implementations.
+- Rationale: a correct implementation is functionally deterministic — same
+  inputs produce same outputs; hallucinated implementations diverge in output.
+
+Replaces BERTScore (semantic-similarity of text) because behavioral equivalence
+is a stronger, code-native consistency signal than surface text similarity.
+
+Open design points (for plan phase):
+- input set construction (provided test inputs vs. generated/fuzzed inputs)
+- output comparison rule (exact match, tolerance, exception handling)
+- handling non-terminating / crashing samples (timeout, sandbox)
+
+### 2. SelfCheck-AST — *replaces n-gram*
+
+Structural consistency via abstract syntax tree.
+
+- Parse main and sample implementations into ASTs.
+- Compute AST tree similarity between main and each sample.
+- Rationale: hallucinated implementations vary a lot in semantic structure;
+  consistent (factual) ones share structure.
+
+Replaces the n-gram score (token-surface model) with a structure-aware metric.
+
+Open design points:
+- AST similarity metric (tree edit distance, subtree overlap, etc.)
+- normalization for identifier renaming / equivalent constructs
+- parse-failure handling for malformed samples
+
+### 3. SelfCheck-Prompt — *carried over*
+
+LLM-as-judge, same idea as the original Prompt variant.
+
+Prompt template (per unit):
+
+```
+Does the following construct from another implementation
+have behavior consistent with the implementation above?
+Construct: {unit from R}
+Answer Yes / No / N/A with a one-sentence justification.
+```
+
+Score aggregates Yes/No/N-A judgments across the N samples (mapping per the
+original Prompt variant, e.g. Yes→0.0 / No→1.0 / N-A→0.5).
+
+## Variant mapping summary
+
+| Original (NL) | Code variant   | Consistency signal      |
+|---------------|----------------|-------------------------|
+| BERTScore     | SelfCheck-Exec | behavioral (I/O)        |
+| n-gram        | SelfCheck-AST  | structural (AST)        |
+| Prompt        | SelfCheck-Prompt | LLM judge             |
+| NLI, QA       | (dropped)      | —                       |
+
+Note: CodeBERT and Code-NLI (earlier proposal candidates) are **not** used.
+
+## Candidate datasets
+
+From the design notes (confirm exact names before plan phase):
+**CodeHaluEval**, **Collu-Bench**, **MBPP+**. HumanEval remains the baseline
+coding set from the proposal.
+
+## Evaluation
+
+Same as replication: sentence/unit-level **AUC-PR** plus passage-level
+correlation, with the per-implementation correctness label derived from
+execution/tests as ground truth.
