@@ -51,8 +51,6 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
     if args.method == "all":
         methods = {"exec", "prompt", "ast"}
-    elif args.method == "both":
-        methods = {"exec", "prompt"}
     else:
         methods = {args.method}
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
@@ -128,7 +126,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
     run_p.add_argument("--think", action="store_true",
                        help="enable model chain-of-thought reasoning (much slower; default off)")
-    run_p.add_argument("--method", choices=["exec", "prompt", "ast", "both", "all"], default="exec",
+    run_p.add_argument("--method", choices=["exec", "prompt", "ast", "all"], default="exec",
                        help="which consistency scorer(s) to run")
     run_p.set_defaults(func=_cmd_run, randomize=True)
 

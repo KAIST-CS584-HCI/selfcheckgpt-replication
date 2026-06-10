@@ -81,7 +81,7 @@ structurally similar to the wrong main, so AST scores ≈0 and misses it.
 
 ## Methods
 
-`run --method {exec,prompt,ast,both,all}` selects the consistency scorer(s). A single run
+`run --method {exec,prompt,ast,all}` selects the consistency scorer(s). A single run
 generates each problem's implementations once and scores them with every selected
 method, so the methods are always compared on identical data.
 
@@ -90,7 +90,6 @@ method, so the methods are always compared on identical data.
   implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
 - `ast` — structural divergence: mean `1 − Jaccard` of AST node-type fingerprints,
   rename- and literal-invariant. No API cost.
-- `both` — runs exec + prompt.
 - `all` — runs exec + prompt + ast; `evaluate` then prints a three-way comparison.
 
 The judge reuses `OPENROUTER_MODEL`. After a run the CLI prints the judge parse-failure
@@ -164,7 +163,7 @@ python run_codecheck.py evaluate
 
 - `--limit` — how many problems to use
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
-- `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, `both`, or `all`
+- `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, or `all`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample

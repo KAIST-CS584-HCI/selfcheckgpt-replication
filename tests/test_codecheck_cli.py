@@ -24,8 +24,8 @@ def test_evaluate_subcommand_prints_auc(tmp_path):
 
 def test_run_parser_accepts_method():
     from run_codecheck import build_parser
-    args = build_parser().parse_args(["run", "--method", "both", "--limit", "2"])
-    assert args.method == "both"
+    args = build_parser().parse_args(["run", "--method", "all", "--limit", "2"])
+    assert args.method == "all"
 
 
 def test_run_parser_method_defaults_to_exec():
