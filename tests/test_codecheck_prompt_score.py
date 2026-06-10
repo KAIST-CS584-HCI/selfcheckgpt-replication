@@ -33,6 +33,7 @@ def test_parse_empty_is_unmatched_half():
     assert score == 0.5 and matched is False
 
 
+import threading
 from types import SimpleNamespace
 from codecheck.prompt_score import PromptJudge
 
@@ -42,11 +43,14 @@ class FakeJudgeClient:
     def __init__(self, answers):
         self._answers = list(answers)
         self.calls = []
+        self._lock = threading.Lock()
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
 
     def _create(self, **kwargs):
-        self.calls.append(kwargs)
-        content = self._answers[len(self.calls) - 1]
+        with self._lock:
+            idx = len(self.calls)
+            self.calls.append(kwargs)
+        content = self._answers[idx]
         msg = SimpleNamespace(content=content)
         return SimpleNamespace(choices=[SimpleNamespace(message=msg)])
 
@@ -77,3 +81,9 @@ def test_judge_disables_reasoning_by_default():
     PromptJudge(client, model="m").score("main", ["a"])
     assert client.calls[0]["extra_body"] == {"reasoning": {"enabled": False}}
     assert client.calls[0]["temperature"] == 0.0
+
+
+def test_judge_think_enables_reasoning():
+    client = FakeJudgeClient(["Yes."])
+    PromptJudge(client, model="m", think=True).score("main", ["a"])
+    assert client.calls[0]["extra_body"] == {"reasoning": {"enabled": True}}
