@@ -1,89 +1,74 @@
-# codecheck — SelfCheckGPT for Code
+# SelfCheckGPT for Code
 
-Extends SelfCheckGPT's sample-consistency idea to code generation. Hallucination = an
-incorrect implementation. Correctness is auto-verified by execution, so no human
-annotation is needed.
+Brings SelfCheckGPT's core idea to code generation: a model that truly "knows" a
+solution tends to write it consistently across many tries; a hallucinated solution drifts.
+Here a hallucination just means **incorrect code** and correctness is checked by actually
+running the code, so no human labeling is needed.
 
-Per problem: generate **1 main** implementation at `T=0` and **N samples** at `T=1`.
-Two numbers come out: `exec_score` (the detection signal) and `is_correct` (ground truth).
+For each problem we ask the model for one main answer (at temperature 0) and several
+extra samples (at temperature 1). From these we get two things: a **consistency signal**
+(how much the samples agree with the main answer) and a **ground-truth correctness label**
+(whether the main answer actually works).
 
-## Methods
+## How the method works
 
-Three variants are planned (`docs/source/04-codecheck-methods.md`). **Only SelfCheck-Exec
-is implemented** in this iteration.
+**SelfCheck-Exec** measures consistency through *behavior*: do the implementations produce
+the same outputs when given the same inputs?
 
-### SelfCheck-Exec (implemented) — behavioral consistency
+1. **Generate.** Ask the model for one main implementation and several sampled
+   implementations of the same problem.
+2. **Run them.** Execute every implementation on a shared set of inputs, in an isolated,
+   time-limited sandbox so bad code can't hang or harm the run. Each run ends as a value,
+   an error, or a timeout.
+3. **Compare outputs.** Two implementations "agree" on an input when they return the same
+   result (with a small tolerance for floating-point numbers).
+4. **Score consistency.** Measure how often the samples disagree with the main answer.
+   Lots of agreement means a low score (looks reliable); lots of disagreement means a high
+   score (looks hallucinated).
+5. **Check correctness.** Separately, run the problem's known-good reference solution on
+   the same inputs and see whether the main answer matches it. This is the ground truth.
+6. **Evaluate.** Across many problems, check how well the consistency score predicts the
+   incorrect answers.
 
-Replaces the original BERTScore variant with behavioral I/O equivalence.
+Two other variants are planned but not built yet: one comparing the *structure* of the
+code, and one asking a separate model to judge whether the samples behave like the main
+answer.
 
-1. **Generate** — `generation.py`: prompt the LLM with the problem; produce 1 main impl
-   (`T=0`) + N samples (`T=1`). Strip markdown fences.
-2. **Execute** — `execution.py`: run every impl on each input in a fresh spawned
-   subprocess (`run_in_subprocess`), killed on timeout (SIGKILL). Outcome is one of
-   `("ok", value)` / `("err", repr)` / `("timeout", None)`.
-3. **Normalize** — `execution.py`: `normalize_output` maps each outcome to a hashable
-   tuple (`("value", canonical)` or `("status", status)`), floats bucketed by `atol`,
-   sets/dicts canonicalized. Equality of these tuples is the consistency primitive.
-4. **Score** — `exec_score.py`: for each sample, `agreement = matches_with_main / n_inputs`;
-   `exec_score = 1 - mean(agreement)`. `0.0` = all samples behave like main (consistent),
-   `1.0` = none do (likely hallucinated).
-5. **Label** — `labeling.py`: run the problem's `canonical_solution` through the same
-   harness; `is_correct = (main outputs == canonical outputs)`, position by position.
-6. **Evaluate** — `evaluate.py`: AUC-PR with positive class = incorrect, score =
-   `exec_score`. Returns `nan` if only one class is present (all correct / all wrong).
+## Dataset in use: MBPP+
 
-### SelfCheck-AST (planned) — structural consistency
+MBPP+ is a set of Python programming problems, each shipped with a reference solution and
+a rich suite of test inputs (an extended version of the MBPP benchmark). The test inputs
+double as the shared inputs we run every implementation on.
 
-Parse main + samples to ASTs; score tree similarity. Replaces the n-gram variant.
+Each problem gives us:
 
-### SelfCheck-Prompt (planned) — LLM judge
+| Part                | What it is                                                   |
+|---------------------|--------------------------------------------------------------|
+| ID                  | a problem identifier                                         |
+| Prompt              | the function signature and docstring shown to the model      |
+| Function name       | the function to call                                         |
+| Reference solution  | a known-correct implementation, used only for grading        |
+| Inputs              | many argument sets the function is called with               |
+| Tolerance           | how close floating-point results must be to count as equal   |
 
-Ask a judge LLM whether each sample's behavior is consistent with main; aggregate
-Yes/No/N-A. Carried over from the original Prompt variant.
+Example problem:
 
-## Dataset (current): MBPP+
+- **Prompt:** "write `f(x)` that adds one"
+- **Reference solution:** returns `x + 1`
+- **Inputs:** `f(1)`, `f(2)`, `f(3)`
 
-Loaded via `evalplus` (`dataset.py` → `load_mbpp_plus`). MBPP+ augments MBPP with extra
-test inputs (EvalPlus). Each problem maps to a `CodeProblem`:
+For each problem we record the consistency score, the correctness label, and the actual
+code that was generated, so results can be inspected later.
 
-| Field               | Source (evalplus key)         | Meaning                                  |
-|---------------------|-------------------------------|------------------------------------------|
-| `task_id`           | `task_id`                     | e.g. `"Mbpp/2"`                          |
-| `prompt`            | `prompt`                      | function signature + docstring, fed to LLM |
-| `entry_point`       | `entry_point`                 | function name to call                    |
-| `canonical_solution`| `canonical_solution`          | reference impl (ground-truth source)     |
-| `inputs`            | `base_input` + `plus_input`   | list of argument-lists                   |
-| `atol`              | `atol`                        | float comparison tolerance               |
-
-`inputs` is a `list[list]`: each element is one call's positional args, invoked as
-`entry_point(*args)`.
-
-Example `CodeProblem`:
-
-```python
-CodeProblem(
-    task_id="Mbpp/2",
-    prompt="def f(x):\n    'add one'\n",
-    entry_point="f",
-    canonical_solution="def f(x):\n    return x + 1\n",
-    inputs=[[1], [2], [3]],   # f(1), f(2), f(3)
-    atol=1e-6,
-)
-```
-
-Result rows (`CodeResult`, saved by `pipeline.save_results`):
-
-```json
-{"task_id": "Mbpp/2", "exec_score": 0.0, "is_correct": true,
- "main_code": "...", "sample_codes": ["...", "..."]}
-```
-
-## Run
+## Running it
 
 ```bash
-python run_codecheck.py run --limit 10 --n 5 --timeout 5   # generate + score + save
-python run_codecheck.py evaluate --results output/codecheck-exec.json
+# generate, score, and save results for a handful of problems
+python run_codecheck.py run --limit 10 --n 5 --timeout 5
+
+# report how well the consistency score detected incorrect answers
+python run_codecheck.py evaluate
 ```
 
-`run` needs `OPENROUTER_API_KEY` (and optional `OPENROUTER_MODEL`, default `qwen/qwen3.5-9b`)
-in `.env`.
+Generation calls a hosted model, so it needs an API key in a local `.env` file. Evaluation
+runs offline on the saved results.
