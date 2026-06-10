@@ -38,7 +38,19 @@ def test_run_parser_rejects_unknown_method():
     import pytest
     from run_codecheck import build_parser
     with pytest.raises(SystemExit):
-        build_parser().parse_args(["run", "--method", "ast"])
+        build_parser().parse_args(["run", "--method", "bogus"])
+
+
+def test_method_ast_is_accepted_by_parser():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--method", "ast"])
+    assert args.method == "ast"
+
+
+def test_method_all_is_accepted_by_parser():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--method", "all"])
+    assert args.method == "all"
 
 
 def test_format_evaluation_lists_each_method():
