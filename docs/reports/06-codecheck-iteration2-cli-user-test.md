@@ -96,6 +96,21 @@ script → flood of spawn tracebacks, yet a saved result with `exec_score=0.0, i
 - **Minor:** add a per-method baseline to `format_evaluation`; print a "no results" line for
   empty files.
 
+## Resolution (2026-06-10, commit `cdc124f`)
+
+Both 🔴 issues fixed:
+- **#1** — `codecheck/execution.py` now pins `PYTHONHASHSEED` (module-level `setdefault`) so
+  every spawned worker hashes identically; set/dict-derived ordering is stable across
+  processes. Verified: `Mbpp/2` canonical-vs-canonical → `exec_score=0.0, is_correct=True`
+  with no command-line seed pin. Regression test
+  `test_batch_set_ordering_is_deterministic_across_spawns`.
+- **#2** — `run_batch_in_subprocess` now raises `RuntimeError` when a worker produces nothing
+  and exits non-zero (spawn/bootstrap failure), instead of silently returning all-timeout.
+  Regression test `test_batch_raises_on_worker_crash_before_output`.
+
+Suite: 58 unit tests pass. The minor observations (per-method baseline, empty-results note)
+were left as-is.
+
 ## Status
 
 Iteration-2 features validated end to end, including the live judge path (1 real run).
