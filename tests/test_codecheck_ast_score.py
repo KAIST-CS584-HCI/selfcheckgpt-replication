@@ -42,6 +42,49 @@ def test_different_structure_has_positive_dissimilarity():
     assert 0.0 < d <= 1.0
 
 
+from codecheck.ast_score import ast_to_tree, ted_dissimilarity
+
+
+def test_ted_identical_structure_is_zero():
+    t = ast_to_tree("def f(x):\n    return x + 1\n")
+    assert ted_dissimilarity(t, t) == 0.0
+
+
+def test_ted_is_invariant_to_variable_renaming():
+    a = ast_to_tree("def f(x):\n    return x + 1\n")
+    b = ast_to_tree("def f(y):\n    return y + 1\n")
+    assert ted_dissimilarity(a, b) == 0.0
+
+
+def test_ted_is_invariant_to_literal_values():
+    a = ast_to_tree("def f(x):\n    return x + 1\n")
+    b = ast_to_tree("def f(x):\n    return x + 99\n")
+    assert ted_dissimilarity(a, b) == 0.0
+
+
+def test_ted_structural_difference_is_positive_and_bounded():
+    a = ast_to_tree("def f(x):\n    return x + 1\n")
+    b = ast_to_tree("def f(x):\n    for i in range(x):\n        print(i)\n")
+    d = ted_dissimilarity(a, b)
+    assert 0.0 < d <= 1.0
+
+
+def test_ted_sees_nesting_that_jaccard_misses():
+    # Same node-type multiset (left- vs right-associative), different tree shape.
+    # Jaccard scores them identical; TED, which compares structure, must not.
+    a_code = "x = (a + b) + c\n"
+    b_code = "x = a + (b + c)\n"
+    assert ast_dissimilarity(ast_fingerprint(a_code), ast_fingerprint(b_code)) == 0.0
+    assert ted_dissimilarity(ast_to_tree(a_code), ast_to_tree(b_code)) > 0.0
+
+
+def test_ast_to_tree_returns_none_on_unparseable_or_bodyless():
+    assert ast_to_tree("@@@ not python @@@") is None
+    assert ast_to_tree("") is None
+    assert ast_to_tree("# only a comment\n") is None
+    assert ast_to_tree(None) is None
+
+
 from codecheck.ast_score import ASTScorer
 
 

@@ -2,6 +2,15 @@ from __future__ import annotations
 import ast
 from collections import Counter
 
+import zss
+
+# Relabel/insert/delete each cost 1 (a label either matches or it doesn't). Passed to
+# zss.simple_distance, this also makes insert/delete unit-cost (label_dist('', x) == 1),
+# replacing zss's default *string*-edit distance between labels — so the raw distance is
+# bounded by size(a) + size(b) and the normalized score stays in [0, 1].
+def _unit_label_dist(a: str, b: str) -> int:
+    return 0 if a == b else 1
+
 
 def ast_fingerprint(code: str) -> Counter | None:
     """Multiset of AST node-type names for `code`, or None if it does not parse.
@@ -32,6 +41,50 @@ def ast_dissimilarity(main_fp: Counter, sample_fp: Counter) -> float:
     if union == 0:
         return 0.0
     return 1.0 - intersection / union
+
+
+def ast_to_tree(code: str) -> "zss.Node | None":
+    """Convert `code` to a zss tree labeled by AST node-type name, or None if it does
+    not parse / is body-less.
+
+    Labels are node-type names only (e.g. `BinOp`, `Call`) — never identifier text or
+    literal values — so the tree is invariant to variable renaming and literal changes,
+    matching `ast_fingerprint`. Parse-failure handling mirrors it exactly.
+    """
+    try:
+        tree = ast.parse(code)
+    except (SyntaxError, ValueError, TypeError):
+        return None
+    if not tree.body:
+        return None
+    return _to_zss(tree)
+
+
+def _to_zss(node: ast.AST) -> "zss.Node":
+    z = zss.Node(type(node).__name__)
+    for child in ast.iter_child_nodes(node):
+        z.addkid(_to_zss(child))
+    return z
+
+
+def _tree_size(node: "zss.Node") -> int:
+    return 1 + sum(_tree_size(child) for child in node.children)
+
+
+def ted_dissimilarity(main_tree: "zss.Node", sample_tree: "zss.Node") -> float:
+    """Zhang-Shasha tree edit distance between two label trees, normalized to [0,1].
+
+    Unlike the bag-of-node-types Jaccard, this compares actual tree shape, so two
+    programs with the same node-type counts but different nesting score apart. 0.0 =
+    identical structure; higher = more divergent (same scale/direction as Jaccard,
+    Exec, Prompt). Normalized as distance / (size_main + size_sample), which is ≤ 1
+    because deleting all of one tree and inserting all of the other costs exactly that.
+    """
+    total = _tree_size(main_tree) + _tree_size(sample_tree)
+    if total == 0:
+        return 0.0
+    distance = zss.simple_distance(main_tree, sample_tree, label_dist=_unit_label_dist)
+    return distance / total
 
 
 class ASTScorer:
