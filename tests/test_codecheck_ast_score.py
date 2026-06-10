@@ -134,3 +134,34 @@ def test_scorer_score_wraps_evaluate():
     main = "def f(x):\n    return x + 1\n"
     scorer = ASTScorer()
     assert scorer.score(main, [main]) == 0.0
+
+
+def test_scorer_defaults_to_ted_metric():
+    assert ASTScorer().metric == "ted"
+
+
+def test_scorer_rejects_unknown_metric():
+    import pytest
+    with pytest.raises(ValueError):
+        ASTScorer(metric="bogus")
+
+
+def test_scorer_ted_sees_nesting_that_jaccard_metric_misses():
+    main = "x = (a + b) + c\n"
+    sample = "x = a + (b + c)\n"
+    assert ASTScorer(metric="jaccard").score(main, [sample]) == 0.0
+    assert ASTScorer(metric="ted").score(main, [sample]) > 0.0
+
+
+def test_scorer_jaccard_metric_still_available():
+    main = "def f(x):\n    return x + 1\n"
+    scorer = ASTScorer(metric="jaccard")
+    assert scorer.score(main, [main]) == 0.0
+    assert scorer.metric == "jaccard"
+
+
+def test_scorer_ted_counts_parse_failures():
+    scorer = ASTScorer(metric="ted")
+    score, per_sample = scorer.evaluate("def f(): return 1", ["@@@ bad @@@", "def g(): return 2"])
+    assert per_sample[0] == 1.0
+    assert scorer.parse_failures == 1

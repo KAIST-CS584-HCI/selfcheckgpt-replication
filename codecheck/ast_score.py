@@ -87,35 +87,48 @@ def ted_dissimilarity(main_tree: "zss.Node", sample_tree: "zss.Node") -> float:
     return distance / total
 
 
+# metric name -> (parse fn: code -> representation|None, dissimilarity fn: (repr, repr) -> [0,1])
+_METRICS = {
+    "jaccard": (ast_fingerprint, ast_dissimilarity),
+    "ted": (ast_to_tree, ted_dissimilarity),
+}
+
+
 class ASTScorer:
     """Structural-consistency scorer (SelfCheck-AST). evaluate() returns the mean
     structural dissimilarity of the samples vs the main implementation, on the same
     [0,1] scale and direction as Exec/Prompt (higher = more likely incorrect).
-    `parse_failures` accumulates implementations that do not parse, mirroring
-    PromptJudge so the CLI can report it.
+    `metric` selects how structure is compared: `ted` (tree edit distance, default,
+    structure-aware) or `jaccard` (bag-of-node-types, count-based). `parse_failures`
+    accumulates implementations that do not parse, mirroring PromptJudge so the CLI
+    can report it.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, metric: str = "ted") -> None:
+        if metric not in _METRICS:
+            raise ValueError(f"unknown ast metric {metric!r}; choose from {sorted(_METRICS)}")
+        self.metric = metric
+        self._parse, self._dissimilarity = _METRICS[metric]
         self.parse_failures = 0
 
     def evaluate(self, main_code: str, sample_codes: list[str]) -> tuple[float, list[float]]:
         """(mean_dissimilarity, per_sample_dissimilarities)."""
         if not sample_codes:
             return 0.0, []
-        main_fp = ast_fingerprint(main_code)
-        if main_fp is None:
+        main_repr = self._parse(main_code)
+        if main_repr is None:
             # The T=0 main failed to parse: structure is unverifiable, so treat every
             # sample as maximally divergent and count one parse failure for the main.
             self.parse_failures += 1
             return 1.0, [1.0] * len(sample_codes)
         per_sample: list[float] = []
         for code in sample_codes:
-            sample_fp = ast_fingerprint(code)
-            if sample_fp is None:
+            sample_repr = self._parse(code)
+            if sample_repr is None:
                 self.parse_failures += 1
                 per_sample.append(1.0)
             else:
-                per_sample.append(ast_dissimilarity(main_fp, sample_fp))
+                per_sample.append(self._dissimilarity(main_repr, sample_repr))
         return sum(per_sample) / len(per_sample), per_sample
 
     def score(self, main_code: str, sample_codes: list[str]) -> float:
