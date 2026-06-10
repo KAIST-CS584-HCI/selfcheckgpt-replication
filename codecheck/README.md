@@ -58,19 +58,51 @@ complementary to Exec, which is blind to samples that consistently agree on the 
 behavior. The two run on the **same generated implementations**, so their scores are directly
 comparable.
 
+### SelfCheck-AST — structural consistency
+
+Measures consistency by *parsing the code* instead of running it or asking a model. Each
+implementation is reduced to a structural fingerprint and the samples are compared against
+the main one.
+
+1. **Generate.** Same as Exec/Prompt — one main implementation plus several samples.
+2. **Fingerprint.** Parse each implementation to an AST and count node types
+   (`Name`, `BinOp`, `Constant`, …), ignoring identifier text and literal values — so
+   renaming variables or changing constants does not change the fingerprint.
+3. **Compare structure.** Dissimilarity = `1 − multiset Jaccard` of the two fingerprints:
+   `0.0` for identical structure, up to `1.0` for no shared node types.
+4. **Score consistency.** Average the per-sample dissimilarities. An implementation that does
+   not parse counts as `1.0` (maximally divergent) and is tallied as a parse failure.
+5. **Check correctness / evaluate.** Identical to Exec — the ground-truth label still comes
+   from running the reference solution.
+
+AST adds **no API cost** (pure local parsing). It is hypothesized to share Exec's
+confident-consistent blind spot: when a model is consistently wrong, the samples are also
+structurally similar to the wrong main, so AST scores ≈0 and misses it.
+
 ## Methods
 
-`run --method {exec,prompt,both}` selects the consistency scorer(s). A single run
+`run --method {exec,prompt,ast,both,all}` selects the consistency scorer(s). A single run
 generates each problem's implementations once and scores them with every selected
-method, so Exec and Prompt are always compared on identical data.
+method, so the methods are always compared on identical data.
 
 - `exec` (default) — behavioral I/O divergence across samples (described above).
 - `prompt` — LLM-as-judge: per sample, is its behavior consistent with the main
   implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
-- `both` — runs both; `evaluate` then prints a per-method comparison.
+- `ast` — structural divergence: mean `1 − Jaccard` of AST node-type fingerprints,
+  rename- and literal-invariant. No API cost.
+- `both` — runs exec + prompt.
+- `all` — runs exec + prompt + ast; `evaluate` then prints a three-way comparison.
 
-The judge reuses `OPENROUTER_MODEL`. After a judged run the CLI prints the judge
-parse-failure count.
+The judge reuses `OPENROUTER_MODEL`. After a run the CLI prints the judge parse-failure
+count (if prompt ran) and the AST parse-failure count (if ast ran).
+
+Three-way run:
+
+```bash
+python run_codecheck.py run --method all --limit 30 --n 5 --seed 1 --timeout 5 \
+  --output output/iter3-all.json
+python run_codecheck.py evaluate --results output/iter3-all.json
+```
 
 ### Standing run/report protocol (from iteration-1 findings)
 
@@ -132,7 +164,7 @@ python run_codecheck.py evaluate
 
 - `--limit` — how many problems to use
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
-- `--method` — consistency scorer: `exec` (default), `prompt`, or `both`
+- `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, `both`, or `all`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample
