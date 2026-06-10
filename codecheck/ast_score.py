@@ -98,13 +98,14 @@ class ASTScorer:
     """Structural-consistency scorer (SelfCheck-AST). evaluate() returns the mean
     structural dissimilarity of the samples vs the main implementation, on the same
     [0,1] scale and direction as Exec/Prompt (higher = more likely incorrect).
-    `metric` selects how structure is compared: `ted` (tree edit distance, default,
-    structure-aware) or `jaccard` (bag-of-node-types, count-based). `parse_failures`
-    accumulates implementations that do not parse, mirroring PromptJudge so the CLI
-    can report it.
+    `metric` selects how structure is compared: `jaccard` (bag-of-node-types,
+    count-based, default) or `ted` (tree edit distance, structure-aware). Jaccard is the
+    default because the Jaccard-vs-TED validation found it the better discriminator on
+    MBPP+ (docs/reports/09). `parse_failures` accumulates implementations that do not
+    parse, mirroring PromptJudge so the CLI can report it.
     """
 
-    def __init__(self, metric: str = "ted") -> None:
+    def __init__(self, metric: str = "jaccard") -> None:
         if metric not in _METRICS:
             raise ValueError(f"unknown ast metric {metric!r}; choose from {sorted(_METRICS)}")
         self.metric = metric

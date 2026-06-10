@@ -7,6 +7,11 @@ source: brainstorming session (TED enhancement for SelfCheck-AST)
 
 # SelfCheck-AST — Tree Edit Distance metric
 
+> **Outcome update:** implemented as planned, but the validation
+> (`docs/reports/09-codecheck-ast-ted-result.md`) found TED does **not** out-discriminate
+> Jaccard on MBPP+, so the shipped **default is `jaccard`**, not `ted` as designed below.
+> TED remains available via `--ast-metric ted`. The rest of this doc is the original design.
+
 ## Goal
 
 Add a structure-aware AST metric (tree edit distance) alongside the current

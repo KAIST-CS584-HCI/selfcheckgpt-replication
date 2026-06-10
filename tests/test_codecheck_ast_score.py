@@ -136,8 +136,8 @@ def test_scorer_score_wraps_evaluate():
     assert scorer.score(main, [main]) == 0.0
 
 
-def test_scorer_defaults_to_ted_metric():
-    assert ASTScorer().metric == "ted"
+def test_scorer_defaults_to_jaccard_metric():
+    assert ASTScorer().metric == "jaccard"
 
 
 def test_scorer_rejects_unknown_metric():

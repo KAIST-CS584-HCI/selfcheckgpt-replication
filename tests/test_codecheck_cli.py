@@ -53,10 +53,10 @@ def test_method_all_is_accepted_by_parser():
     assert args.method == "all"
 
 
-def test_ast_metric_defaults_to_ted():
+def test_ast_metric_defaults_to_jaccard():
     from run_codecheck import build_parser
     args = build_parser().parse_args(["run"])
-    assert args.ast_metric == "ted"
+    assert args.ast_metric == "jaccard"
 
 
 def test_ast_metric_accepts_jaccard():

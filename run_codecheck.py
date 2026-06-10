@@ -133,9 +133,9 @@ def build_parser() -> argparse.ArgumentParser:
                        help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
     run_p.add_argument("--method", choices=["exec", "prompt", "ast", "all"], default="exec",
                        help="which consistency scorer(s) to run")
-    run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="ted",
-                       help="AST structural metric: ted (tree edit distance, default) or "
-                            "jaccard (bag-of-node-types). Only used when --method includes ast")
+    run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="jaccard",
+                       help="AST structural metric: jaccard (bag-of-node-types, default) or "
+                            "ted (tree edit distance). Only used when --method includes ast")
     run_p.set_defaults(func=_cmd_run, randomize=True)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")

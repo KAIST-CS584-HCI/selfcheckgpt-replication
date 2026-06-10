@@ -53,14 +53,11 @@ Pending the in-flight `--no-random --limit 200 --n 20` run. Will be recomputed o
 apples-to-apples evidence; the easy low-numbered slice is expected to compress both
 metrics further (fewer positives, more consistent samples), not reverse their ordering.
 
-## Recommendation
+## Recommendation — decided
 
-- **Reconsider the TED default.** The evidence says `jaccard` discriminates better on
-  this data. Either flip the default back to `jaccard`, or keep `ted` available but
-  default to `jaccard`. (Decision deferred to the user — TED-as-default was the stated
-  directive; this report is the evidence to revisit it.)
-- **Both metrics stay selectable** via `--ast-metric`, so this comparison is cheap to
-  re-run on any future sample (offline, zero API cost).
+- **Default switched to `jaccard`** (this evidence). `ted` stays available via
+  `--ast-metric ted`; both remain selectable, so this comparison is cheap to re-run on
+  any future sample (offline, zero API cost).
 - The deeper takeaway feeds the Improvement-2 narrative: AST (either metric) is a
   weak-to-moderate signal on MBPP+ and shares Exec's confident-consistent blind spot;
   the richer structural metric does not rescue it. A genuinely different signal

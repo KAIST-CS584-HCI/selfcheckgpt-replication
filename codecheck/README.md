@@ -95,11 +95,13 @@ method, so the methods are always compared on identical data.
 
 **`--ast-metric {jaccard,ted}`** (only used when `--method` includes `ast`):
 
-- `ted` (default) — tree edit distance (Zhang-Shasha, via `zss`) between the AST shapes.
-  Structure-aware: two programs with the same node-type counts but different nesting score
-  apart. Normalized to `[0,1]`.
-- `jaccard` — `1 − multiset Jaccard` of AST node-type counts. Cheaper but count-based: it
-  ignores nesting/ordering, so it is blind to structural differences `ted` catches.
+- `jaccard` (default) — `1 − multiset Jaccard` of AST node-type counts. Count-based: it
+  ignores nesting/ordering. The default because it out-discriminated `ted` on MBPP+
+  (see `docs/reports/09-codecheck-ast-ted-result.md`).
+- `ted` — tree edit distance (Zhang-Shasha, via `zss`) between the AST shapes.
+  Structure-aware (two programs with the same node-type counts but different nesting score
+  apart), normalized to `[0,1]`. More sensitive to shape, but on MBPP+ that penalizes
+  correct-but-restructured samples and compresses the signal — kept available, not default.
 
 The judge reuses `OPENROUTER_MODEL`. After a run the CLI prints the judge parse-failure
 count (if prompt ran) and the AST parse-failure count (if ast ran).
@@ -173,7 +175,7 @@ python run_codecheck.py evaluate
 - `--limit` — how many problems to use
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
 - `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, or `all`
-- `--ast-metric` — AST metric when `ast` runs: `ted` (default) or `jaccard`
+- `--ast-metric` — AST metric when `ast` runs: `jaccard` (default) or `ted`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample
