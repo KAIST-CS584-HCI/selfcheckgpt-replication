@@ -2,6 +2,8 @@ from __future__ import annotations
 import re
 from concurrent.futures import ThreadPoolExecutor
 
+from codecheck.api_retry import chat_with_retries
+
 _FENCE = re.compile(r"```(?:python)?\s*(.*?)```", re.S)
 
 PROMPT_TEMPLATE = (
@@ -29,14 +31,15 @@ class CodeGenerator:
         self.max_workers = max_workers
 
     def _complete(self, prompt: str, temperature: float) -> str:
-        resp = self.client.chat.completions.create(
+        # Reasoning off by default (enable with --think): reasoning models otherwise spend
+        # thousands of hidden tokens per trivial function (~20x slower); the text is
+        # discarded. Retries absorb transient API failures over a long run.
+        resp = chat_with_retries(
+            self.client,
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
-            # Reasoning models (e.g. qwen3) otherwise spend thousands of hidden
-            # tokens per trivial function (~20x slower); the text is discarded.
-            # Off by default; enable with --think. OpenRouter extension.
-            extra_body={"reasoning": {"enabled": self.think}},
+            think=self.think,
         )
         if not resp.choices:
             return ""

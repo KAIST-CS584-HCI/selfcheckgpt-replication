@@ -2,6 +2,8 @@ from __future__ import annotations
 import re
 from concurrent.futures import ThreadPoolExecutor
 
+from codecheck.api_retry import APIRetriesExhausted, chat_with_retries
+
 JUDGE_TEMPLATE = (
     "Implementation:\n{main_code}\n\n"
     "Does the following construct from another implementation have behavior "
@@ -46,12 +48,18 @@ class PromptJudge:
         self.parse_failures = 0
 
     def _judge_one(self, main_code: str, sample_code: str) -> str:
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": build_judge_prompt(main_code, sample_code)}],
-            temperature=0.0,
-            extra_body={"reasoning": {"enabled": self.think}},
-        )
+        try:
+            resp = chat_with_retries(
+                self.client,
+                model=self.model,
+                messages=[{"role": "user", "content": build_judge_prompt(main_code, sample_code)}],
+                temperature=0.0,
+                think=self.think,
+            )
+        except APIRetriesExhausted:
+            # A persistently-failing judge call is an unusable judgment, not a fatal error:
+            # return "" so it counts as a parse failure and the run survives the bad sample.
+            return ""
         if not resp.choices:
             return ""
         return resp.choices[0].message.content or ""

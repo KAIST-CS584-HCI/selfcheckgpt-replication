@@ -87,3 +87,22 @@ def test_judge_think_enables_reasoning():
     client = FakeJudgeClient(["Yes."])
     PromptJudge(client, model="m", think=True).score("main", ["a"])
     assert client.calls[0]["extra_body"] == {"reasoning": {"enabled": True}}
+
+
+def test_judge_degrades_on_persistent_api_failure(monkeypatch):
+    # A judge call that keeps failing (transient API error across all retries) must not
+    # crash the run: the sample degrades to a parse failure (N/A) and the run continues.
+    import json
+    import codecheck.api_retry as api_retry
+    monkeypatch.setattr(api_retry.time, "sleep", lambda *_: None)
+
+    class DeadClient:
+        def __init__(self):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._c))
+        def _c(self, **kwargs):
+            raise json.JSONDecodeError("Expecting value", "", 0)
+
+    judge = PromptJudge(DeadClient(), model="m")
+    score = judge.score("main", ["a", "b"])
+    assert score == 0.5               # both unusable -> N/A
+    assert judge.parse_failures == 2
