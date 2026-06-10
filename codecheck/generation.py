@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 _FENCE = re.compile(r"```(?:python)?\s*(.*?)```", re.S)
 
@@ -21,19 +22,21 @@ def build_prompt(problem) -> str:
 
 
 class CodeGenerator:
-    def __init__(self, client, model: str) -> None:
+    def __init__(self, client, model: str, think: bool = False, max_workers: int | None = None) -> None:
         self.client = client
         self.model = model
+        self.think = think          # chain-of-thought reasoning; off = far faster
+        self.max_workers = max_workers
 
     def _complete(self, prompt: str, temperature: float) -> str:
         resp = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
-            # Disable chain-of-thought: reasoning models (e.g. qwen3) otherwise
-            # spend thousands of hidden tokens on a trivial function — ~20x slower
-            # — and we discard the reasoning text anyway. OpenRouter extension.
-            extra_body={"reasoning": {"enabled": False}},
+            # Reasoning models (e.g. qwen3) otherwise spend thousands of hidden
+            # tokens per trivial function (~20x slower); the text is discarded.
+            # Off by default; enable with --think. OpenRouter extension.
+            extra_body={"reasoning": {"enabled": self.think}},
         )
         if not resp.choices:
             return ""
@@ -41,6 +44,8 @@ class CodeGenerator:
 
     def generate(self, problem, n_samples: int) -> tuple[str, list[str]]:
         prompt = build_prompt(problem)
-        main = self._complete(prompt, 0.0)
-        samples = [self._complete(prompt, 1.0) for _ in range(n_samples)]
-        return main, samples
+        temps = [0.0] + [1.0] * n_samples  # main at T=0, n samples at T=1
+        # Fire the N+1 calls concurrently; ex.map preserves input order.
+        with ThreadPoolExecutor(max_workers=self.max_workers or len(temps)) as ex:
+            outs = list(ex.map(lambda t: self._complete(prompt, t), temps))
+        return outs[0], outs[1:]

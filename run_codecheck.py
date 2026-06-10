@@ -24,7 +24,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").strip()
 
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
-    generator = CodeGenerator(client, model=model)
+    generator = CodeGenerator(client, model=model, think=args.think)
 
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
     try:
@@ -61,6 +61,8 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--no-random", dest="randomize", action="store_false",
                        help="use the first --limit problems in dataset order instead of a random sample")
     run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
+    run_p.add_argument("--think", action="store_true",
+                       help="enable model chain-of-thought reasoning (much slower; default off)")
     run_p.set_defaults(func=_cmd_run, randomize=True)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")
