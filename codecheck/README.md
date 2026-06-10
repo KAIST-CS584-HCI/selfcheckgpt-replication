@@ -10,10 +10,16 @@ extra samples (at temperature 1). From these we get two things: a **consistency 
 (how much the samples agree with the main answer) and a **ground-truth correctness label**
 (whether the main answer actually works).
 
-## How the method works
+## How the methods work
 
-**SelfCheck-Exec** measures consistency through *behavior*: do the implementations produce
-the same outputs when given the same inputs?
+Both variants share the same generation and ground-truth steps; they differ only in how
+they measure consistency between the main answer and the samples. Both produce a score on
+the same scale: **higher = more likely hallucinated (incorrect)**.
+
+### SelfCheck-Exec — behavioral consistency
+
+Measures consistency through *behavior*: do the implementations produce the same outputs
+when given the same inputs?
 
 1. **Generate.** Ask the model for one main implementation and several sampled
    implementations of the same problem.
@@ -29,6 +35,28 @@ the same outputs when given the same inputs?
    the same inputs and see whether the main answer matches it. This is the ground truth.
 6. **Evaluate.** Across many problems, check how well the consistency score predicts the
    incorrect answers.
+
+### SelfCheck-Prompt — LLM-as-judge
+
+Measures consistency by *asking a model* instead of running the code. For each sampled
+implementation, a judge LLM is shown the main implementation and that sample and asked
+whether the sample's behavior is consistent with the main one.
+
+1. **Generate.** Same as Exec — one main implementation plus several samples.
+2. **Judge each sample.** For every sample, ask the judge: is its behavior consistent with
+   the main implementation? It answers Yes, No, or N/A with a one-sentence justification.
+   The N judgments run concurrently.
+3. **Map answers.** Yes (consistent) → `0.0`, No (inconsistent) → `1.0`, N/A → `0.5`. An
+   unparseable answer counts as `0.5` and is tallied as a parse failure.
+4. **Score consistency.** Average the per-sample values: low when the judge keeps saying the
+   samples match the main answer, high when it flags disagreement.
+5. **Check correctness / evaluate.** Identical to Exec — the ground-truth label still comes
+   from running the reference solution; the judge never sees it.
+
+The judge needs no execution, so it can flag cases where the code runs but is subtly wrong —
+complementary to Exec, which is blind to samples that consistently agree on the *same* wrong
+behavior. The two run on the **same generated implementations**, so their scores are directly
+comparable.
 
 ## Methods
 
