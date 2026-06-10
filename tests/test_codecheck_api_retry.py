@@ -47,3 +47,10 @@ def test_non_transient_error_is_not_retried():
     with pytest.raises(ValueError):
         chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False, attempts=4)
     assert c.calls == 1
+
+
+def test_retry_is_logged(caplog):
+    c = FlakyClient(fail_times=1)
+    with caplog.at_level("WARNING", logger="codecheck.api"):
+        chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False, attempts=3)
+    assert any("transient API error" in r.message for r in caplog.records)

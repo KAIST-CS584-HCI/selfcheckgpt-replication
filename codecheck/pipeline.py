@@ -2,6 +2,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from pathlib import Path
 
 from tqdm import tqdm
@@ -46,8 +47,19 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
 
 def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5.0,
                 methods: set[str] | None = None, judge=None) -> list[CodeResult]:
-    return [score_problem(p, generator, harness, n_samples, timeout, methods, judge)
-            for p in tqdm(problems, desc="codecheck")]
+    problems = list(problems)
+    total = len(problems)
+    results: list[CodeResult] = []
+    for i, problem in enumerate(tqdm(problems, desc="codecheck"), start=1):
+        started = time.monotonic()
+        result = score_problem(problem, generator, harness, n_samples, timeout, methods, judge)
+        elapsed = time.monotonic() - started
+        scores = "  ".join(f"{name}={value:.3f}" for name, value in result.scores.items())
+        # tqdm.write keeps these lines from corrupting the live progress bar.
+        tqdm.write(f"[{i}/{total}] {result.task_id}  correct={result.is_correct}  "
+                   f"{scores}  n_inputs={result.n_inputs}  ({elapsed:.1f}s)")
+        results.append(result)
+    return results
 
 
 def save_results(results: list[CodeResult], path: str | os.PathLike) -> None:

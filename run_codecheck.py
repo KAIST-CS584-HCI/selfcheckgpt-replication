@@ -1,5 +1,6 @@
 from __future__ import annotations
 import argparse
+import logging
 import os
 import sys
 from pathlib import Path
@@ -8,6 +9,26 @@ from score import load_environment  # reuse existing env loader
 
 REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT = REPO_ROOT / "output" / "codecheck.json"
+
+
+class _TqdmLoggingHandler(logging.Handler):
+    """Route log records through tqdm.write so they don't corrupt the progress bar."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        from tqdm import tqdm
+        try:
+            tqdm.write(self.format(record))
+        except Exception:  # noqa: BLE001 — never let logging crash a run
+            self.handleError(record)
+
+
+def _setup_run_logging() -> None:
+    handler = _TqdmLoggingHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%H:%M:%S"))
+    root = logging.getLogger("codecheck")
+    root.setLevel(logging.INFO)
+    root.handlers = [handler]
+    root.propagate = False
 
 
 def _cmd_run(args: argparse.Namespace) -> None:
@@ -30,7 +51,10 @@ def _cmd_run(args: argparse.Namespace) -> None:
     methods = {"exec", "prompt"} if args.method == "both" else {args.method}
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
 
+    _setup_run_logging()
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
+    print(f"Running methods={sorted(methods)} on {len(problems)} problems "
+          f"(n={args.n}, timeout={args.timeout}s, model={model})")
     try:
         results = run_dataset(problems, generator, run_batch_in_subprocess,
                               n_samples=args.n, timeout=args.timeout,

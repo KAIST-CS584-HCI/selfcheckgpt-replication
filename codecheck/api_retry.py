@@ -1,8 +1,11 @@
 from __future__ import annotations
 import json
+import logging
 import time
 
 from openai import APIConnectionError, InternalServerError, RateLimitError
+
+logger = logging.getLogger("codecheck.api")
 
 # Transient failures worth retrying. JSONDecodeError covers a malformed/truncated 200 body
 # (an OpenRouter gateway/HTML error page parsed as JSON) — the SDK does NOT retry that.
@@ -34,5 +37,9 @@ def chat_with_retries(client, *, model, messages, temperature, think,
         except _TRANSIENT as exc:
             last = exc
             if attempt < attempts - 1:
-                time.sleep(base_delay * (2 ** attempt))
+                delay = base_delay * (2 ** attempt)
+                logger.warning("transient API error %s; retry %d/%d after %.1fs",
+                               type(exc).__name__, attempt + 1, attempts - 1, delay)
+                time.sleep(delay)
+    logger.error("API call failed after %d attempts (%s)", attempts, type(last).__name__)
     raise APIRetriesExhausted(repr(last)) from last
