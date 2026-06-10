@@ -39,3 +39,16 @@ def test_run_parser_rejects_unknown_method():
     from run_codecheck import build_parser
     with pytest.raises(SystemExit):
         build_parser().parse_args(["run", "--method", "ast"])
+
+
+def test_format_evaluation_lists_each_method():
+    from run_codecheck import format_evaluation
+    from codecheck.models import CodeResult
+    results = [
+        CodeResult("a", {"exec": 0.9, "prompt": 0.2}, False, "m", []),
+        CodeResult("b", {"exec": 0.1, "prompt": 0.8}, True, "m", []),
+    ]
+    text = format_evaluation(results)
+    assert "exec" in text and "prompt" in text
+    assert "AUC-PR" in text
+    assert "baseline" in text.lower()

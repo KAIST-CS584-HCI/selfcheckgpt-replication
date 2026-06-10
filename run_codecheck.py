@@ -43,18 +43,41 @@ def _cmd_run(args: argparse.Namespace) -> None:
         print(f"Judge parse failures: {judge.parse_failures}")
 
 
+def _methods_present(results) -> list[str]:
+    seen: list[str] = []
+    for r in results:
+        for m in r.scores:
+            if m not in seen:
+                seen.append(m)
+    return seen
+
+
+def format_evaluation(results) -> str:
+    from codecheck.evaluate import (
+        auc_pr_detect_incorrect, prevalence_baseline, score_histogram,
+    )
+    n = len(results)
+    n_incorrect = sum(1 for r in results if not r.is_correct)
+    lines = [f"n={n}  incorrect={n_incorrect}  correct={n - n_incorrect}",
+             f"baseline (incorrect prevalence): {prevalence_baseline(results):.4f}", ""]
+    for method in _methods_present(results):
+        auc_pr = auc_pr_detect_incorrect(results, method=method)
+        lines.append(f"[{method}] AUC-PR (detect incorrect): {auc_pr:.4f}")
+        lines.append(f"  {method} score histogram (bin: correct/incorrect):")
+        for b in score_histogram(results, method=method, bins=10):
+            lines.append(f"    [{b['lo']:.1f},{b['hi']:.1f}) {b['correct']}/{b['incorrect']}")
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+
 def _cmd_evaluate(args: argparse.Namespace) -> None:
     from codecheck.pipeline import load_results
-    from codecheck.evaluate import auc_pr_detect_incorrect
 
     try:
         results = load_results(args.results)
     except FileNotFoundError:
         sys.exit(f"error: results file not found: {args.results}")
-    n_incorrect = sum(1 for r in results if not r.is_correct)
-    auc_pr = auc_pr_detect_incorrect(results)
-    print(f"AUC-PR (detect incorrect): {auc_pr:.4f}")
-    print(f"n={len(results)}  incorrect={n_incorrect}  correct={len(results) - n_incorrect}")
+    print(format_evaluation(results))
 
 
 def build_parser() -> argparse.ArgumentParser:
