@@ -23,11 +23,11 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
     methods = methods or {"exec"}
     main_code, sample_codes = generator.generate(problem, n_samples)
     main_outputs = _run_vector(main_code, problem, harness, timeout)
-    sample_outputs = [_run_vector(code, problem, harness, timeout) for code in sample_codes]
     expected = expected_outputs(problem, harness, timeout)
 
     scores: dict[str, float] = {}
     if "exec" in methods:
+        sample_outputs = [_run_vector(code, problem, harness, timeout) for code in sample_codes]
         scores["exec"] = exec_inconsistency(main_outputs, sample_outputs)
     if "prompt" in methods:
         if judge is None:
