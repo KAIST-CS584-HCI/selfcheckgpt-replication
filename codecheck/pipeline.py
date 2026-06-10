@@ -29,6 +29,7 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
         is_correct=is_correct(main_outputs, expected),
         main_code=main_code,
         sample_codes=sample_codes,
+        n_inputs=len(problem.inputs),
     )
 
 

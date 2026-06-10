@@ -32,16 +32,17 @@ class CodeResult:
     is_correct: bool
     main_code: str
     sample_codes: list[str]
+    n_inputs: int = 0          # size of the shared input set all impls ran on
 
     def to_dict(self) -> dict:
         return {
             "task_id": self.task_id, "exec_score": self.exec_score, "is_correct": self.is_correct,
-            "main_code": self.main_code, "sample_codes": self.sample_codes,
+            "main_code": self.main_code, "sample_codes": self.sample_codes, "n_inputs": self.n_inputs,
         }
 
     @classmethod
     def from_dict(cls, d: dict) -> "CodeResult":
         return cls(
             task_id=d["task_id"], exec_score=d["exec_score"], is_correct=d["is_correct"],
-            main_code=d["main_code"], sample_codes=d["sample_codes"],
+            main_code=d["main_code"], sample_codes=d["sample_codes"], n_inputs=d.get("n_inputs", 0),
         )

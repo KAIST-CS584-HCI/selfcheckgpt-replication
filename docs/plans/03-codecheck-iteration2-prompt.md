@@ -101,6 +101,7 @@ class CodeResult:
     is_correct: bool
     main_code: str
     sample_codes: list[str]
+    n_inputs: int = 0             # size of the shared input set all impls ran on
 
     @property
     def exec_score(self) -> float:
@@ -109,7 +110,7 @@ class CodeResult:
     def to_dict(self) -> dict:
         return {
             "task_id": self.task_id, "scores": self.scores, "is_correct": self.is_correct,
-            "main_code": self.main_code, "sample_codes": self.sample_codes,
+            "main_code": self.main_code, "sample_codes": self.sample_codes, "n_inputs": self.n_inputs,
         }
 
     @classmethod
@@ -122,7 +123,7 @@ class CodeResult:
             scores = {}
         return cls(
             task_id=d["task_id"], scores=scores, is_correct=d["is_correct"],
-            main_code=d["main_code"], sample_codes=d["sample_codes"],
+            main_code=d["main_code"], sample_codes=d["sample_codes"], n_inputs=d.get("n_inputs", 0),
         )
 ```
 
@@ -543,6 +544,7 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
         is_correct=is_correct(main_outputs, expected),
         main_code=main_code,
         sample_codes=sample_codes,
+        n_inputs=len(problem.inputs),
     )
 
 
