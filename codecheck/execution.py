@@ -12,6 +12,12 @@ import time
 # every worker hashes identically. setdefault: honor an explicit user override.
 os.environ.setdefault("PYTHONHASHSEED", "0")
 
+# Spawn + import + first-SIGALRM-delivery slack added to the per-input `timeout` to form
+# the parent-side idle deadline. The in-worker SIGALRM is best-effort (it cannot preempt
+# C-level calls or code that swallows the injected TimeoutError), so the parent treats
+# "no new result within timeout + this grace" as a wedged input and kills the worker.
+_PROGRESS_GRACE = 2.0
+
 
 def _worker(code: str, entry_point: str, args: list, q) -> None:
     try:
@@ -31,16 +37,20 @@ def run_in_subprocess(code: str, entry_point: str, args: list, timeout: float = 
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
     p = ctx.Process(target=_worker, args=(code, entry_point, list(args), q))
+    p.daemon = True  # a hung worker must never outlive / block the parent's exit
     p.start()
     p.join(timeout)
     if p.is_alive():
         p.kill()  # SIGKILL: untrusted code may ignore SIGTERM (terminate)
         p.join()
+        q.close()
         return ("timeout", None)
     try:
         return q.get_nowait()
     except Exception:
         return ("err", None)
+    finally:
+        q.close()
 
 
 def _batch_worker(code: str, entry_point: str, args_list: list, timeout: float, q) -> None:
@@ -90,19 +100,27 @@ def run_batch_in_subprocess(code: str, entry_point: str, args_list: list, timeou
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
     p = ctx.Process(target=_batch_worker, args=(code, entry_point, args_list, timeout, q))
+    p.daemon = True  # a hung worker must never outlive / block the parent's exit
     p.start()
     outcomes: list = []
-    deadline = time.monotonic() + timeout * n + 5.0  # generous overall ceiling
+    # Idle deadline, reset on every result: the in-worker SIGALRM should yield one outcome
+    # per input within `timeout`, so a gap longer than timeout + grace means the current
+    # input has wedged the worker (C-level call or swallowed TimeoutError). Kill it then,
+    # bounding a stuck input to ~timeout instead of the old timeout*n whole-batch ceiling.
+    idle_budget = timeout + _PROGRESS_GRACE
+    last_progress = time.monotonic()
     while len(outcomes) < n:
         try:
             outcomes.append(q.get(timeout=0.2))
+            last_progress = time.monotonic()
         except _queue.Empty:
-            if not p.is_alive() or time.monotonic() > deadline:
+            if not p.is_alive() or time.monotonic() - last_progress > idle_budget:
                 break
     killed = p.is_alive()
     if killed:
         p.kill()
     p.join()
+    q.close()
     # A worker that produced nothing and exited non-zero never reached the run loop:
     # an infrastructure failure (e.g. spawn/bootstrap error when the caller is not under
     # `if __name__ == "__main__"`), not untrusted-code errors. Surface it loudly instead
