@@ -26,7 +26,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
     generator = CodeGenerator(client, model=model)
 
-    problems = load_mbpp_plus(limit=args.limit)
+    problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
     results = run_dataset(problems, generator, run_in_subprocess, n_samples=args.n, timeout=args.timeout)
     save_results(results, args.output)
     print(f"Saved {len(results)} results to {args.output}")
@@ -52,7 +52,10 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--n", type=int, default=5, help="samples per problem (T=1)")
     run_p.add_argument("--timeout", type=float, default=5.0, help="per-call execution timeout (s)")
     run_p.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")
-    run_p.set_defaults(func=_cmd_run)
+    run_p.add_argument("--no-random", dest="randomize", action="store_false",
+                       help="use the first --limit problems in dataset order instead of a random sample")
+    run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
+    run_p.set_defaults(func=_cmd_run, randomize=True)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")
     eval_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")

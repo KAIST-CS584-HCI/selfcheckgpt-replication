@@ -87,6 +87,12 @@ python run_codecheck.py evaluate
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
+- `--seed` — random seed for a reproducible problem sample
+- `--no-random` — use the first `--limit` problems in order instead of a random sample
+
+By default the problems are sampled at random (use `--seed` to reproduce a sample, or
+`--no-random` for the first `--limit` in dataset order). The saved results record which
+problems were used, so any run is reproducible from its output.
 
 **`evaluate` parameters**
 
