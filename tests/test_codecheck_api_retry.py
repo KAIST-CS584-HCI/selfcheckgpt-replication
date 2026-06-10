@@ -54,3 +54,55 @@ def test_retry_is_logged(caplog):
     with caplog.at_level("WARNING", logger="codecheck.api"):
         chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False, attempts=3)
     assert any("transient API error" in r.message for r in caplog.records)
+
+
+import threading
+
+
+class StarvingClient:
+    """Blocks longer than the wall-clock call_timeout on the first `slow_times`
+    calls (simulating a request OpenRouter accepts but never finishes under load),
+    then returns a normal response. Blocks via Event.wait so the autouse sleep patch
+    (which targets time.sleep) does not neutralize the simulated stall."""
+
+    def __init__(self, slow_times, block_seconds=2.0):
+        self.slow_times = slow_times
+        self.block_seconds = block_seconds
+        self.calls = 0
+        self._lock = threading.Lock()
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
+
+    def _create(self, **kwargs):
+        with self._lock:
+            self.calls += 1
+            n = self.calls
+        if n <= self.slow_times:
+            threading.Event().wait(self.block_seconds)
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))])
+
+
+def test_wall_clock_timeout_abandons_starved_call_and_retries():
+    # Every attempt starves past the call_timeout -> each is abandoned and retried,
+    # finally exhausting. Without a wall-clock cap this would block on the first call.
+    c = StarvingClient(slow_times=99, block_seconds=2.0)
+    with pytest.raises(APIRetriesExhausted):
+        chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False,
+                          attempts=3, call_timeout=0.05)
+    assert c.calls == 3
+
+
+def test_retry_recovers_when_a_later_call_returns_fast():
+    # First call starves; the retry returns immediately.
+    c = StarvingClient(slow_times=1, block_seconds=2.0)
+    resp = chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False,
+                             attempts=3, call_timeout=0.05)
+    assert resp.choices[0].message.content == "ok"
+    assert c.calls >= 2
+
+
+def test_wall_clock_timeout_is_logged(caplog):
+    c = StarvingClient(slow_times=1, block_seconds=2.0)
+    with caplog.at_level("WARNING", logger="codecheck.api"):
+        chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False,
+                          attempts=3, call_timeout=0.05)
+    assert any("wall-clock" in r.message for r in caplog.records)
