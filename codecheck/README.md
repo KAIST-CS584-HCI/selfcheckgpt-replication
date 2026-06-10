@@ -88,9 +88,18 @@ method, so the methods are always compared on identical data.
 - `exec` (default) — behavioral I/O divergence across samples (described above).
 - `prompt` — LLM-as-judge: per sample, is its behavior consistent with the main
   implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
-- `ast` — structural divergence: mean `1 − Jaccard` of AST node-type fingerprints,
-  rename- and literal-invariant. No API cost.
+- `ast` — structural divergence between the main and each sample, rename- and
+  literal-invariant, averaged over the N samples. No API cost. The metric is chosen with
+  `--ast-metric` (below).
 - `all` — runs exec + prompt + ast; `evaluate` then prints a three-way comparison.
+
+**`--ast-metric {jaccard,ted}`** (only used when `--method` includes `ast`):
+
+- `ted` (default) — tree edit distance (Zhang-Shasha, via `zss`) between the AST shapes.
+  Structure-aware: two programs with the same node-type counts but different nesting score
+  apart. Normalized to `[0,1]`.
+- `jaccard` — `1 − multiset Jaccard` of AST node-type counts. Cheaper but count-based: it
+  ignores nesting/ordering, so it is blind to structural differences `ted` catches.
 
 The judge reuses `OPENROUTER_MODEL`. After a run the CLI prints the judge parse-failure
 count (if prompt ran) and the AST parse-failure count (if ast ran).
@@ -164,6 +173,7 @@ python run_codecheck.py evaluate
 - `--limit` — how many problems to use
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
 - `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, or `all`
+- `--ast-metric` — AST metric when `ast` runs: `ted` (default) or `jaccard`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample

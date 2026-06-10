@@ -53,6 +53,25 @@ def test_method_all_is_accepted_by_parser():
     assert args.method == "all"
 
 
+def test_ast_metric_defaults_to_ted():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run"])
+    assert args.ast_metric == "ted"
+
+
+def test_ast_metric_accepts_jaccard():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--ast-metric", "jaccard"])
+    assert args.ast_metric == "jaccard"
+
+
+def test_ast_metric_rejects_unknown():
+    import pytest
+    from run_codecheck import build_parser
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["run", "--ast-metric", "bogus"])
+
+
 def test_format_evaluation_lists_each_method():
     from run_codecheck import format_evaluation
     from codecheck.models import CodeResult

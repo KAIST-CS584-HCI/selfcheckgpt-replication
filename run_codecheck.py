@@ -56,12 +56,13 @@ def _cmd_run(args: argparse.Namespace) -> None:
     else:
         methods = {args.method}
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
-    ast_scorer = ASTScorer() if "ast" in methods else None
+    ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
 
     _setup_run_logging(verbose=args.verbose)
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
+    ast_note = f", ast-metric={args.ast_metric}" if ast_scorer is not None else ""
     print(f"Running methods={sorted(methods)} on {len(problems)} problems "
-          f"(n={args.n}, timeout={args.timeout}s, model={model})")
+          f"(n={args.n}, timeout={args.timeout}s, model={model}{ast_note})")
     try:
         results = run_dataset(problems, generator, run_batch_in_subprocess,
                               n_samples=args.n, timeout=args.timeout,
@@ -132,6 +133,9 @@ def build_parser() -> argparse.ArgumentParser:
                        help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
     run_p.add_argument("--method", choices=["exec", "prompt", "ast", "all"], default="exec",
                        help="which consistency scorer(s) to run")
+    run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="ted",
+                       help="AST structural metric: ted (tree edit distance, default) or "
+                            "jaccard (bag-of-node-types). Only used when --method includes ast")
     run_p.set_defaults(func=_cmd_run, randomize=True)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")
