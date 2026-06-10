@@ -30,6 +30,10 @@ class CodeGenerator:
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
+            # Disable chain-of-thought: reasoning models (e.g. qwen3) otherwise
+            # spend thousands of hidden tokens on a trivial function — ~20x slower
+            # — and we discard the reasoning text anyway. OpenRouter extension.
+            extra_body={"reasoning": {"enabled": False}},
         )
         if not resp.choices:
             return ""

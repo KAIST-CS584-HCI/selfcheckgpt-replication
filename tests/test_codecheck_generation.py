@@ -32,3 +32,9 @@ def test_generate_uses_temperatures_0_and_1():
     assert len(samples) == 3
     temps = [c["temperature"] for c in client.calls]
     assert temps == [0.0, 1.0, 1.0, 1.0]
+
+
+def test_generate_disables_reasoning():
+    client = FakeClient()
+    CodeGenerator(client, model="m").generate(PROBLEM, n_samples=2)
+    assert all(c["extra_body"] == {"reasoning": {"enabled": False}} for c in client.calls)
