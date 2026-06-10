@@ -7,7 +7,7 @@ from pathlib import Path
 from score import load_environment  # reuse existing env loader
 
 REPO_ROOT = Path(__file__).resolve().parent
-DEFAULT_OUTPUT = REPO_ROOT / "output" / "codecheck-exec.json"
+DEFAULT_OUTPUT = REPO_ROOT / "output" / "codecheck.json"
 
 
 def _cmd_run(args: argparse.Namespace) -> None:
@@ -61,10 +61,11 @@ def format_evaluation(results) -> str:
     lines = [f"n={n}  incorrect={n_incorrect}  correct={n - n_incorrect}",
              f"baseline (incorrect prevalence): {prevalence_baseline(results):.4f}", ""]
     for method in _methods_present(results):
-        auc_pr = auc_pr_detect_incorrect(results, method=method)
-        lines.append(f"[{method}] AUC-PR (detect incorrect): {auc_pr:.4f}")
+        method_results = [r for r in results if method in r.scores]
+        auc_pr = auc_pr_detect_incorrect(method_results, method=method)
+        lines.append(f"[{method}] AUC-PR (detect incorrect): {auc_pr:.4f}  (n={len(method_results)})")
         lines.append(f"  {method} score histogram (bin: correct/incorrect):")
-        for b in score_histogram(results, method=method, bins=10):
+        for b in score_histogram(method_results, method=method, bins=10):
             lines.append(f"    [{b['lo']:.1f},{b['hi']:.1f}) {b['correct']}/{b['incorrect']}")
         lines.append("")
     return "\n".join(lines).rstrip()
@@ -81,7 +82,7 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="SelfCheck-Exec on MBPP+ (iteration 1).")
+    parser = argparse.ArgumentParser(description="SelfCheck for code (Exec + Prompt) on MBPP+.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     run_p = sub.add_parser("run", help="generate, score, and save")

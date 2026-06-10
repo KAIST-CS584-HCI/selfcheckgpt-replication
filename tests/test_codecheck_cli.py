@@ -52,3 +52,15 @@ def test_format_evaluation_lists_each_method():
     assert "exec" in text and "prompt" in text
     assert "AUC-PR" in text
     assert "baseline" in text.lower()
+
+
+def test_format_evaluation_handles_mixed_method_results():
+    from run_codecheck import format_evaluation
+    from codecheck.models import CodeResult
+    # one record has both methods, one is exec-only -> must not raise
+    results = [
+        CodeResult("a", {"exec": 0.9, "prompt": 0.8}, False, "m", []),
+        CodeResult("b", {"exec": 0.1}, True, "m", []),
+    ]
+    text = format_evaluation(results)        # would KeyError before the fix
+    assert "exec" in text and "prompt" in text
