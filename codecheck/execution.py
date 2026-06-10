@@ -1,7 +1,16 @@
 from __future__ import annotations
+import math
 import multiprocessing as mp
+import os
 import queue as _queue
 import time
+
+# Spawned workers compute outputs whose ordering can depend on string/bytes hashing
+# (e.g. `tuple(set(...))`). Each spawn is a fresh interpreter with a random hash seed by
+# default, so identical code can order a set differently per process — inflating the
+# consistency score and corrupting the canonical correctness label. Pin a fixed seed so
+# every worker hashes identically. setdefault: honor an explicit user override.
+os.environ.setdefault("PYTHONHASHSEED", "0")
 
 
 def _worker(code: str, entry_point: str, args: list, q) -> None:
@@ -90,9 +99,19 @@ def run_batch_in_subprocess(code: str, entry_point: str, args_list: list, timeou
         except _queue.Empty:
             if not p.is_alive() or time.monotonic() > deadline:
                 break
-    if p.is_alive():
+    killed = p.is_alive()
+    if killed:
         p.kill()
-        p.join()
+    p.join()
+    # A worker that produced nothing and exited non-zero never reached the run loop:
+    # an infrastructure failure (e.g. spawn/bootstrap error when the caller is not under
+    # `if __name__ == "__main__"`), not untrusted-code errors. Surface it loudly instead
+    # of silently reporting every input as a timeout.
+    if not outcomes and not killed and p.exitcode not in (0, None):
+        raise RuntimeError(
+            f"execution worker exited with code {p.exitcode} before producing any output "
+            '(spawn/bootstrap failure — is the caller under `if __name__ == "__main__"`?)'
+        )
     outcomes.extend(("timeout", None) for _ in range(n - len(outcomes)))
     return outcomes
 
@@ -101,6 +120,8 @@ def _canonical(value, atol: float):
     if isinstance(value, bool):
         return value
     if isinstance(value, float):
+        if not math.isfinite(value):
+            return value
         return round(value / atol) if atol else value
     if isinstance(value, (list, tuple)):
         return tuple(_canonical(v, atol) for v in value)
