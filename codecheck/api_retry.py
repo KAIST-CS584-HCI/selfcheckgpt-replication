@@ -19,6 +19,29 @@ class APIRetriesExhausted(Exception):
     """Raised when transient API failures persisted across every retry attempt."""
 
 
+def _log_response(resp, elapsed: float) -> None:
+    """Surface the return-value clues from a successful completion.
+
+    Per-call detail (latency, finish_reason, content size, completion tokens) goes to
+    DEBUG so a normal run stays quiet; the two anomalies worth seeing by default —
+    a truncated response (`finish_reason` other than `stop`) and empty content — warn.
+    """
+    choice = resp.choices[0] if getattr(resp, "choices", None) else None
+    finish = getattr(choice, "finish_reason", None)
+    message = getattr(choice, "message", None)
+    content = (getattr(message, "content", None) or "") if message else ""
+    usage = getattr(resp, "usage", None)
+    completion_tokens = getattr(usage, "completion_tokens", None) if usage else None
+
+    logger.debug("API ok in %.1fs: finish=%s chars=%d completion_tokens=%s",
+                 elapsed, finish, len(content), completion_tokens)
+    if finish not in (None, "stop"):
+        logger.warning("API finish_reason=%s after %.1fs: output likely truncated/incomplete",
+                       finish, elapsed)
+    if not content:
+        logger.warning("API returned empty content after %.1fs (finish=%s)", elapsed, finish)
+
+
 def chat_with_retries(client, *, model, messages, temperature, think,
                       attempts: int = 4, base_delay: float = 0.8, call_timeout: float = 60.0):
     """One chat completion, retried on transient failures with exponential backoff.
@@ -38,6 +61,7 @@ def chat_with_retries(client, *, model, messages, temperature, think,
     executor = ThreadPoolExecutor(max_workers=attempts, thread_name_prefix="chat")
     try:
         for attempt in range(attempts):
+            started = time.monotonic()
             future = executor.submit(
                 client.chat.completions.create,
                 model=model,
@@ -46,7 +70,7 @@ def chat_with_retries(client, *, model, messages, temperature, think,
                 extra_body={"reasoning": {"enabled": think}},
             )
             try:
-                return future.result(timeout=call_timeout)
+                resp = future.result(timeout=call_timeout)
             except FuturesTimeout as exc:
                 last = exc
                 future.cancel()
@@ -59,6 +83,9 @@ def chat_with_retries(client, *, model, messages, temperature, think,
                     logger.warning("transient API error %s; retry %d/%d after %.1fs",
                                    type(exc).__name__, attempt + 1, attempts - 1, delay)
                     time.sleep(delay)
+            else:
+                _log_response(resp, time.monotonic() - started)
+                return resp
         logger.error("API call failed after %d attempts (%s)", attempts, type(last).__name__)
         raise APIRetriesExhausted(repr(last)) from last
     finally:

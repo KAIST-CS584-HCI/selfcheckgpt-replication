@@ -168,6 +168,9 @@ python run_codecheck.py evaluate
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample
 - `--no-random` — use the first `--limit` problems in order instead of a random sample
+- `-v` / `--verbose` — log per-call API detail (latency, `finish_reason`, completion tokens)
+  at DEBUG. Without it, a run still warns on truncated (`finish_reason != stop`) or empty
+  responses.
 
 By default the problems are sampled at random (use `--seed` to reproduce a sample, or
 `--no-random` for the first `--limit` in dataset order). The saved results record which

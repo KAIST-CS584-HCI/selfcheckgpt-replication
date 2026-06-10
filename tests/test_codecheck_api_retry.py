@@ -106,3 +106,49 @@ def test_wall_clock_timeout_is_logged(caplog):
         chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False,
                           attempts=3, call_timeout=0.05)
     assert any("wall-clock" in r.message for r in caplog.records)
+
+
+class ResponseClient:
+    """Returns one configurable chat completion (finish_reason / content / usage)."""
+
+    def __init__(self, content="ok", finish_reason="stop", completion_tokens=12):
+        usage = SimpleNamespace(completion_tokens=completion_tokens)
+        self._resp = SimpleNamespace(
+            choices=[SimpleNamespace(
+                finish_reason=finish_reason,
+                message=SimpleNamespace(content=content),
+            )],
+            usage=usage,
+        )
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=lambda **kw: self._resp))
+
+
+def test_successful_call_logs_return_value_clues_at_debug(caplog):
+    c = ResponseClient(content="def f(): return 1", finish_reason="stop", completion_tokens=7)
+    with caplog.at_level("DEBUG", logger="codecheck.api"):
+        chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False)
+    debug = [r.message for r in caplog.records if r.levelname == "DEBUG"]
+    assert any("finish=stop" in m and "completion_tokens=7" in m for m in debug)
+
+
+def test_truncated_finish_reason_warns(caplog):
+    c = ResponseClient(content="def f(): retur", finish_reason="length")
+    with caplog.at_level("WARNING", logger="codecheck.api"):
+        chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False)
+    assert any("truncated" in r.message and "length" in r.message
+               for r in caplog.records if r.levelname == "WARNING")
+
+
+def test_empty_content_warns(caplog):
+    c = ResponseClient(content="", finish_reason="stop")
+    with caplog.at_level("WARNING", logger="codecheck.api"):
+        chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False)
+    assert any("empty content" in r.message
+               for r in caplog.records if r.levelname == "WARNING")
+
+
+def test_clean_success_emits_no_warning(caplog):
+    c = ResponseClient(content="def f(): return 1", finish_reason="stop")
+    with caplog.at_level("WARNING", logger="codecheck.api"):
+        chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False)
+    assert [r for r in caplog.records if r.levelname == "WARNING"] == []

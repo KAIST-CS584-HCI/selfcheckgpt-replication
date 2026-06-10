@@ -22,11 +22,13 @@ class _TqdmLoggingHandler(logging.Handler):
             self.handleError(record)
 
 
-def _setup_run_logging() -> None:
+def _setup_run_logging(verbose: bool = False) -> None:
     handler = _TqdmLoggingHandler()
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%H:%M:%S"))
     root = logging.getLogger("codecheck")
-    root.setLevel(logging.INFO)
+    # INFO keeps a normal run quiet apart from the per-call anomaly warnings (truncated /
+    # empty responses); --verbose drops to DEBUG for the per-call latency/finish/token detail.
+    root.setLevel(logging.DEBUG if verbose else logging.INFO)
     root.handlers = [handler]
     root.propagate = False
 
@@ -56,7 +58,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
     ast_scorer = ASTScorer() if "ast" in methods else None
 
-    _setup_run_logging()
+    _setup_run_logging(verbose=args.verbose)
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
     print(f"Running methods={sorted(methods)} on {len(problems)} problems "
           f"(n={args.n}, timeout={args.timeout}s, model={model})")
@@ -126,6 +128,8 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
     run_p.add_argument("--think", action="store_true",
                        help="enable model chain-of-thought reasoning (much slower; default off)")
+    run_p.add_argument("-v", "--verbose", action="store_true",
+                       help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
     run_p.add_argument("--method", choices=["exec", "prompt", "ast", "all"], default="exec",
                        help="which consistency scorer(s) to run")
     run_p.set_defaults(func=_cmd_run, randomize=True)
