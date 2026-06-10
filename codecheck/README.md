@@ -81,5 +81,16 @@ python run_codecheck.py run --limit 10 --n 5 --timeout 5
 python run_codecheck.py evaluate
 ```
 
+**`run` parameters**
+
+- `--limit` — how many problems to use
+- `--n` — sampled implementations per problem (extra tries at temperature 1)
+- `--timeout` — max seconds per code execution before it's killed
+- `--output` — where to save the results file
+
+**`evaluate` parameters**
+
+- `--results` — results file to score
+
 Generation calls a hosted model, so it needs an API key in a local `.env` file. Evaluation
 runs offline on the saved results.
