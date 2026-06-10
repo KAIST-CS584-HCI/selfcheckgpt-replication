@@ -57,3 +57,40 @@ def test_batch_timeout_isolates_per_input():
 def test_batch_module_load_failure_marks_all():
     out = run_batch_in_subprocess("def broken(:\n", "f", [[1], [2]], timeout=2.0)
     assert [o[0] for o in out] == ["err", "err"]
+
+
+# String hashing is seed-dependent, so `set` iteration order differs across separately
+# spawned interpreters unless the hash seed is pinned (execution.py pins PYTHONHASHSEED).
+# Without the pin, identical code returns differently-ordered tuples per process, which
+# inflates the consistency score and mislabels correct code. Two spawns must now agree.
+SET_ORDER = "def f(xs):\n    return tuple(set(xs))\n"
+
+
+def test_batch_set_ordering_is_deterministic_across_spawns():
+    inp = [["banana", "apple", "cherry", "date", "fig", "grape", "kiwi", "lemon"]]
+    a = run_batch_in_subprocess(SET_ORDER, "f", inp, timeout=5.0)
+    b = run_batch_in_subprocess(SET_ORDER, "f", inp, timeout=5.0)
+    assert a == b
+
+
+def test_canonical_mixed_type_set_is_order_independent():
+    # untrusted code may return a set of mixed types; sorted() would raise str<int.
+    a = normalize_output(("ok", {1, "x", 2}), atol=1e-6)
+    b = normalize_output(("ok", {"x", 2, 1}), atol=1e-6)  # same set, different literal order
+    assert a == b
+
+
+def test_canonical_mixed_type_dict_keys():
+    a = normalize_output(("ok", {1: "a", "k": 2}), atol=0)
+    b = normalize_output(("ok", {"k": 2, 1: "a"}), atol=0)
+    assert a == b
+
+
+def test_batch_raises_on_worker_crash_before_output():
+    # os._exit(1) during module exec: the worker dies before any q.put and exits non-zero,
+    # which is an infra/bootstrap failure, not a code error -> must surface, not silently
+    # return all-timeout.
+    import pytest
+    crash = "import os\nos._exit(1)\n"
+    with pytest.raises(RuntimeError):
+        run_batch_in_subprocess(crash, "f", [[1], [2]], timeout=2.0)

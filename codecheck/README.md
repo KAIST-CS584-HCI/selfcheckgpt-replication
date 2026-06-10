@@ -10,10 +10,16 @@ extra samples (at temperature 1). From these we get two things: a **consistency 
 (how much the samples agree with the main answer) and a **ground-truth correctness label**
 (whether the main answer actually works).
 
-## How the method works
+## How the methods work
 
-**SelfCheck-Exec** measures consistency through *behavior*: do the implementations produce
-the same outputs when given the same inputs?
+Both variants share the same generation and ground-truth steps; they differ only in how
+they measure consistency between the main answer and the samples. Both produce a score on
+the same scale: **higher = more likely hallucinated (incorrect)**.
+
+### SelfCheck-Exec — behavioral consistency
+
+Measures consistency through *behavior*: do the implementations produce the same outputs
+when given the same inputs?
 
 1. **Generate.** Ask the model for one main implementation and several sampled
    implementations of the same problem.
@@ -30,14 +36,55 @@ the same outputs when given the same inputs?
 6. **Evaluate.** Across many problems, check how well the consistency score predicts the
    incorrect answers.
 
-Two other variants are planned but not built yet: one comparing the *structure* of the
-code, and one asking a separate model to judge whether the samples behave like the main
-answer.
+### SelfCheck-Prompt — LLM-as-judge
 
-## Dataset in use: MBPP+
+Measures consistency by *asking a model* instead of running the code. For each sampled
+implementation, a judge LLM is shown the main implementation and that sample and asked
+whether the sample's behavior is consistent with the main one.
 
-MBPP+ is a set of Python programming problems, each shipped with a reference solution and
-a rich suite of test inputs (an extended version of the MBPP benchmark). The test inputs
+1. **Generate.** Same as Exec — one main implementation plus several samples.
+2. **Judge each sample.** For every sample, ask the judge: is its behavior consistent with
+   the main implementation? It answers Yes, No, or N/A with a one-sentence justification.
+   The N judgments run concurrently.
+3. **Map answers.** Yes (consistent) → `0.0`, No (inconsistent) → `1.0`, N/A → `0.5`. An
+   unparseable answer counts as `0.5` and is tallied as a parse failure.
+4. **Score consistency.** Average the per-sample values: low when the judge keeps saying the
+   samples match the main answer, high when it flags disagreement.
+5. **Check correctness / evaluate.** Identical to Exec — the ground-truth label still comes
+   from running the reference solution; the judge never sees it.
+
+The judge needs no execution, so it can flag cases where the code runs but is subtly wrong —
+complementary to Exec, which is blind to samples that consistently agree on the *same* wrong
+behavior. The two run on the **same generated implementations**, so their scores are directly
+comparable.
+
+## Methods
+
+`run --method {exec,prompt,both}` selects the consistency scorer(s). A single run
+generates each problem's implementations once and scores them with every selected
+method, so Exec and Prompt are always compared on identical data.
+
+- `exec` (default) — behavioral I/O divergence across samples (described above).
+- `prompt` — LLM-as-judge: per sample, is its behavior consistent with the main
+  implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
+- `both` — runs both; `evaluate` then prints a per-method comparison.
+
+The judge reuses `OPENROUTER_MODEL`. After a judged run the CLI prints the judge
+parse-failure count.
+
+### Standing run/report protocol (from iteration-1 findings)
+
+- Sample problems **randomly across the full set** with a capable model — never the
+  low-numbered slice (it is unrepresentatively easy and yields a single class).
+- `evaluate` prints, per method, the AUC-PR, the **prevalence baseline** (the PR
+  no-skill floor), and a **per-class score histogram**. Read AUC-PR against the
+  baseline, not in isolation; the histogram exposes tie pile-ups at 0 that make
+  the scalar fragile.
+
+## Dataset in use: MBPP+ (378 problems)
+
+MBPP+ is a set of 378 Python programming problems, each shipped with a reference solution
+and a rich suite of test inputs (an extended version of the MBPP benchmark). The test inputs
 double as the shared inputs we run every implementation on.
 
 Each problem gives us:
@@ -85,6 +132,7 @@ python run_codecheck.py evaluate
 
 - `--limit` — how many problems to use
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
+- `--method` — consistency scorer: `exec` (default), `prompt`, or `both`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample

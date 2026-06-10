@@ -1,0 +1,392 @@
+[
+  {
+    "task_id": "Mbpp/123",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def amicable_numbers_sum(n):\n    def sum_of_divisors(num):\n        return sum(i for i in range(1, num) if num % i == 0)\n\n    amicable_sum = for i in range(1, n):\n        if sum_of_divisors(i) < n and sum_of_divisors(sum_of_divisors(i)) == i:\n            amicable_sum += sum_of_divisors(i)\n    return amicable_sum",
+    "sample_codes": [
+      "def amicable_numbers_sum(n):\n    def sum_of_divisors(num):\n        return sum(i for i in range(1, num) if num % i == 0)\n\n    amicable_sum = for i in range(1, n):\n        if sum_of_divisors(i) < n and sum_of_divisors(sum_of_divisors(i)) == i:\n            amicable_sum += sum_of_divisors(i)\n    return amicable_sum",
+      "def amicable_numbers_sum(n):\n    def sum_of_divisors(num):\n        return sum(i for i in range(1, num) if num % i == 0)\n\n    amicable_sum = for i in range(1, n):\n        if sum_of_divisors(i) < n and sum_of_divisors(sum_of_divisors(i)) == i:\n            amicable_sum += sum_of_divisors(i)\n    return amicable_sum",
+      "def amicable_numbers_sum(n):\n    def sum_of_divisors(num):\n        return sum(i for i in range(1, num) if num % i == 0)\n\n    amicable_sum = for i in range(1, n):\n        if sum_of_divisors(i) < n and sum_of_divisors(sum_of_divisors(i)) == i:\n            amicable_sum += sum_of_divisors(i)\n    return amicable_sum",
+      "def amicable_numbers_sum(n):\n    def sum_of_divisors(num):\n        return sum(i for i in range(1, num) if num % i == 0)\n\n    amicable_sum = for i in range(1, n):\n        if sum_of_divisors(i) < n and sum_of_divisors(sum_of_divisors(i)) == i:\n            amicable_sum += sum_of_divisors(i)\n    return amicable_sum",
+      "def amicable_numbers_sum(n):\n    def sum_of_divisors(num):\n        return sum(i for i in range(1, num) if num % i == 0)\n\n    amicable_sum = for i in range(1, n):\n        if sum_of_divisors(i) < n and sum_of_divisors(sum_of_divisors(i)) == i:\n            amicable_sum += sum_of_divisors(i)\n    return amicable_sum"
+    ]
+  },
+  {
+    "task_id": "Mbpp/629",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]",
+    "sample_codes": [
+      "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]",
+      "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]",
+      "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]",
+      "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]",
+      "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]"
+    ]
+  },
+  {
+    "task_id": "Mbpp/75",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def find_tuples(tuples, k):\n    return [t for t in tuples if all(i % k == 0 for i in t)]",
+    "sample_codes": [
+      "def find_tuples(tuples, k):\n    return [t for t in tuples if all(i % k == 0 for i in t)]",
+      "def find_tuples(tuples, k):\n    return [t for t in tuples if all(i % k == 0 for i in t)]",
+      "def find_tuples(tuples, k):\n    return [t for t in tuples if all(i % k == 0 for i in t)]",
+      "def find_tuples(tuples, k):\n    return [t for t in tuples if all(i % k == 0 for i in t)]",
+      "def find_tuples(tuples, k):\n    return [t for t in tuples if all(i % k == 0 for i in t)]"
+    ]
+  },
+  {
+    "task_id": "Mbpp/268",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def find_star_num(n):\n    return 6*n - n*(n-1)",
+    "sample_codes": [
+      "def find_star_num(n):\n    return 6*n - n*(n-1)",
+      "def find_star_num(n):\n    return 6*n - n*(n-1)",
+      "def find_star_num(n):\n    return 6*n - n*(n-1)",
+      "def find_star_num(n):\n    return 6*n - n*(n-1)",
+      "def find_star_num(n):\n    return 6*n - n*(n-1)"
+    ]
+  },
+  {
+    "task_id": "Mbpp/108",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def merge_sorted_list(list",
+    "sample_codes": [
+      "def merge_sorted_list(list",
+      "def merge_sorted_list(list",
+      "def merge_sorted_list(list",
+      "def merge_sorted_list(list",
+      "def merge_sorted_list(list"
+    ]
+  },
+  {
+    "task_id": "Mbpp/581",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def surface_Area(base_edge, height):\n    return 4 * (base_edge ** 2) +",
+    "sample_codes": [
+      "def surface_Area(base_edge, height):\n    return 4 * (base_edge ** 2) +",
+      "def surface_Area(base_edge, height):\n    return 4 * (base_edge ** 2) +",
+      "def surface_Area(base_edge, height):\n    return 4 * (base_edge ** 2) +",
+      "def surface_Area(base_edge, height):\n    slant_height = (base_edge**2 + height**2)**.",
+      "def surface_Area(base_edge, height):\n    return 4 * (base_edge ** 2) +"
+    ]
+  },
+  {
+    "task_id": "Mbpp/479",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def first_Digit(n):\n    return int(str(n)[0])",
+    "sample_codes": [
+      "def first_Digit(n):\n    return int(str(n)[0])",
+      "def first_Digit(n):\n    return int(str(n)[0])",
+      "def first_Digit(n):\n    return int(str(n)[0])",
+      "def first_Digit(n):\n    return int(str(n)[0])",
+      "def first_Digit(n):\n    return int(str(n)[0])"
+    ]
+  },
+  {
+    "task_id": "Mbpp/565",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def split(s):\n    return list(s)",
+    "sample_codes": [
+      "def split(s):\n    return list(s)",
+      "def split(s):\n    return list(s)",
+      "def split(s):\n    return list(s)",
+      "def split(s):\n    return list(s)",
+      "def split(s):\n    return list(s)"
+    ]
+  },
+  {
+    "task_id": "Mbpp/755",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def second_smallest(nums):\n    if len(nums) < 2:\n        return None\n    nums.sort()\n    return nums[1]",
+    "sample_codes": [
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        return None\n    nums.sort()\n    return nums[1]",
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        return None\n    nums.sort()\n    return nums[1]",
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        return None\n    nums.sort()\n    return nums[1]",
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        return None\n    nums.sort()\n    return nums[1]",
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        return None\n    nums.sort()\n    return nums[1]"
+    ]
+  },
+  {
+    "task_id": "Mbpp/430",
+    "exec_score": 0.4,
+    "is_correct": false,
+    "main_code": "def parabola_directrix(a, h, k):\n    return -((a * (h - h)) + k)",
+    "sample_codes": [
+      "def parabola_directrix(a, h, k):\n    return -(k + (",
+      "def parabola_directrix(a, h, k):\n    return -((a * (h - h)) + k)",
+      "def parabola_directrix(a, h, k):\n    return -((a * (h - h)) + k)",
+      "def parabola_directrix(a, h, k):\n    return -((a * (h - h)) + k)",
+      "def parabola_directrix(a, h, k):\n    return -(k + ("
+    ]
+  },
+  {
+    "task_id": "Mbpp/237",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def check_occurences(tuples_list):\n    occurences_dict =",
+    "sample_codes": [
+      "def check_occurences(tuples_list):\n    occurences_dict =",
+      "def check_occurences(tuples_list):\n    occurences_dict =",
+      "def check_occurences(tuples_list):\n    occurences_dict =",
+      "def check_occurences(tuples_list):\n    occurences_dict =",
+      "def check_occurences(tuples_list):\n    occurences_dict ="
+    ]
+  },
+  {
+    "task_id": "Mbpp/95",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def Find_Min_Length(lists):\n    return min(len(i) for i in lists)",
+    "sample_codes": [
+      "def Find_Min_Length(lists):\n    return min(len(sublist) for sublist in lists)",
+      "def Find_Min_Length(lists):\n    return min(len(sublist) for sublist in lists)",
+      "def Find_Min_Length(lists):\n    return min(len(sublist) for sublist in lists)",
+      "def Find_Min_Length(lists):\n    return min(len(i) for i in lists)",
+      "def Find_Min_Length(lists):\n    return min(len(i) for i in lists)"
+    ]
+  },
+  {
+    "task_id": "Mbpp/577",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "```python\ndef last_Digit_Factorial(n):\n    result =",
+    "sample_codes": [
+      "```python\ndef last_Digit_Factorial(n):\n    result =",
+      "```python\ndef last_Digit_Factorial(n):\n    result =",
+      "```python\ndef last_Digit_Factorial(n):\n    result =",
+      "```python\ndef last_Digit_Factorial(n):\n    result =",
+      "```python\ndef last_Digit_Factorial(n):\n    result ="
+    ]
+  },
+  {
+    "task_id": "Mbpp/20",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def is_woodall(n):\n    s = str(n)\n    return s == s[::-1]",
+    "sample_codes": [
+      "def is_woodall(n):\n    s = str(n)\n    return s == s[::-1]",
+      "def is_woodall(n):\n    s = str(n)\n    return s == s[::-1]",
+      "def is_woodall(n):\n    s = str(n)\n    return s == s[::-1]",
+      "def is_woodall(n):\n    s = str(n)\n    return s == s[::-1]",
+      "def is_woodall(n):\n    s = str(n)\n    return s == s[::-1]"
+    ]
+  },
+  {
+    "task_id": "Mbpp/437",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def remove_odd(s):\n    return \"\".join([c for c in s if int(c) % 2 == 0])",
+    "sample_codes": [
+      "def remove_odd(s):\n    return \"\".join([c for c in s if int(c) % 2 == 0])",
+      "def remove_odd(s):\n    return \"\".join([c for c in s if int(c) % 2 == 0])",
+      "def remove_odd(s):\n    return \"\".join([c for c in s if int(c) % 2 == 0])",
+      "def remove_odd(s):\n    return \"\".join([c for c in s if int(c) % 2 == 0])",
+      "def remove_odd(s):\n    return \"\".join([c for c in s if int(c) % 2 == 0])"
+    ]
+  },
+  {
+    "task_id": "Mbpp/470",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def add_pairwise(t):\n    return tuple(a + b for a, b in zip(t, t[1:]))",
+    "sample_codes": [
+      "def add_pairwise(t):\n    return tuple(a + b for a, b in zip(t, t[1:]))",
+      "def add_pairwise(t):\n    return tuple(a + b for a, b in zip(t, t[1:]))",
+      "def add_pairwise(t):\n    return tuple(a + b for a, b in zip(t, t[1:]))",
+      "def add_pairwise(t):\n    return tuple(a + b for a, b in zip(t, t[1:]))",
+      "def add_pairwise(t):\n    return tuple(a + b for a, b in zip(t, t[1:]))"
+    ]
+  },
+  {
+    "task_id": "Mbpp/730",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def consecutive_duplicates(lst):\n    result = []\n    for i in lst:\n        if not result or i != result[-1]:\n            result.append(i)\n    return result",
+    "sample_codes": [
+      "def consecutive_duplicates(lst):\n    result = []\n    for i in lst:\n        if not result or i != result[-1]:\n            result.append(i)\n    return result",
+      "def consecutive_duplicates(lst):\n    result = []\n    for i in lst:\n        if not result or i != result[-1]:\n            result.append(i)\n    return result",
+      "def consecutive_duplicates(lst):\n    result = []\n    for i in lst:\n        if not result or i != result[-1]:\n            result.append(i)\n    return result",
+      "def consecutive_duplicates(lst):\n    result = []\n    for i in lst:\n        if not result or i != result[-1]:\n            result.append(i)\n    return result",
+      "def consecutive_duplicates(lst):\n    result = []\n    for i in lst:\n        if not result or i != result[-1]:\n            result.append(i)\n    return result"
+    ]
+  },
+  {
+    "task_id": "Mbpp/3",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return True\n    return False",
+    "sample_codes": [
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return True\n    return False",
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return True\n    return False",
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return True\n    return False",
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return True\n    return False",
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return True\n    return False"
+    ]
+  },
+  {
+    "task_id": "Mbpp/785",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def tuple_str_int(s):\n    return tuple(int(i) for i in s[1:-1].split(','))",
+    "sample_codes": [
+      "def tuple_str_int(s):\n    return tuple(int(i) for i in s[1:-1].split(','))",
+      "def tuple_str_int(s):\n    return tuple(int(i) for i in s[1:-1].split(','))",
+      "def tuple_str_int(s):\n    return tuple(int(i) for i in s[1:-1].split(','))",
+      "def tuple_str_int(s):\n    return tuple(int(i) for i in s[1:-1].split(','))",
+      "def tuple_str_int(s):\n    return tuple(int(i) for i in s[1:-1].split(','))"
+    ]
+  },
+  {
+    "task_id": "Mbpp/477",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def is_lower(s):\n    return s.lower()",
+    "sample_codes": [
+      "def is_lower(s):\n    return s.lower()",
+      "def is_lower(s):\n    return s.lower()",
+      "def is_lower(s):\n    return s.lower()",
+      "def is_lower(s):\n    return s.lower()",
+      "def is_lower(s):\n    return s.lower()"
+    ]
+  },
+  {
+    "task_id": "Mbpp/274",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def even_binomial_Coeff_Sum(n):\n    return sum([math.comb(n, i) for i in range(n+1) if i % 2 == 0])",
+    "sample_codes": [
+      "def even_binomial_Coeff_Sum(n):\n    return sum([math.comb(n, i) for i in range(n+1) if i % 2 == 0])",
+      "```python\ndef even_binomial_Coeff_Sum(n):\n    return sum([math.comb(n, i) for i in range(n+",
+      "def even_binomial_Coeff_Sum(n):\n    return sum([math.comb(n, i) for i in range(n+1) if i % 2 == 0])",
+      "def even_binomial_Coeff_Sum(n):\n    return sum([math.comb(n, i) for i in range(n+1) if i % 2 == 0])",
+      "def even_binomial_Coeff_Sum(n):\n    return sum([math.comb(n, i) for i in range(n+1) if i % 2 == 0])"
+    ]
+  },
+  {
+    "task_id": "Mbpp/800",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+    "sample_codes": [
+      "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+      "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+      "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+      "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+      "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")"
+    ]
+  },
+  {
+    "task_id": "Mbpp/252",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "import math\n\ndef convert(z):\n    r = abs(z)\n    theta = math.atan2(z.imag, z.real)\n    return (r, theta)",
+    "sample_codes": [
+      "import math\n\ndef convert(z):\n    r = abs(z)\n    theta = math.atan2(z.imag, z.real)\n    return (r, theta)",
+      "import math\n\ndef convert(z):\n    r = abs(z)\n    theta = math.atan2(z.imag, z.real)\n    return (r, theta)",
+      "import math\n\ndef convert(z):\n    r = abs(z)\n    theta = math.atan2(z.imag, z.real)\n    return (r, theta)",
+      "import math\n\ndef convert(z):\n    r = abs(z)\n    theta = math.atan2(z.imag, z.real)\n    return (r, theta)",
+      "import math\n\ndef convert(z):\n    r = abs(z)\n    theta = math.atan2(z.imag, z.real)\n    return (r, theta)"
+    ]
+  },
+  {
+    "task_id": "Mbpp/644",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def reverse_Array_Upto_K(arr, k):\n    return arr[:k][::-1] + arr[k:]",
+    "sample_codes": [
+      "def reverse_Array_Upto_K(arr, k):\n    return arr[:k][::-1] + arr[k:]",
+      "def reverse_Array_Upto_K(arr, k):\n    return arr[:k][::-1] + arr[k:]",
+      "def reverse_Array_Upto_K(arr, k):\n    return arr[:k][::-1] + arr[k:]",
+      "def reverse_Array_Upto_K(arr, k):\n    return arr[:k][::-1] + arr[k:]",
+      "def reverse_Array_Upto_K(arr, k):\n    return arr[:k][::-1] + arr[k:]"
+    ]
+  },
+  {
+    "task_id": "Mbpp/99",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def decimal_to_binary(n):\n    return bin(n)[2:]",
+    "sample_codes": [
+      "def decimal_to_binary(n):\n    return bin(n)[2:]",
+      "def decimal_to_binary(n):\n    return bin(n)[2:]",
+      "def decimal_to_binary(n):\n    return bin(n)[2:]",
+      "def decimal_to_binary(n):\n    return bin(n)[2:]",
+      "def decimal_to_binary(n):\n    return bin(n)[2:]"
+    ]
+  },
+  {
+    "task_id": "Mbpp/310",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def string_to_tuple(s):\n    return tuple(s)",
+    "sample_codes": [
+      "def string_to_tuple(s):\n    return tuple(s)",
+      "def string_to_tuple(s):\n    return tuple(s)",
+      "def string_to_tuple(s):\n    return tuple(s)",
+      "def string_to_tuple(s):\n    return tuple(s)",
+      "def string_to_tuple(s):\n    return tuple(s)"
+    ]
+  },
+  {
+    "task_id": "Mbpp/56",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def check(n):\n    rev = int(str(n)[::-1])\n    return n != 2 * rev - 1",
+    "sample_codes": [
+      "def check(n):\n    rev = int(str(n)[::-1])\n    return n != 2 * rev - 1",
+      "def check(n):\n    rev = int(str(n)[::-1])\n    return n != 2 * rev - 1",
+      "def check(n):\n    rev = int(str(n)[::-1])\n    return n != 2 * rev - 1",
+      "def check(n):\n    rev = int(str(n)[::-1])\n    return n != 2 * rev - 1",
+      "def check(n):\n    rev = int(str(n)[::-1])\n    return n != 2 * rev - 1"
+    ]
+  },
+  {
+    "task_id": "Mbpp/17",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def square_perimeter(side_length):\n    return side_length * 4",
+    "sample_codes": [
+      "def square_perimeter(side_length):\n    return side_length * 4",
+      "def square_perimeter(side_length):\n    return side_length * 4",
+      "def square_perimeter(side_length):\n    return side_length * 4",
+      "def square_perimeter(side_length):\n    return side_length * 4",
+      "def square_perimeter(side_length):\n    return side_length * 4"
+    ]
+  },
+  {
+    "task_id": "Mbpp/19",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def test_duplicate(arr):\n    return len(arr) == len(set(arr))",
+    "sample_codes": [
+      "def test_duplicate(arr):\n    return len(arr) == len(set(arr))",
+      "def test_duplicate(arr):\n    return len(arr) == len(set(arr))",
+      "def test_duplicate(arr):\n    return len(arr) == len(set(arr))",
+      "def test_duplicate(arr):\n    return len(arr) == len(set(arr))",
+      "def test_duplicate(arr):\n    return len(arr) == len(set(arr))"
+    ]
+  },
+  {
+    "task_id": "Mbpp/754",
+    "exec_score": 0.0,
+    "is_correct": false,
+    "main_code": "def extract_index_list(l1, l2, l3):\n    return [i for i, (x, y, z) in enumerate(zip(l1, l2, l3)) if x == y == z]",
+    "sample_codes": [
+      "def extract_index_list(l1, l2, l3):\n    return [i for i in range(min(len(l1), len(l2), len(l3))) if l1[i] == l2[i] == l3[i]]",
+      "def extract_index_list(l1, l2, l3):\n    return [i for i in range(min(len(l1), len(l2), len(l3))) if l1[i] == l2[i] == l3[i]]",
+      "def extract_index_list(l1, l2, l3):\n    return [i for i, (x, y, z) in enumerate(zip(l1, l2, l3)) if x == y == z]",
+      "def extract_index_list(l1, l2, l3):\n    return [i for i, (x, y, z) in enumerate(zip(l1, l2, l3)) if x == y == z]",
+      "def extract_index_list(l1, l2, l3):\n    return [i for i in range(min(len(l1), len(l2), len(l3))) if l1[i] == l2[i] == l3[i]]"
+    ]
+  }
+]
