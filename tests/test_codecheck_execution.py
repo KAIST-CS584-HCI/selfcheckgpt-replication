@@ -73,6 +73,19 @@ def test_batch_set_ordering_is_deterministic_across_spawns():
     assert a == b
 
 
+def test_canonical_mixed_type_set_is_order_independent():
+    # untrusted code may return a set of mixed types; sorted() would raise str<int.
+    a = normalize_output(("ok", {1, "x", 2}), atol=1e-6)
+    b = normalize_output(("ok", {"x", 2, 1}), atol=1e-6)  # same set, different literal order
+    assert a == b
+
+
+def test_canonical_mixed_type_dict_keys():
+    a = normalize_output(("ok", {1: "a", "k": 2}), atol=0)
+    b = normalize_output(("ok", {"k": 2, 1: "a"}), atol=0)
+    assert a == b
+
+
 def test_batch_raises_on_worker_crash_before_output():
     # os._exit(1) during module exec: the worker dies before any q.put and exits non-zero,
     # which is an infra/bootstrap failure, not a code error -> must surface, not silently

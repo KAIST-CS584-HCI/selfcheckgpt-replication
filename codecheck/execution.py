@@ -126,9 +126,12 @@ def _canonical(value, atol: float):
     if isinstance(value, (list, tuple)):
         return tuple(_canonical(v, atol) for v in value)
     if isinstance(value, set):
-        return tuple(sorted(_canonical(v, atol) for v in value))
+        # key=repr gives a total order across mixed element types (e.g. {1, "x"}),
+        # where plain sorted() raises TypeError on str-vs-int. Order-independent and
+        # stable: canonicalization runs in one process, so equal sets sort identically.
+        return tuple(sorted((_canonical(v, atol) for v in value), key=repr))
     if isinstance(value, dict):
-        return tuple(sorted((k, _canonical(v, atol)) for k, v in value.items()))
+        return tuple(sorted(((k, _canonical(v, atol)) for k, v in value.items()), key=repr))
     return value
 
 
