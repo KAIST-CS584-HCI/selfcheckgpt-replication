@@ -27,13 +27,14 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
     expected = expected_outputs(problem, harness, timeout)
 
     scores: dict[str, float] = {}
+    prompt_responses: list[str] | None = None
     if "exec" in methods:
         sample_outputs = [_run_vector(code, problem, harness, timeout) for code in sample_codes]
         scores["exec"] = exec_inconsistency(main_outputs, sample_outputs)
     if "prompt" in methods:
         if judge is None:
             raise ValueError("method 'prompt' requires a judge")
-        scores["prompt"] = judge.score(main_code, sample_codes)
+        scores["prompt"], prompt_responses = judge.evaluate(main_code, sample_codes)
 
     return CodeResult(
         task_id=problem.task_id,
@@ -42,6 +43,7 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
         main_code=main_code,
         sample_codes=sample_codes,
         n_inputs=len(problem.inputs),
+        prompt_responses=prompt_responses,
     )
 
 

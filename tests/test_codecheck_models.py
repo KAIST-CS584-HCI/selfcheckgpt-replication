@@ -17,6 +17,20 @@ def test_code_result_roundtrip():
     assert CodeResult.from_dict(r.to_dict()) == r
 
 
+def test_code_result_prompt_responses_roundtrip():
+    r = CodeResult(task_id="Mbpp/2", scores={"prompt": 0.5}, is_correct=True,
+                   main_code="m", sample_codes=["s1", "s2"], n_inputs=3,
+                   prompt_responses=["Yes.", "No."])
+    assert CodeResult.from_dict(r.to_dict()) == r
+
+
+def test_code_result_omits_prompt_responses_when_absent():
+    # exec-only runs carry no judge text; the key stays out of the JSON
+    r = CodeResult("t", {"exec": 0.4}, True, "m", ["s"])
+    assert "prompt_responses" not in r.to_dict()
+    assert CodeResult.from_dict(r.to_dict()).prompt_responses is None
+
+
 def test_code_result_n_inputs_defaults_for_legacy_json():
     # iteration-1 artifacts had no n_inputs key
     legacy = {"task_id": "t", "exec_score": 0.3, "is_correct": False,

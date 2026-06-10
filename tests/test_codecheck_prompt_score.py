@@ -63,6 +63,16 @@ def test_judge_score_is_mean_inconsistency():
     assert judge.parse_failures == 0
 
 
+def test_judge_evaluate_returns_raw_responses():
+    client = FakeJudgeClient(["Yes.", "No.", "Yes."])
+    judge = PromptJudge(client, model="m")
+    score, raws = judge.evaluate("def f(): return 1", ["a", "b", "c"])
+    assert abs(score - (1.0 / 3.0)) < 1e-9
+    # ex.map fixes result order to sample order, but the fake hands out answers in
+    # thread-scheduling order, so assert the multiset rather than exact positions.
+    assert sorted(raws) == ["No.", "Yes.", "Yes."]
+
+
 def test_judge_counts_parse_failures():
     client = FakeJudgeClient(["Yes.", "uhh dunno"])     # second is unparseable
     judge = PromptJudge(client, model="m")

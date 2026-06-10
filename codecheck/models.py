@@ -33,16 +33,20 @@ class CodeResult:
     main_code: str
     sample_codes: list[str]
     n_inputs: int = 0             # size of the shared input set all impls ran on
+    prompt_responses: list[str] | None = None   # raw judge text per sample (prompt method only)
 
     @property
     def exec_score(self) -> float:
         return self.scores.get("exec", float("nan"))
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "task_id": self.task_id, "scores": self.scores, "is_correct": self.is_correct,
             "main_code": self.main_code, "sample_codes": self.sample_codes, "n_inputs": self.n_inputs,
         }
+        if self.prompt_responses is not None:
+            d["prompt_responses"] = self.prompt_responses
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "CodeResult":
@@ -55,4 +59,5 @@ class CodeResult:
         return cls(
             task_id=d["task_id"], scores=scores, is_correct=d["is_correct"],
             main_code=d["main_code"], sample_codes=d["sample_codes"], n_inputs=d.get("n_inputs", 0),
+            prompt_responses=d.get("prompt_responses"),
         )

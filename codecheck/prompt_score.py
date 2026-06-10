@@ -64,9 +64,11 @@ class PromptJudge:
             return ""
         return resp.choices[0].message.content or ""
 
-    def score(self, main_code: str, sample_codes: list[str]) -> float:
+    def evaluate(self, main_code: str, sample_codes: list[str]) -> tuple[float, list[str]]:
+        """(mean_inconsistency, raw_responses). raw_responses runs parallel to
+        sample_codes so callers can record per-sample judge text for variance analysis."""
         if not sample_codes:
-            return 0.0
+            return 0.0, []
         with ThreadPoolExecutor(max_workers=self.max_workers or len(sample_codes)) as ex:
             raws = list(ex.map(lambda s: self._judge_one(main_code, s), sample_codes))
         values = []
@@ -75,4 +77,7 @@ class PromptJudge:
             if not matched:
                 self.parse_failures += 1
             values.append(value)
-        return sum(values) / len(values)
+        return sum(values) / len(values), raws
+
+    def score(self, main_code: str, sample_codes: list[str]) -> float:
+        return self.evaluate(main_code, sample_codes)[0]
