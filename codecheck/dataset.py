@@ -41,5 +41,10 @@ def load_mbpp_plus(
     if limit is not None:
         problems = _select(problems, limit, randomize, seed)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
-    cache_path.write_text(json.dumps([p.to_dict() for p in problems], indent=2), encoding="utf-8")
+    # default=str keeps the write-only debug cache tolerant of non-JSON inputs
+    # (e.g. complex numbers in Mbpp/124, Mbpp/252); the cache is never read back.
+    cache_path.write_text(
+        json.dumps([p.to_dict() for p in problems], indent=2, default=str),
+        encoding="utf-8",
+    )
     return problems

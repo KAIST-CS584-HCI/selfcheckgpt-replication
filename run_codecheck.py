@@ -11,7 +11,7 @@ DEFAULT_OUTPUT = REPO_ROOT / "output" / "codecheck-exec.json"
 
 
 def _cmd_run(args: argparse.Namespace) -> None:
-    from openai import OpenAI
+    from openai import AuthenticationError, OpenAI
     from codecheck.dataset import load_mbpp_plus
     from codecheck.generation import CodeGenerator
     from codecheck.execution import run_in_subprocess
@@ -27,7 +27,10 @@ def _cmd_run(args: argparse.Namespace) -> None:
     generator = CodeGenerator(client, model=model)
 
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
-    results = run_dataset(problems, generator, run_in_subprocess, n_samples=args.n, timeout=args.timeout)
+    try:
+        results = run_dataset(problems, generator, run_in_subprocess, n_samples=args.n, timeout=args.timeout)
+    except AuthenticationError:
+        sys.exit("error: OpenRouter rejected OPENROUTER_API_KEY (expects an sk-or-v1-… key; see .env.example)")
     save_results(results, args.output)
     print(f"Saved {len(results)} results to {args.output}")
 
@@ -36,7 +39,10 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
     from codecheck.pipeline import load_results
     from codecheck.evaluate import auc_pr_detect_incorrect
 
-    results = load_results(args.results)
+    try:
+        results = load_results(args.results)
+    except FileNotFoundError:
+        sys.exit(f"error: results file not found: {args.results}")
     n_incorrect = sum(1 for r in results if not r.is_correct)
     auc_pr = auc_pr_detect_incorrect(results)
     print(f"AUC-PR (detect incorrect): {auc_pr:.4f}")
