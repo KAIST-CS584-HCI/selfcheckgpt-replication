@@ -14,7 +14,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
     from codecheck.dataset import load_mbpp_plus
     from codecheck.generation import CodeGenerator
-    from codecheck.execution import run_in_subprocess
+    from codecheck.execution import run_batch_in_subprocess
     from codecheck.pipeline import run_dataset, save_results
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
@@ -28,7 +28,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
     try:
-        results = run_dataset(problems, generator, run_in_subprocess, n_samples=args.n, timeout=args.timeout)
+        results = run_dataset(problems, generator, run_batch_in_subprocess, n_samples=args.n, timeout=args.timeout)
     except AuthenticationError:
         sys.exit("error: OpenRouter rejected OPENROUTER_API_KEY (expects an sk-or-v1-… key; see .env.example)")
     save_results(results, args.output)

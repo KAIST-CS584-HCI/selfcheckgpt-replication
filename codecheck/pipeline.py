@@ -13,8 +13,9 @@ from codecheck.labeling import expected_outputs, is_correct
 
 
 def _run_vector(code: str, problem: CodeProblem, harness, timeout: float) -> list:
-    return [normalize_output(harness(code, problem.entry_point, args, timeout), problem.atol)
-            for args in problem.inputs]
+    # harness is a batch harness: one call runs all inputs (one spawn per impl).
+    outcomes = harness(code, problem.entry_point, problem.inputs, timeout)
+    return [normalize_output(o, problem.atol) for o in outcomes]
 
 
 def score_problem(problem, generator, harness, n_samples: int, timeout: float = 5.0) -> CodeResult:

@@ -1,5 +1,5 @@
 from codecheck.models import CodeProblem, CodeResult
-from codecheck.execution import run_in_subprocess
+from codecheck.execution import run_batch_in_subprocess
 from codecheck.pipeline import score_problem, save_results, load_results
 
 PROBLEM = CodeProblem(task_id="t", prompt="", entry_point="f",
@@ -18,7 +18,7 @@ class StubGen:
 def test_correct_main_with_consistent_samples():
     gen = StubGen("def f(x):\n    return x + 1\n",
                   ["def f(x):\n    return x + 1\n", "def f(x):\n    return 1 + x\n"])
-    res = score_problem(PROBLEM, gen, run_in_subprocess, n_samples=2, timeout=5.0)
+    res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=2, timeout=5.0)
     assert res.is_correct is True
     assert res.exec_score == 0.0
 
@@ -26,7 +26,7 @@ def test_correct_main_with_consistent_samples():
 def test_incorrect_main_with_divergent_samples():
     gen = StubGen("def f(x):\n    return x\n",
                   ["def f(x):\n    return x + 1\n", "def f(x):\n    return x + 1\n"])
-    res = score_problem(PROBLEM, gen, run_in_subprocess, n_samples=2, timeout=5.0)
+    res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=2, timeout=5.0)
     assert res.is_correct is False
     assert res.exec_score == 1.0
 
