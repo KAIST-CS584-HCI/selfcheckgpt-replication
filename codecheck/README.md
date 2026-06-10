@@ -30,14 +30,33 @@ the same outputs when given the same inputs?
 6. **Evaluate.** Across many problems, check how well the consistency score predicts the
    incorrect answers.
 
-Two other variants are planned but not built yet: one comparing the *structure* of the
-code, and one asking a separate model to judge whether the samples behave like the main
-answer.
+## Methods
 
-## Dataset in use: MBPP+
+`run --method {exec,prompt,both}` selects the consistency scorer(s). A single run
+generates each problem's implementations once and scores them with every selected
+method, so Exec and Prompt are always compared on identical data.
 
-MBPP+ is a set of Python programming problems, each shipped with a reference solution and
-a rich suite of test inputs (an extended version of the MBPP benchmark). The test inputs
+- `exec` (default) — behavioral I/O divergence across samples (described above).
+- `prompt` — LLM-as-judge: per sample, is its behavior consistent with the main
+  implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
+- `both` — runs both; `evaluate` then prints a per-method comparison.
+
+The judge reuses `OPENROUTER_MODEL`. After a judged run the CLI prints the judge
+parse-failure count.
+
+### Standing run/report protocol (from iteration-1 findings)
+
+- Sample problems **randomly across the full set** with a capable model — never the
+  low-numbered slice (it is unrepresentatively easy and yields a single class).
+- `evaluate` prints, per method, the AUC-PR, the **prevalence baseline** (the PR
+  no-skill floor), and a **per-class score histogram**. Read AUC-PR against the
+  baseline, not in isolation; the histogram exposes tie pile-ups at 0 that make
+  the scalar fragile.
+
+## Dataset in use: MBPP+ (378 problems)
+
+MBPP+ is a set of 378 Python programming problems, each shipped with a reference solution
+and a rich suite of test inputs (an extended version of the MBPP benchmark). The test inputs
 double as the shared inputs we run every implementation on.
 
 Each problem gives us:
@@ -85,6 +104,7 @@ python run_codecheck.py evaluate
 
 - `--limit` — how many problems to use
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
+- `--method` — consistency scorer: `exec` (default), `prompt`, or `both`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample
