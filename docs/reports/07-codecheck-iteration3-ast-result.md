@@ -1,8 +1,9 @@
 # Three-way Exec / Prompt / AST comparison (Iteration 3)
 
 Date: 2026-06-10
-Artifact: `output/iter3-all.json` (also serves as the iteration-2.5 validation gate —
-see note below). Run log: `output/iter3-run.log`.
+Artifact: `docs/reports/07-codecheck-iteration3-ast-result.json` (a copy of the run's
+`output/iter3-all.json`; `output/` is gitignored). This also serves as the
+iteration-2.5 validation gate — see note below. Run log: `output/iter3-run.log`.
 
 ## Setup
 
