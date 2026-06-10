@@ -51,28 +51,22 @@ Each problem gives us:
 | Inputs              | many argument sets the function is called with               |
 | Tolerance           | how close floating-point results must be to count as equal   |
 
-Raw example (one row, abridged):
+Example problem (real row `Mbpp/2`):
 
-```python
-{
-  "task_id": "Mbpp/2",
-  "prompt": '"""\nWrite a function to find the shared elements from the given two lists.\n'
-            'assert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\n"""\n',
-  "entry_point": "similar_elements",
-  "canonical_solution": "def similar_elements(test_tup1, test_tup2):\n"
-                        "  return tuple(set(test_tup1) & set(test_tup2))\n",
-  "base_input": [
-    [(3, 4, 5, 6), (5, 7, 4, 10)],          # similar_elements((3,4,5,6),(5,7,4,10))
-    [(1, 2, 3, 4), (5, 4, 3, 7)],
-    [(11, 12, 14, 13), (17, 15, 14, 13)],
-  ],
-  "plus_input": [[(), ()], [(1, 2, 3), ()], ...],   # 108 extra stress-test inputs
-  "atol": 0,
-}
-```
+> **Task:** Write a function to find the shared elements from two lists.
 
-Each entry in `base_input` / `plus_input` is one call's argument list; here every call
-passes two tuples. We combine both lists into the full input set the implementations run on.
+- **Function name:** `similar_elements`
+- **Reference solution:**
+  ```python
+  def similar_elements(test_tup1, test_tup2):
+      return tuple(set(test_tup1) & set(test_tup2))
+  ```
+- **Inputs the function is tested on** (two tuples per call):
+  - `similar_elements((3, 4, 5, 6), (5, 7, 4, 10))` → expects `(4, 5)`
+  - `similar_elements((1, 2, 3, 4), (5, 4, 3, 7))` → expects `(3, 4)`
+  - `similar_elements((11, 12, 14, 13), (17, 15, 14, 13))` → expects `(13, 14)`
+  - ...plus ~100 more edge-case inputs (empty tuples, large tuples, duplicates)
+- **Tolerance:** `0` (exact match; this problem has no floating-point results)
 
 For each problem we record the consistency score, the correctness label, and the actual
 code that was generated, so results can be inspected later.
