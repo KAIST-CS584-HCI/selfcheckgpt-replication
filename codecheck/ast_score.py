@@ -13,7 +13,13 @@ def ast_fingerprint(code: str) -> Counter | None:
     """
     try:
         tree = ast.parse(code)
-    except SyntaxError:
+    except (SyntaxError, ValueError, TypeError):
+        # SyntaxError: malformed code. ValueError: e.g. source with null bytes.
+        # TypeError: a non-str input (e.g. None from a failed extraction).
+        return None
+    if not tree.body:
+        # Empty, whitespace-only, or comment-only source parses to a body-less
+        # module: a non-answer, not a structure to compare. Treat as unparseable.
         return None
     return Counter(type(node).__name__ for node in ast.walk(tree))
 
