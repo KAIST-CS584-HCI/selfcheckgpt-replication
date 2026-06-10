@@ -66,3 +66,26 @@ def test_prompt_only_skips_sample_execution():
     assert res.scores["prompt"] == 0.0
     assert res.is_correct is True
     assert res.n_inputs == 3
+
+
+from codecheck.ast_score import ASTScorer
+
+
+def test_score_problem_fills_ast():
+    gen = StubGen("def f(x):\n    return x + 1\n",
+                  ["def f(x):\n    return x + 1\n", "def f(x):\n    return x + 1\n"])
+    res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=2, timeout=5.0,
+                        methods={"ast"}, ast_scorer=ASTScorer())
+    assert "ast" in res.scores
+    assert "exec" not in res.scores          # ast-only run skips sample execution
+    assert res.scores["ast"] == 0.0          # samples structurally identical to main
+    assert res.is_correct is True            # labeling still runs (main vs canonical)
+    assert res.n_inputs == 3
+
+
+def test_score_problem_ast_requires_scorer():
+    import pytest
+    gen = StubGen("def f(x):\n    return x + 1\n", ["def f(x):\n    return x + 1\n"])
+    with pytest.raises(ValueError):
+        score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0,
+                      methods={"ast"})

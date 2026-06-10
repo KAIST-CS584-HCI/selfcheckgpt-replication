@@ -22,11 +22,13 @@ class _TqdmLoggingHandler(logging.Handler):
             self.handleError(record)
 
 
-def _setup_run_logging() -> None:
+def _setup_run_logging(verbose: bool = False) -> None:
     handler = _TqdmLoggingHandler()
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%H:%M:%S"))
     root = logging.getLogger("codecheck")
-    root.setLevel(logging.INFO)
+    # INFO keeps a normal run quiet apart from the per-call anomaly warnings (truncated /
+    # empty responses); --verbose drops to DEBUG for the per-call latency/finish/token detail.
+    root.setLevel(logging.DEBUG if verbose else logging.INFO)
     root.handlers = [handler]
     root.propagate = False
 
@@ -36,6 +38,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from codecheck.dataset import load_mbpp_plus
     from codecheck.generation import CodeGenerator
     from codecheck.prompt_score import PromptJudge
+    from codecheck.ast_score import ASTScorer
     from codecheck.execution import run_batch_in_subprocess
     from codecheck.pipeline import run_dataset, save_results
 
@@ -48,23 +51,30 @@ def _cmd_run(args: argparse.Namespace) -> None:
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
     generator = CodeGenerator(client, model=model, think=args.think)
 
-    methods = {"exec", "prompt"} if args.method == "both" else {args.method}
+    if args.method == "all":
+        methods = {"exec", "prompt", "ast"}
+    else:
+        methods = {args.method}
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
+    ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
 
-    _setup_run_logging()
+    _setup_run_logging(verbose=args.verbose)
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
+    ast_note = f", ast-metric={args.ast_metric}" if ast_scorer is not None else ""
     print(f"Running methods={sorted(methods)} on {len(problems)} problems "
-          f"(n={args.n}, timeout={args.timeout}s, model={model})")
+          f"(n={args.n}, timeout={args.timeout}s, model={model}{ast_note})")
     try:
         results = run_dataset(problems, generator, run_batch_in_subprocess,
                               n_samples=args.n, timeout=args.timeout,
-                              methods=methods, judge=judge)
+                              methods=methods, judge=judge, ast_scorer=ast_scorer)
     except AuthenticationError:
         sys.exit("error: OpenRouter rejected OPENROUTER_API_KEY (expects an sk-or-v1-… key; see .env.example)")
     save_results(results, args.output)
     print(f"Saved {len(results)} results to {args.output}")
     if judge is not None:
         print(f"Judge parse failures: {judge.parse_failures}")
+    if ast_scorer is not None:
+        print(f"AST parse failures: {ast_scorer.parse_failures}")
 
 
 def _methods_present(results) -> list[str]:
@@ -119,8 +129,13 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
     run_p.add_argument("--think", action="store_true",
                        help="enable model chain-of-thought reasoning (much slower; default off)")
-    run_p.add_argument("--method", choices=["exec", "prompt", "both"], default="exec",
+    run_p.add_argument("-v", "--verbose", action="store_true",
+                       help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
+    run_p.add_argument("--method", choices=["exec", "prompt", "ast", "all"], default="exec",
                        help="which consistency scorer(s) to run")
+    run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="jaccard",
+                       help="AST structural metric: jaccard (bag-of-node-types, default) or "
+                            "ted (tree edit distance). Only used when --method includes ast")
     run_p.set_defaults(func=_cmd_run, randomize=True)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")

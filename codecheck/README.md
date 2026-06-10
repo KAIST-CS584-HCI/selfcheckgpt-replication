@@ -12,9 +12,9 @@ extra samples (at temperature 1). From these we get two things: a **consistency 
 
 ## How the methods work
 
-Both variants share the same generation and ground-truth steps; they differ only in how
-they measure consistency between the main answer and the samples. Both produce a score on
-the same scale: **higher = more likely hallucinated (incorrect)**.
+All three variants share the same generation and ground-truth steps; they differ only in
+how they measure consistency between the main answer and the samples. Each produces a score
+on the same scale: **higher = more likely hallucinated (incorrect)**.
 
 ### SelfCheck-Exec — behavioral consistency
 
@@ -58,19 +58,61 @@ complementary to Exec, which is blind to samples that consistently agree on the 
 behavior. The two run on the **same generated implementations**, so their scores are directly
 comparable.
 
+### SelfCheck-AST — structural consistency
+
+Measures consistency by *parsing the code* instead of running it or asking a model. Each
+implementation is reduced to a structural fingerprint and the samples are compared against
+the main one.
+
+1. **Generate.** Same as Exec/Prompt — one main implementation plus several samples.
+2. **Fingerprint.** Parse each implementation to an AST and count node types
+   (`Name`, `BinOp`, `Constant`, …), ignoring identifier text and literal values — so
+   renaming variables or changing constants does not change the fingerprint.
+3. **Compare structure.** Dissimilarity = `1 − multiset Jaccard` of the two fingerprints:
+   `0.0` for identical structure, up to `1.0` for no shared node types.
+4. **Score consistency.** Average the per-sample dissimilarities. An implementation that does
+   not parse counts as `1.0` (maximally divergent) and is tallied as a parse failure.
+5. **Check correctness / evaluate.** Identical to Exec — the ground-truth label still comes
+   from running the reference solution.
+
+AST adds **no API cost** (pure local parsing). It is hypothesized to share Exec's
+confident-consistent blind spot: when a model is consistently wrong, the samples are also
+structurally similar to the wrong main, so AST scores ≈0 and misses it.
+
 ## Methods
 
-`run --method {exec,prompt,both}` selects the consistency scorer(s). A single run
+`run --method {exec,prompt,ast,all}` selects the consistency scorer(s). A single run
 generates each problem's implementations once and scores them with every selected
-method, so Exec and Prompt are always compared on identical data.
+method, so the methods are always compared on identical data.
 
 - `exec` (default) — behavioral I/O divergence across samples (described above).
 - `prompt` — LLM-as-judge: per sample, is its behavior consistent with the main
   implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
-- `both` — runs both; `evaluate` then prints a per-method comparison.
+- `ast` — structural divergence between the main and each sample, rename- and
+  literal-invariant, averaged over the N samples. No API cost. The metric is chosen with
+  `--ast-metric` (below).
+- `all` — runs exec + prompt + ast; `evaluate` then prints a three-way comparison.
 
-The judge reuses `OPENROUTER_MODEL`. After a judged run the CLI prints the judge
-parse-failure count.
+**`--ast-metric {jaccard,ted}`** (only used when `--method` includes `ast`):
+
+- `jaccard` (default) — `1 − multiset Jaccard` of AST node-type counts. Count-based: it
+  ignores nesting/ordering. The default because it out-discriminated `ted` on MBPP+
+  (see `docs/reports/09-codecheck-ast-ted-result.md`).
+- `ted` — tree edit distance (Zhang-Shasha, via `zss`) between the AST shapes.
+  Structure-aware (two programs with the same node-type counts but different nesting score
+  apart), normalized to `[0,1]`. More sensitive to shape, but on MBPP+ that penalizes
+  correct-but-restructured samples and compresses the signal — kept available, not default.
+
+The judge reuses `OPENROUTER_MODEL`. After a run the CLI prints the judge parse-failure
+count (if prompt ran) and the AST parse-failure count (if ast ran).
+
+Three-way run:
+
+```bash
+python run_codecheck.py run --method all --limit 30 --n 5 --seed 1 --timeout 5 \
+  --output output/iter3-all.json
+python run_codecheck.py evaluate --results output/iter3-all.json
+```
 
 ### Standing run/report protocol (from iteration-1 findings)
 
@@ -132,11 +174,15 @@ python run_codecheck.py evaluate
 
 - `--limit` — how many problems to use
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
-- `--method` — consistency scorer: `exec` (default), `prompt`, or `both`
+- `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, or `all`
+- `--ast-metric` — AST metric when `ast` runs: `jaccard` (default) or `ted`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results file
 - `--seed` — random seed for a reproducible problem sample
 - `--no-random` — use the first `--limit` problems in order instead of a random sample
+- `-v` / `--verbose` — log per-call API detail (latency, `finish_reason`, completion tokens)
+  at DEBUG. Without it, a run still warns on truncated (`finish_reason != stop`) or empty
+  responses.
 
 By default the problems are sampled at random (use `--seed` to reproduce a sample, or
 `--no-random` for the first `--limit` in dataset order). The saved results record which

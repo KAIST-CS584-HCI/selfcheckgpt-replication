@@ -20,7 +20,7 @@ def _run_vector(code: str, problem: CodeProblem, harness, timeout: float) -> lis
 
 
 def score_problem(problem, generator, harness, n_samples: int, timeout: float = 5.0,
-                  methods: set[str] | None = None, judge=None) -> CodeResult:
+                  methods: set[str] | None = None, judge=None, ast_scorer=None) -> CodeResult:
     methods = methods or {"exec"}
     main_code, sample_codes = generator.generate(problem, n_samples)
     main_outputs = _run_vector(main_code, problem, harness, timeout)
@@ -35,6 +35,10 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
         if judge is None:
             raise ValueError("method 'prompt' requires a judge")
         scores["prompt"], prompt_responses = judge.evaluate(main_code, sample_codes)
+    if "ast" in methods:
+        if ast_scorer is None:
+            raise ValueError("method 'ast' requires an ast_scorer")
+        scores["ast"], _ = ast_scorer.evaluate(main_code, sample_codes)
 
     return CodeResult(
         task_id=problem.task_id,
@@ -48,13 +52,13 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
 
 
 def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5.0,
-                methods: set[str] | None = None, judge=None) -> list[CodeResult]:
+                methods: set[str] | None = None, judge=None, ast_scorer=None) -> list[CodeResult]:
     problems = list(problems)
     total = len(problems)
     results: list[CodeResult] = []
     for i, problem in enumerate(tqdm(problems, desc="codecheck"), start=1):
         started = time.monotonic()
-        result = score_problem(problem, generator, harness, n_samples, timeout, methods, judge)
+        result = score_problem(problem, generator, harness, n_samples, timeout, methods, judge, ast_scorer)
         elapsed = time.monotonic() - started
         scores = "  ".join(f"{name}={value:.3f}" for name, value in result.scores.items())
         # tqdm.write keeps these lines from corrupting the live progress bar.

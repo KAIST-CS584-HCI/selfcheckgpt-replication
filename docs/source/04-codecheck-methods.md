@@ -20,6 +20,29 @@ Same sampling scheme as the original paper, applied to code:
 The unit being scored is the **implementation itself** (one function/program),
 analogous to a "sentence" in the original WikiBio setup.
 
+### Unit granularity — RESOLVED (2026-06-10): per-problem / per-main-implementation
+
+The scored unit is **the single `T = 0` main implementation per problem**. Its
+ground-truth label is that implementation's execution correctness. The `N`
+sample implementations are **consistency evidence only — never scored as units
+themselves**.
+
+This is faithful to SelfCheckGPT: in WikiBio only the main passage `R` is
+evaluated (its sentences are the units); the sample passages `S1..SN` are
+evidence used to score `R`, never labeled or scored on their own. The code
+analogue maps `R` → main implementation (one function ≈ one "sentence") and
+`S1..SN` → sample implementations (evidence).
+
+Rejected alternative — *per-sample* (treat each of the `N+1` implementations as
+its own labeled unit). It would deviate from the paper: it requires a
+self-referential evidence set the paper never defines, and it breaks the Prompt
+template below (which compares a "construct from another implementation"
+*against* "the implementation above" = the main). It would also change the Exec
+and AST metrics' meaning. The one genuine benefit (more labeled units per
+problem → less fragile AUC-PR under heavy score ties) is instead addressed by
+**scaling the number of problems** (roadmap iteration 4), not by redefining what
+a unit is. All three variants share this single definition.
+
 ## Methods
 
 Three variants. Two replace original NL-specific variants with code-aware

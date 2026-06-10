@@ -86,6 +86,34 @@ def test_canonical_mixed_type_dict_keys():
     assert a == b
 
 
+# A sample the in-worker SIGALRM cannot stop: it blocks SIGALRM delivery, so setitimer
+# fires but the handler never runs and the input emits no result at all. This is the real
+# freeze (a worker pegged at 100% CPU with no new output). The parent must enforce its own
+# wall-clock bound and SIGKILL instead of waiting the timeout*n ceiling.
+BLOCK_ALARM = (
+    "def f(x):\n"
+    "    import signal\n"
+    "    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGALRM})\n"
+    "    while True:\n"
+    "        pass\n"
+)
+
+
+def test_batch_kills_uninterruptible_hang_without_waiting_for_full_ceiling():
+    import time
+    n = 50
+    timeout = 0.3
+    args = [[i] for i in range(n)]  # the first input wedges the worker, emitting nothing
+    start = time.monotonic()
+    out = run_batch_in_subprocess(BLOCK_ALARM, "f", args, timeout=timeout)
+    elapsed = time.monotonic() - start
+    # Old behaviour waited the timeout*n (=15s) ceiling; a parent-side idle timeout
+    # must kill far sooner. Generous bound to stay robust under load.
+    assert elapsed < timeout * n * 0.5
+    assert len(out) == n
+    assert all(o == ("timeout", None) for o in out)
+
+
 def test_batch_raises_on_worker_crash_before_output():
     # os._exit(1) during module exec: the worker dies before any q.put and exits non-zero,
     # which is an infra/bootstrap failure, not a code error -> must surface, not silently

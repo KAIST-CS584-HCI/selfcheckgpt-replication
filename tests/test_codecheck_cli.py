@@ -24,8 +24,8 @@ def test_evaluate_subcommand_prints_auc(tmp_path):
 
 def test_run_parser_accepts_method():
     from run_codecheck import build_parser
-    args = build_parser().parse_args(["run", "--method", "both", "--limit", "2"])
-    assert args.method == "both"
+    args = build_parser().parse_args(["run", "--method", "all", "--limit", "2"])
+    assert args.method == "all"
 
 
 def test_run_parser_method_defaults_to_exec():
@@ -38,7 +38,38 @@ def test_run_parser_rejects_unknown_method():
     import pytest
     from run_codecheck import build_parser
     with pytest.raises(SystemExit):
-        build_parser().parse_args(["run", "--method", "ast"])
+        build_parser().parse_args(["run", "--method", "bogus"])
+
+
+def test_method_ast_is_accepted_by_parser():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--method", "ast"])
+    assert args.method == "ast"
+
+
+def test_method_all_is_accepted_by_parser():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--method", "all"])
+    assert args.method == "all"
+
+
+def test_ast_metric_defaults_to_jaccard():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run"])
+    assert args.ast_metric == "jaccard"
+
+
+def test_ast_metric_accepts_jaccard():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--ast-metric", "jaccard"])
+    assert args.ast_metric == "jaccard"
+
+
+def test_ast_metric_rejects_unknown():
+    import pytest
+    from run_codecheck import build_parser
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["run", "--ast-metric", "bogus"])
 
 
 def test_format_evaluation_lists_each_method():

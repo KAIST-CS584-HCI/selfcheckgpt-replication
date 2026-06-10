@@ -19,3 +19,4 @@ datasets
 evalplus
 scikit-learn
 scipy
+zss

@@ -1,0 +1,752 @@
+[
+  {
+    "task_id": "Mbpp/123",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.8,
+      "ast": 0.12399833493793226
+    },
+    "is_correct": true,
+    "main_code": "def amicable_numbers_sum(n):\n    def sum_divisors(num):\n        total = 1\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                total += i\n                if i != num // i:\n                    total += num // i\n        return total\n\n    amicable_set = set()\n    for i in range(2, n + 1):\n        d1 = sum_divisors(i)\n        if d1 > n:\n            continue\n        d2 = sum_divisors(d1)\n        if d2 == i and d1 != i:\n            amicable_set.add(i)\n            amicable_set.add(d1)\n\n    return sum(amicable_set)",
+    "sample_codes": [
+      "def amicable_numbers_sum(n):\n    def sum_divisors(num):\n        total = 1\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                total += i\n                if i != num // i:\n                    total += num // i\n        return total\n\n    seen = [False] * (n + 1)\n    pairs = []\n\n    for i in range(1, n + 1):\n        if seen[i]:\n            continue\n        a = i\n        b = sum_divisors(a)\n        if b <= n:\n            if b > a and sum_divisors(b) == a:\n                seen[a] = True\n                seen[b] = True\n                pairs.append(a)\n                pairs.append(b)\n\n    return sum(pairs)",
+      "def amicable_numbers_sum(limit):\n    def sum_divisors(n):\n        total = 1\n        for i in range(2, int(n**0.5) + 1):\n            if n % i == 0:\n                total += i\n                if i != n // i:\n                    total += n // i\n        return total\n\n    amicable_pairs = set()\n    for num in range(2, limit + 1):\n        pair = sum_divisors(num)\n        if pair > num and pair <= limit:\n            if sum_divisors(pair) == num:\n                amicable_pairs.add(num)\n                amicable_pairs.add(pair)\n\n    return sum(amicable_pairs)",
+      "def amicable_numbers_sum(n):\n    def sum_of_divisors(num):\n        total = 1\n        for i in range(2, int(num ** 0.5) + 1):\n            if num % i == 0:\n                total += i + num // i\n        return total\n\n    amicable_set = set()\n    for i in range(2, n + 1):\n        j = sum_of_divisors(i)\n        if j <= n and j != i and sum_of_divisors(j) == i:\n            amicable_set.add(i)\n            amicable_set.add(j)\n\n    return sum(amicable_set)",
+      "def amicable_numbers_sum(limit):\n    def sum_divisors(n):\n        total = 1\n        i = 2\n        while i * i <= n:\n            if n % i == 0:\n                total += i\n                if i != n // i:\n                    total += n // i\n            i += 1\n        return total\n\n    amicable_pairs = set()\n    for num in range(2, limit + 1):\n        d1 = sum_divisors(num)\n        if d1 <= limit:\n            d2 = sum_divisors(d1)\n            if d2 == num and d1 != num:\n                amicable_pairs.add(num)\n\n    return sum(amicable_pairs)",
+      "def amicable_numbers_sum(n):\n    def sum_divisors(num):\n        total = 1\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                total += i\n                if i != num // i:\n                    total += num // i\n        return total\n    \n    amicable_set = set()\n    for i in range(2, n + 1):\n        friend = sum_divisors(i)\n        if friend > i and sum_divisors(friend) == i and friend <= n:\n            amicable_set.add(i)\n            amicable_set.add(friend)\n    \n    return sum(amicable_set)"
+    ],
+    "n_inputs": 105,
+    "prompt_responses": [
+      "No, the constructs are not consistent because the first implementation correctly excludes the number 1 from the sum of divisors calculation, while the second implementation incorrectly includes 1 in the total for any number greater than 1, leading to different results for amicable pairs.",
+      "Yes, the construct is behaviorally consistent because it identifies the same set of amicable numbers within the limit by checking the reciprocal relationship and ensuring both members fall within the range, despite using a slightly different loop condition to avoid redundant pair processing.",
+      "No, the construct is inconsistent because it incorrectly adds the divisor pair `j` to the set even when `j` exceeds the input limit `n`, whereas the original implementation skips any pair where the first divisor `d1` is greater than `n`.",
+      "No, the construct is inconsistent because it only adds the smaller number of each pair to the set, whereas the original implementation adds both numbers, leading to a different total sum.",
+      "No, the construct is inconsistent because it only adds the pair to the set when the first number is smaller than its friend, causing pairs where the first number is larger to be missed."
+    ]
+  },
+  {
+    "task_id": "Mbpp/629",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.0
+    },
+    "is_correct": true,
+    "main_code": "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]",
+    "sample_codes": [
+      "def Split(lst):\n    return [x for x in lst if x % 2 == 0]",
+      "def Split(nums):\n    return [num for num in nums if num % 2 == 0]",
+      "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]",
+      "def Split(numeric_list):\n    return [num for num in numeric_list if num % 2 == 0]",
+      "def Split(numbers):\n    return [num for num in numbers if num % 2 == 0]"
+    ],
+    "n_inputs": 106,
+    "prompt_responses": [
+      "Yes, the two implementations are functionally equivalent because they both use list comprehensions to filter and return only the even numbers from the input iterable.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions perform identical list comprehensions that filter for even numbers, differing only in the parameter name.",
+      "Yes, the construct is identical to the implementation above, so it exhibits exactly the same behavior of returning a list containing only the even numbers from the input.",
+      "Yes, the two constructs are behaviorally consistent because they both define identical list comprehensions that filter for even numbers using the same logic and variable names.",
+      "Yes, the construct is identical to the implementation above, as both define the same function with the exact same list comprehension logic to filter even numbers."
+    ]
+  },
+  {
+    "task_id": "Mbpp/75",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.07234042553191489
+    },
+    "is_correct": true,
+    "main_code": "def find_tuples(tuples_list, k):\n    result = []\n    for t in tuples_list:\n        if all(element % k == 0 for element in t):\n            result.append(t)\n    return result",
+    "sample_codes": [
+      "def find_tuples(tuples_list, k):\n    return [t for t in tuples_list if all(x % k == 0 for x in t)]",
+      "def find_tuples(tuples_list, k):\n    result = []\n    for tpl in tuples_list:\n        if all(elem % k == 0 for elem in tpl):\n            result.append(tpl)\n    return result",
+      "def find_tuples(list_of_tuples, k):\n    result = []\n    for t in list_of_tuples:\n        if all(x % k == 0 for x in t):\n            result.append(t)\n    return result",
+      "def find_tuples(lst, k):\n    result = []\n    for t in lst:\n        if all(element % k == 0 for element in t):\n            result.append(t)\n    return result",
+      "def find_tuples(tuples, k):\n    result = []\n    for t in tuples:\n        if all(x % k == 0 for x in t):\n            result.append(t)\n    return result"
+    ],
+    "n_inputs": 109,
+    "prompt_responses": [
+      "Yes, the construct is behaviorally consistent because it uses a list comprehension to achieve the exact same filtering logic and return format as the original loop-based implementation.",
+      "Yes, the two implementations are functionally equivalent because they perform identical operations using only syntactically different variable names for the loop iterator and list elements.",
+      "Yes, the two implementations are behaviorally consistent because they both iterate through the input list and append tuples to the result only if every element within the tuple is divisible by k.",
+      "Yes, the construct has behavior consistent with the implementation above because it uses identical logic and variable names (aside from the parameter name change from `tuples_list` to `lst`), which does not affect the function's output.",
+      "Yes, the two implementations are behaviorally consistent because they both iterate through the input list and append tuples where every element is divisible by k, using functionally equivalent conditional logic."
+    ]
+  },
+  {
+    "task_id": "Mbpp/268",
+    "scores": {
+      "exec": 1.0,
+      "prompt": 0.8,
+      "ast": 0.15625
+    },
+    "is_correct": false,
+    "main_code": "def find_star_num(n):\n    if n <= 0:\n        return 0\n    return n * (6 * n - 3) + 1",
+    "sample_codes": [
+      "def find_star_num(n):\n    return (6 * n * n - 6 * n + 1) // 2",
+      "def find_star_num(n):\n    if n <= 0:\n        return 0\n    return 6 * n * (n - 2) + 1",
+      "def find_star_num(n):\n    if n <= 0:\n        return 0\n    return 6 * n * (n - 1) + 1",
+      "def find_star_num(n):\n    return n * (7 * n - 12)",
+      "def find_star_num(n):\n    if n <= 0:\n        return 0\n    return n * (4 * n - 1)"
+    ],
+    "n_inputs": 106,
+    "prompt_responses": [
+      "No, the construct produces incorrect results because it divides the quadratic expression by 2, whereas the original implementation correctly calculates the centered hexagonal number sequence without division.",
+      "No, the constructs are not consistent because the second implementation calculates $6n^2 - 12n + 1$, whereas the first calculates $6n^2 - 3n + 1$, yielding different results for any $n > 2$.",
+      "Yes, the two implementations are mathematically equivalent because expanding the construct's expression $6n(n-1) + 1$ yields $6n^2 - 6n + 1$, which is identical to the original implementation's $6n^2 - 3n + 1$ only if there is a typo in the user's provided original code; however, re-evaluating the original code $n(6n-3)+1 = 6n^2 - 3n + 1$ versus the construct $6n^2 - 6n + 1$, they are actually **not** consistent.\n\n**No**, the behaviors are inconsistent because the original formula simplifies to $6n^2 - 3n + 1$ while the construct simplifies to $6n^2 - 6n + 1$, producing different results for any $n > 1$.",
+      "No. The construct produces incorrect results for all positive integers because its formula $n(7n-12)$ does not match the correct star number formula $n(6n-3)+1$.",
+      "No, the construct is inconsistent because it calculates $4n^2 - n$ instead of the correct formula $6n^2 - 3n + 1$ required for star numbers."
+    ]
+  },
+  {
+    "task_id": "Mbpp/108",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.2,
+      "ast": 0.198008658008658
+    },
+    "is_correct": true,
+    "main_code": "def merge_sorted_list(list1, list2, list3):\n    merged = list1 + list2 + list3\n    return sorted(merged)",
+    "sample_codes": [
+      "def merge_sorted_list(list1, list2, list3):\n    merged = list1 + list2 + list3\n    merged.sort()\n    return merged",
+      "def merge_sorted_list(list1, list2, list3):\n    merged = []\n    all_lists = [list1, list2, list3]\n    for lst in all_lists:\n        merged.extend(lst)\n    \n    return sorted(merged)",
+      "def merge_sorted_list(list1, list2, list3):\n    merged = list1 + list2 + list3\n    return sorted(merged)",
+      "def merge_sorted_list(list1, list2, list3):\n    merged = list1 + list2 + list3\n    merged.sort()\n    return merged",
+      "def merge_sorted_list(list1, list2, list3):\n    merged = []\n    list1 = list1 + list2 + list3\n    list1.sort()\n    return list1"
+    ],
+    "n_inputs": 121,
+    "prompt_responses": [
+      "Yes, the construct has behavior consistent with the implementation above because both concatenate the three input lists and then sort the resulting combined list in ascending order.",
+      "Yes, the construct behaves consistently because both implementations concatenate the three input lists and return a new list containing all elements sorted in ascending order.",
+      "Yes, the construct has behavior consistent with the implementation above because it uses the identical logic of concatenating the three input lists and returning a sorted version of the result.",
+      "Yes, both constructs produce identical results because they concatenate the three input lists and then sort the combined elements in ascending order.",
+      "No, the construct is inconsistent because it permanently modifies the `list1` argument in place before returning it, whereas the reference implementation creates a new sorted list without altering the original inputs."
+    ]
+  },
+  {
+    "task_id": "Mbpp/581",
+    "scores": {
+      "exec": 0.19999999999999996,
+      "prompt": 0.2,
+      "ast": 0.17388631331367202
+    },
+    "is_correct": false,
+    "main_code": "def surface_Area(base_edge, height):\n    import math\n    # Base area\n    base_area = base_edge ** 2\n    \n    # Slant height calculation\n    # The slant height is the hypotenuse of a right triangle with:\n    # one leg = height of pyramid\n    # other leg = half of the base edge\n    slant_height = math.sqrt(height**2 + (base_edge / 2)**2)\n    \n    # Lateral area = perimeter of base * slant_height / 2\n    perimeter = 4 * base_edge\n    lateral_area = (perimeter * slant_height) / 2\n    \n    # Total surface area\n    total_area = base_area + lateral_area\n    \n    return total_area",
+    "sample_codes": [
+      "def surface_Area(base_edge, height):\n    import math\n    base = base_edge ** 2\n    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)\n    lateral_area = 4 * (0.5 * base_edge * slant_height)\n    return base + lateral_area",
+      "def surface_Area(base_edge, height):\n    import math\n    # Base area of the square\n    base_area = base_edge ** 2\n    \n    # Slant height calculation: sqrt(height^2 + (base_edge/2)^2)\n    slant_height = math.sqrt(height ** 2 + (base_edge / 2) ** 2)\n    \n    # Lateral area = 4 * (1/2 * base_edge * slant_height)\n    lateral_area = 2 * base_edge * slant_height\n    \n    return base_area + lateral_area",
+      "import math\n\ndef surface_Area(base_edge, height):\n    \"\"\"\n    Calculate the surface area of a square pyramid.\n    \n    Parameters:\n    base_edge (float): The length of the base edge of the pyramid.\n    height (float): The height of the pyramid from the base to the apex.\n    \n    Returns:\n    float: The surface area of the square pyramid.\n    \"\"\"\n    base_area = base_edge ** 2\n    \n    # Calculate the slant height (l) using the Pythagorean theorem\n    # l = sqrt((base_edge / 2)^2 + height^2)\n    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)\n    \n    # Calculate the lateral area (4 triangles)\n    lateral_area = 4 * (0.5 * base_edge * slant_height)\n    \n    total_area = base_area + lateral_area\n    return total_area",
+      "def surface_Area(b, h):\n    import math\n    base = b * b\n    slant_height = math.sqrt(h * h + (b / 2) ** 2)\n    lateral_area = b * slant_height\n    total_surface_area = base + lateral_area\n    return int(total_surface_area)",
+      "import math\n\ndef surface_Area(edge, height):\n    \"\"\"\n    Calculate the surface area of a square pyramid.\n    \n    Parameters:\n    edge (float): Length of the base edge.\n    height (float): Height of the pyramid.\n    \n    Returns:\n    float: Surface area of the pyramid.\n    \"\"\"\n    base_area = edge * edge\n    \n    slant_height = math.sqrt(height**2 + (edge/2)**2)\n    lateral_area = 4 * (0.5 * edge * slant_height)\n    \n    return base_area + lateral_area"
+    ],
+    "n_inputs": 106,
+    "prompt_responses": [
+      "Yes, the construct is consistent because it calculates the same base area, slant height, and lateral area (using four triangular faces) as the original implementation.",
+      "Yes, the construct is consistent because the lateral area formula `2 * base_edge * slant_height` is mathematically equivalent to the original implementation's `(4 * base_edge * slant_height) / 2`.",
+      "Yes, the construct is behaviorally consistent because both implementations calculate the total surface area of a square pyramid using the same mathematical formulas for the base area, slant height, and lateral area.",
+      "No, the construct is inconsistent because it calculates the lateral area incorrectly by omitting the division by 2 and truncates the final result to an integer, whereas the reference implementation correctly divides by 2 and returns a float.",
+      "Yes, the construct is behaviorally consistent because it calculates the same base area, uses the identical formula for slant height, and sums the base area with the lateral area (which is mathematically equivalent to perimeter times slant height divided by two)."
+    ]
+  },
+  {
+    "task_id": "Mbpp/479",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.1
+    },
+    "is_correct": true,
+    "main_code": "def first_Digit(n):\n    return int(str(abs(n))[0])",
+    "sample_codes": [
+      "def first_Digit(n):\n    return int(str(abs(n))[0])",
+      "def first_Digit(number):\n    number = abs(number)\n    while number >= 10:\n        number //= 10\n    return number",
+      "def first_Digit(n):\n    return int(str(abs(n))[0])",
+      "def first_Digit(n):\n    return int(str(abs(n))[0])",
+      "def first_Digit(n):\n    return int(str(abs(n))[0])"
+    ],
+    "n_inputs": 106,
+    "prompt_responses": [
+      "Yes, the construct is identical to the implementation above, so it exhibits exactly the same behavior.",
+      "Yes, the construct is consistent because both functions correctly extract the leading digit of an integer by handling negative inputs and iteratively removing trailing digits until only the first remains.",
+      "Yes, the construct is identical to the implementation above, so it exhibits exactly the same behavior.",
+      "Yes, the construct is identical to the implementation above, so it exhibits exactly the same behavior.",
+      "Yes, the construct is identical to the implementation above, so it exhibits exactly the same behavior."
+    ]
+  },
+  {
+    "task_id": "Mbpp/565",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.033333333333333326
+    },
+    "is_correct": true,
+    "main_code": "def split(s):\n    return list(s)",
+    "sample_codes": [
+      "def split(s):\n    return list(s)",
+      "def split(s):\n    return list(s)",
+      "def split(string):\n    return list(string)",
+      "def split(s):\n    return list(s)",
+      "def split(s: str):\n    return list(s)"
+    ],
+    "n_inputs": 112,
+    "prompt_responses": [
+      "Yes, the construct is identical to the implementation, so it exhibits exactly the same behavior of converting the input string into a list of individual characters.",
+      "Yes, the construct is identical to the implementation, so it exhibits exactly the same behavior of converting the input string into a list of individual characters.",
+      "Yes, the behavior is consistent because both functions return a list of individual characters from the input string.",
+      "Yes, the construct is identical to the implementation, so it exhibits exactly the same behavior of converting the input string into a list of individual characters.",
+      "Yes, because both implementations perform the exact same operation of converting the input string into a list of its individual characters."
+    ]
+  },
+  {
+    "task_id": "Mbpp/755",
+    "scores": {
+      "exec": 0.19813084112149537,
+      "prompt": 0.6,
+      "ast": 0.2419496816192707
+    },
+    "is_correct": false,
+    "main_code": "def second_smallest(nums):\n    if len(nums) < 2:\n        raise ValueError(\"List must contain at least two elements.\")\n    \n    first = float('inf')\n    second = float('inf')\n    \n    for num in nums:\n        if num < first:\n            second = first\n            first = num\n        elif first < num < second:\n            second = num\n    \n    if second == float('inf'):\n        raise ValueError(\"List must contain at least two distinct elements.\")\n    \n    return second",
+    "sample_codes": [
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        raise ValueError(\"List must contain at least two elements\")\n    sorted_nums = sorted(set(nums))\n    second = len(sorted_nums) - 2\n    if second < 0:\n        raise ValueError(\"List must contain at least two unique elements\")\n    return sorted_nums[second]",
+      "\"\"\"\nWrite a function to find the second smallest number in a list.\nassert second_smallest([1, 2, -8, -2, 0, -2])==-2\n\"\"\"\ndef second_smallest(nums):\n    if len(nums) < 2:\n        raise ValueError(\"List must contain at least two elements.\")\n    \n    first = float('inf')\n    second = float('inf')\n    \n    for num in nums:\n        if num < first:\n            second = first\n            first = num\n        elif first < num < second:\n            second = num\n    \n    if second == float('inf'):\n        raise ValueError(\"No second smallest number found.\")\n    \n    return second",
+      "def second_smallest(nums):\n    sorted_nums = sorted(set(nums))\n    return sorted_nums[1]",
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        raise ValueError(\"List must contain at least two numbers.\")\n    \n    smallest = float('inf')\n    second_smallest_num = float('inf')\n    \n    for num in nums:\n        if num < smallest:\n            second_smallest_num = smallest\n            smallest = num\n        elif num < second_smallest_num:\n            second_smallest_num = num\n            \n    if second_smallest_num == float('inf'):\n        raise ValueError(\"All numbers are the same.\")\n        \n    return second_smallest_num",
+      "def second_smallest(nums):\n    if len(nums) < 2:\n        raise ValueError(\"List must contain at least two elements.\")\n    \n    first = float('inf')\n    second = float('inf')\n    \n    for num in nums:\n        if num < first:\n            second = first\n            first = num\n        elif first < num < second:\n            second = num\n    \n    if second == float('inf'):\n        raise ValueError(\"List does not have a second smallest distinct element.\")\n    \n    return second"
+    ],
+    "n_inputs": 107,
+    "prompt_responses": [
+      "No, the construct is not consistent because it raises an error when the list contains fewer than two unique elements, whereas the original implementation only requires at least two elements (allowing duplicates as long as a second distinct value exists).",
+      "No, the construct is not consistent because it raises a ValueError with the message \"No second smallest number found\" instead of \"List must contain at least two distinct elements\" when the list lacks two unique values.",
+      "Yes, the construct is consistent because it correctly returns the second smallest distinct element by sorting the unique values of the list, which matches the logic and error-handling requirements of the original implementation.",
+      "No, the construct is not consistent because it fails to enforce the requirement for distinct elements, incorrectly returning the smallest value when the input list contains only identical numbers.",
+      "Yes, the construct has behavior consistent with the implementation above because it uses identical logic and only differs in the specific error message text, which does not affect the functional outcome."
+    ]
+  },
+  {
+    "task_id": "Mbpp/430",
+    "scores": {
+      "exec": 0.8857142857142857,
+      "prompt": 0.8,
+      "ast": 0.5906738110432881
+    },
+    "is_correct": false,
+    "main_code": "def parabola_directrix(a, b, c):\n    # The directrix of a parabola y = ax^2 + bx + c is given by y = c - b^2/(4a)\n    return c - (b ** 2) / (4 * a)",
+    "sample_codes": [
+      "def parabola_directrix(a, b, c):\n    \"\"\"\n    Calculate the directrix of a parabola given by the equation ax^2 + bx + c = 0.\n    \n    The parabola is derived from the standard form y = ax^2 + bx + c by completing the square.\n    The vertex form is y = a(x - h)^2 + k, where h = -b/(2a) and k = c - b^2/(4a).\n    \n    For a vertical parabola y = a(x-h)^2 + k, the focus is at (h, k + 1/(4a)) and the directrix is y = k - 1/(4a).\n    Since the problem involves x as the quadratic variable, it implies a horizontal parabola x = ay^2 + by + c.\n    For x = ay^2 + by + c, the axis is horizontal. Completing the square gives:\n    x = a(y + b/(2a))^2 + (c - b^2/(4a)).\n    \n    Let h = b/(2a) and k = c - b^2/(4a). The vertex is at (k, h) in (x, y) coordinates? \n    Wait, standard form: x = a(y-k)^2 + h_vertex_x.\n    Rewrite: x - (c - b^2/(4a)) = a(y + b/(2a))^2.\n    Vertex: (x_v, y_v) = (c - b^2/(4a), -b/(2a)).\n    Since it opens left or right based on 'a', the directrix is a vertical line x = x_v - 1/(4a).\n    \n    Directrix equation: x = (c - b^2/(4a)) - 1/(4a)\n    x = (4ac - b^2 - 1) / (4a)\n    The function returns the value of the directrix (the x-coordinate).\n    \"\"\"\n    return (4 * a * c - b**2 - 1) / (4 * a)",
+      "def parabola_directrix(a, b, c):\n    \"\"\"Find the directrix of a parabola given y = ax^2 + bx + c.\n    \n    The vertex form is y = a(x-h)^2 + k, where h = -b/(2a) and k = c - b^2/(4a).\n    The directrix is y = k - 1/(4a).\n    \"\"\"\n    if a == 0:\n        raise ValueError(\"Coefficient 'a' cannot be zero for a parabola.\")\n    \n    k = c - (b ** 2) / (4 * a)\n    directrix_y = k - 1 / (4 * a)\n    return directrix_y",
+      "def parabola_directrix(a, b, c):\n    # For a parabola given by y = ax^2 + bx + c, the directrix is a horizontal line.\n    # The vertex is at x_v = -b / (2a)\n    # The y-coordinate of the vertex is y_v = a*x_v^2 + b*x_v + c\n    # The focus is at (x_v, y_v + 1/(4a))\n    # The directrix is y = y_v - 1/(4a)\n    \n    if a == 0:\n        raise ValueError(\"The coefficient 'a' cannot be zero for a parabola in the form y = ax^2 + bx + c.\")\n    \n    x_v = -b / (2 * a)\n    y_v = a * x_v**2 + b * x_v + c\n    directrix_y = y_v - 1 / (4 * a)\n    \n    return directrix_y",
+      "def parabola_directrix(a, b, c):\n    # The standard form of a parabola is y = ax^2 + bx + c.\n    # The vertex form is y = a(x - h)^2 + k, where (h, k) is the vertex.\n    # h = -b / (2a)\n    # k = c - (b^2) / (4a)\n    # The focus is at (h, k + 1/(4a))\n    # The directrix is the line y = k - 1/(4a)\n    \n    h = -b / (2 * a)\n    k = c - (b * b) / (4 * a)\n    directrix_y = k - (1 / (4 * a))\n    \n    # We need to check if the directrix_y is an integer, if so return it as such, otherwise return as float.\n    if directrix_y.is_integer():\n        return int(directrix_y)\n    return directrix_y",
+      "def parabola_directrix(a, b, c):\n    \"\"\"\n    Returns the y-coordinate of the directrix for a quadratic function y = ax^2 + bx + c.\n    \n    The parabola y = ax^2 + bx + c can be written in vertex form as:\n    y = a(x - h)^2 + k, where (h, k) is the vertex.\n    h = -b / (2a)\n    k = c - b^2 / (4a)\n    \n    The focus is at (h, k + 1/(4a)) and the directrix is the line y = k - 1/(4a).\n    \"\"\"\n    if a == 0:\n        return None\n    \n    discriminant = b**2 - 4*a*c\n    # We need c - b^2/(4a) - 1/(4a)\n    # k = c - b^2/(4a)\n    # p = 1/(4a)\n    # directrix_y = k - p = c - b^2/(4a) - 1/(4a) = c - (b^2 + 1) / (4a)\n    \n    numerator = b**2 + 1\n    denominator = 4 * a\n    return c - numerator / denominator\n\n# Verification\n#assert parabola_directrix(5,3,2)==-198"
+    ],
+    "n_inputs": 105,
+    "prompt_responses": [
+      "No, the construct calculates the x-coordinate of the directrix for a horizontal parabola (x = ay² + by + c), whereas the original implementation calculates the y-coordinate of the directrix for a vertical parabola (y = ax² + bx + c).",
+      "No, the construct is inconsistent because it incorrectly subtracts an additional term ($1/(4a)$) from the vertex y-coordinate $k$, whereas the directrix of the parabola $y = ax^2 + bx + c$ is exactly $k$ (or equivalently $c - b^2/(4a)$).",
+      "Yes, the construct is behaviorally consistent with the original implementation because both derive the same directrix value by algebraically simplifying the vertex-based formula to $c - \\frac{b^2}{4a}$.",
+      "No, the construct is not consistent because it includes an unnecessary type conversion to integer when the original implementation always returns a float.",
+      "No, the construct is inconsistent because it incorrectly adds 1 to the numerator (calculating `c - (b^2 + 1)/(4a)`) instead of correctly computing the directrix as `c - b^2/(4a)`."
+    ]
+  },
+  {
+    "task_id": "Mbpp/237",
+    "scores": {
+      "exec": 0.19999999999999996,
+      "prompt": 0.4,
+      "ast": 0.7047061047061047
+    },
+    "is_correct": false,
+    "main_code": "def check_occurences(tuples_list):\n    from collections import Counter\n    return dict(Counter(tuples_list))",
+    "sample_codes": [
+      "def check_occurences(lst):\n    count = {}\n    for item in lst:\n        count[item] = count.get(item, 0) + 1\n    return count",
+      "from collections import Counter\n\ndef check_occurences(list_of_tuples):\n    return dict(Counter(list_of_tuples))\n\nif __name__ == \"__main__\":\n    assert check_occurences([(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)] ) == {(1, 3): 2, (2, 5): 2, (3, 6): 1}",
+      "def check_occurences(tuples_list):\n    count_dict = {}\n    for t in tuples_list:\n        count_dict[t] = count_dict.get(t, 0) + 1\n    return count_dict",
+      "def count_tuple_occurrences(tuple_list):\n    from collections import defaultdict\n\n    count = defaultdict(int)\n    for i, t in enumerate(tuple_list):\n        if i < len(tuple_list) - 1:\n            continue  # Ignore the last element to match the example output\n        count[t] += 1\n    return dict(count)",
+      "def check_occurences(list_of_tuples):\n    count = {}\n    for t in list_of_tuples:\n        count[t] = count.get(t, 0) + 1\n    return count"
+    ],
+    "n_inputs": 114,
+    "prompt_responses": [
+      "Yes, the construct has behavior consistent with the implementation above because both functions correctly count the occurrences of each unique item in the input list and return a dictionary mapping those items to their frequencies.",
+      "No, the construct is inconsistent because the assertion tests for a result containing `(3, 6)` which does not exist in the provided input list, whereas the implementation correctly counts only the tuples actually present.",
+      "Yes, the construct behaves consistently because both implementations correctly count the occurrences of each tuple in the input list and return a dictionary mapping those tuples to their frequencies.",
+      "No, the construct is not consistent because it explicitly skips counting the last tuple in the list, whereas the original implementation counts every tuple in the input.",
+      "Yes, the construct behaves consistently with the implementation above because both functions correctly count the occurrences of each tuple in the input list and return a dictionary mapping those tuples to their frequencies."
+    ]
+  },
+  {
+    "task_id": "Mbpp/95",
+    "scores": {
+      "exec": 0.4,
+      "prompt": 0.4,
+      "ast": 0.12673992673992676
+    },
+    "is_correct": true,
+    "main_code": "def Find_Min_Length(list_of_lists):\n    return min(len(lst) for lst in list_of_lists)",
+    "sample_codes": [
+      "def find_min_length(list_of_lists):\n    if not list_of_lists:\n        return 0\n    return min(len(lst) for lst in list_of_lists)",
+      "def find_min_length(list_of_lists):\n    if not list_of_lists:\n        return 0\n    return min(len(lst) for lst in list_of_lists)",
+      "def Find_Min_Length(list_of_lists):\n    return min(len(sublist) for sublist in list_of_lists)",
+      "def Find_Min_Length(list_of_lists):\n    \"\"\"\n    Find the length of the smallest list in a list of lists.\n    \n    Args:\n        list_of_lists (list): A list containing other lists.\n        \n    Returns:\n        int: The length of the smallest inner list.\n    \"\"\"\n    return min(len(sub_list) for sub_list in list_of_lists)",
+      "def Find_Min_Length(list_of_lists):\n    return min(len(sublist) for sublist in list_of_lists)"
+    ],
+    "n_inputs": 108,
+    "prompt_responses": [
+      "No, the construct is not consistent because it returns 0 for an empty list, whereas the original implementation would raise a `ValueError` when attempting to find the minimum of an empty sequence.",
+      "No, the constructs are not consistent because the second implementation returns 0 for an empty list, whereas the first implementation would raise a ValueError.",
+      "Yes, the two constructs are behaviorally consistent because they both iterate over the input list of lists and compute the minimum of the lengths of the individual sublists using functionally equivalent generator expressions.",
+      "Yes, the construct has behavior consistent with the implementation above because it uses the identical logic of calculating the minimum of the lengths of all inner lists.",
+      "Yes, the construct is behaviorally consistent because it performs the exact same operation of calculating the length of each sublist and finding the minimum value, differing only in the variable name used for iteration."
+    ]
+  },
+  {
+    "task_id": "Mbpp/577",
+    "scores": {
+      "exec": 0.6648148148148147,
+      "prompt": 0.8,
+      "ast": 0.5495533677791743
+    },
+    "is_correct": false,
+    "main_code": "def last_Digit_Factorial(n):\n    if n <= 1:\n        return 1\n    if n <= 3:\n        return n\n    if n <= 6:\n        return 6\n    return 0",
+    "sample_codes": [
+      "def last_Digit_Factorial(n: int) -> int:\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers.\")\n    if n <= 1:\n        return 1\n    \n    digit = 1\n    for i in range(2, n + 1):\n        digit *= i\n        digit %= 10\n        \n    return digit",
+      "def last_Digit_Factorial(n):\n    if n <= 1:\n        return 1\n    if n <= 3:\n        return n\n    digit = 1\n    for i in range(2, n + 1):\n        digit = (digit * i) % 10\n    return digit",
+      "def last_Digit_Factorial(n):\n    if n <= 3:\n        return n\n    return 0",
+      "def last_Digit_Factorial(n):\n    if n <= 1:\n        return 1\n    \n    # For n >= 5, the last digit of n! is always 0\n    if n >= 5:\n        return 0\n    \n    # Calculate factorial for n < 5 and return the last digit\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n        result %= 10  # Keep only the last digit to avoid large numbers\n    \n    return result",
+      "def last_Digit_Factorial(n: int) -> int:\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers.\")\n    if n <= 1:\n        return 1\n    \n    for i in range(2, n + 1):\n        n = (n * i) % 10\n    \n    return n"
+    ],
+    "n_inputs": 108,
+    "prompt_responses": [
+      "No, the construct is not consistent because it correctly computes the last digit for all non-negative integers, whereas the original implementation incorrectly returns 0 for all inputs greater than 6.",
+      "No, the construct is not consistent because it correctly calculates the last digit for all n ≥ 4 (e.g., returning 2 for n=4 and 4 for n=5), whereas the original implementation incorrectly returns 0 for all n > 6.",
+      "No, the construct is inconsistent because it fails to return 6 for inputs between 4 and 6, whereas the original implementation correctly returns 6 for those cases.",
+      "Yes, the construct is consistent because both implementations correctly return the last digit of the factorial for all non-negative integers by handling small cases explicitly and returning 0 for any n ≥ 5 where the factorial includes factors of both 2 and 5.",
+      "No, the construct is not consistent because it correctly computes the last digit for all non-negative integers, whereas the original implementation incorrectly returns 0 for any input greater than 6."
+    ]
+  },
+  {
+    "task_id": "Mbpp/20",
+    "scores": {
+      "exec": 0.2384615384615385,
+      "prompt": 0.6,
+      "ast": 0.36355731758460924
+    },
+    "is_correct": true,
+    "main_code": "def is_woodall(n):\n    \"\"\"\n    Check if the given number is a Woodall number.\n    A Woodall number is of the form n * 2^n - 1 for some integer n >= 1.\n    \"\"\"\n    if n <= 0:\n        return False\n    \n    # Check for n from 1 up to a reasonable limit where n*2^n - 1 exceeds n\n    # Since 2^n grows very fast, we can stop early if the generated number exceeds n\n    i = 1\n    while True:\n        woodall_num = i * (2 ** i) - 1\n        if woodall_num == n:\n            return True\n        if woodall_num > n:\n            return False\n        i += 1",
+    "sample_codes": [
+      "def is_woodall(n):\n    if n <= 0:\n        return False\n    if n == 1:\n        return False\n    if n == 2:\n        return False\n    if n % 2 == 1:\n        k = 3\n    else:\n        k = 4\n    while k < n:\n        if is_woodall(k) == False:\n            return True\n        k += 2 if k % 2 == 1 else 4\n    return False",
+      "def is_woodall(n):\n    def is_prime(num):\n        if num < 2:\n            return False\n        if num == 2:\n            return True\n        if num % 2 == 0:\n            return False\n        for i in range(3, int(num**0.5) + 1, 2):\n            if num % i == 0:\n                return False\n        return True\n    \n    # Woodall number is of the form n * 2^n - 1 where n > 0\n    # Check if there exists some k such that k * 2^k - 1 == n\n    if n <= 0:\n        return False\n    \n    k = 1\n    while True:\n        woodall_num = k * (2 ** k) - 1\n        if woodall_num == n:\n            return True\n        if woodall_num > n:\n            return False\n        k += 1",
+      "def is_woodall(n):\n    if n < 4:\n        return False\n    num_terms = n.bit_length()\n    def factorial(k):\n        result = 1\n        for i in range(2, k + 1):\n            result *= i\n        return result\n    def hamming_weight(k):\n        count = 0\n        while k:\n            count += k & 1\n            k >>= 1\n        return count\n    def lit_letras(n, base):\n        s = bin(n)[2:]\n        result = 0\n        for i, char in enumerate(s):\n            result += int(char) * (base ** (len(s) - 1 - i))\n            if char == '1':\n                w = hamming_weight(result)\n                if w < i:\n                    break\n        return result\n    limit = lit_letras(num_terms, 5)\n    return n == limit\n\nif __name__ == \"__main__\":\n    assert is_woodall(383) == True\n    print(\"All tests passed.\")",
+      "def is_woodall(n):\n    \"\"\"\n    Checks if a number is a Woodall number.\n    A Woodall number is of the form n * 2^n - 1 for some integer n >= 1.\n    \"\"\"\n    if n < 1:\n        return False\n    \n    k = 1\n    while True:\n        woodall_num = k * (2 ** k) - 1\n        if woodall_num == n:\n            return True\n        if woodall_num > n:\n            return False\n        k += 1",
+      "def is_woodall(n):\n    \"\"\"Check if a number is woodall\"\"\"\n    if n <= 0:\n        return False\n    \n    # Calculate Woodall number limit: Wm = m * 2^m + 1\n    # We need to find m such that the m-th Woodall number is close to or equals n\n    # Actually, we should check if n itself is a Woodall number.\n    # Woodall numbers: Wm = m * 2^m + 1 for m >= 1\n    \n    m = 1\n    while True:\n        woodall_num = m * (2 ** m) + 1\n        if woodall_num == n:\n            return True\n        if woodall_num > n:\n            return False\n        m += 1\n\n# Test\nassert is_woodall(383) == True"
+    ],
+    "n_inputs": 104,
+    "prompt_responses": [
+      "No, the construct is logically inconsistent because it recursively calls itself to check if `k` is a Woodall number, creating infinite recursion for any input greater than 2, whereas the reference implementation uses an iterative loop to generate Woodall numbers.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions use identical logic to generate Woodall numbers and terminate early when the generated value exceeds the input, despite the construct including an unused `is_prime` helper function.",
+      "No, the construct is not consistent because it implements a completely different algorithm involving custom bit manipulation and a non-standard `lit_letras` function, whereas the reference implementation correctly checks if a number matches the mathematical definition of a Woodall number ($n \\cdot 2^n - 1$).",
+      "Yes, the construct has behavior consistent with the implementation above because both functions correctly validate the input constraint (n >= 1) and use identical logic to iterate through Woodall numbers until a match is found or the generated number exceeds the input.",
+      "No, the construct is inconsistent because it incorrectly defines Woodall numbers as $m \\cdot 2^m + 1$ (which are Mersenne-like or related to factorions) instead of the correct formula $m \\cdot 2^m - 1$ used in the reference implementation."
+    ]
+  },
+  {
+    "task_id": "Mbpp/437",
+    "scores": {
+      "exec": 0.39622641509433953,
+      "prompt": 0.4,
+      "ast": 0.1507309941520468
+    },
+    "is_correct": true,
+    "main_code": "def remove_odd(s):\n    return ''.join(c for i, c in enumerate(s) if i % 2 == 1)",
+    "sample_codes": [
+      "def remove_odd(s):\n    return ''.join(c for i, c in enumerate(s) if i % 2 == 1)",
+      "def remove_odd(s):\n    return ''.join(c for c in s if int(c) % 2 == 0)",
+      "def remove_odd(s: str) -> str:\n    return \"\".join(char for i, char in enumerate(s) if i % 2 == 1)",
+      "def remove_odd(s):\n    result = ''.join([char for i, char in enumerate(s) if i % 2 == 1])\n    return result",
+      "def remove_odd(s):\n    result = \"\"\n    for i, char in enumerate(s):\n        if i % 2 == 0:\n            result += char\n    return result"
+    ],
+    "n_inputs": 106,
+    "prompt_responses": [
+      "Yes, the construct is identical to the implementation above, so it exhibits exactly the same behavior of returning a string composed only of characters at odd indices.",
+      "No, the constructs have inconsistent behavior because the first removes characters at odd indices while the second removes characters whose numeric values are odd.",
+      "Yes, the construct has consistent behavior because it performs the identical operation of filtering characters at odd indices and joining them, differing only in variable naming and type hints which do not affect runtime logic.",
+      "Yes, the construct behaves consistently because both implementations use a list comprehension with identical filtering logic to select characters at odd indices and join them into a string.",
+      "No, the construct has inconsistent behavior because it retains characters at even indices (0, 2, 4...) while the original implementation removes them by keeping only characters at odd indices."
+    ]
+  },
+  {
+    "task_id": "Mbpp/470",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.22035002035002033
+    },
+    "is_correct": true,
+    "main_code": "def add_pairwise(t):\n    return tuple(t[i] + t[i+1] for i in range(len(t)-1))",
+    "sample_codes": [
+      "def add_pairwise(t):\n    if len(t) < 2:\n        return ()\n    return tuple(t[i] + t[i + 1] for i in range(len(t) - 1))",
+      "def add_pairwise(t):\n    if len(t) < 2:\n        return ()\n    return tuple(t[i] + t[i+1] for i in range(len(t)-1))",
+      "def add_pairwise(t):\n    \"\"\"\n    Write a function to find the pairwise addition of the neighboring elements of the given tuple.\n    \"\"\"\n    return tuple(t[i] + t[i+1] for i in range(len(t) - 1))",
+      "def add_pairwise(t):\n    result = []\n    for i in range(len(t) - 1):\n        result.append(t[i] + t[i + 1])\n    return tuple(result)",
+      "def add_pairwise(t):\n    result = []\n    for i in range(len(t) - 1):\n        result.append(t[i] + t[i + 1])\n    return tuple(result)"
+    ],
+    "n_inputs": 112,
+    "prompt_responses": [
+      "Yes, the construct is consistent because it produces identical results for all valid inputs while safely handling the edge case of sequences with fewer than two elements, which the original implementation would otherwise process incorrectly.",
+      "Yes, the construct is consistent because it adds an explicit check for sequences shorter than two elements, which naturally results in an empty tuple—the same outcome produced by the original generator expression when `range(len(t)-1)` is empty.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions generate an identical tuple of sums for every pair of neighboring elements in the input tuple.",
+      "Yes, the construct is consistent because it iterates through the same index range to sum adjacent elements and returns the result as a tuple, matching the behavior of the original implementation.",
+      "Yes, the construct behaves consistently because it iterates through the same index range to sum adjacent elements and returns the result as a tuple, matching the logic and output type of the original implementation."
+    ]
+  },
+  {
+    "task_id": "Mbpp/730",
+    "scores": {
+      "exec": 0.19999999999999996,
+      "prompt": 0.0,
+      "ast": 0.0
+    },
+    "is_correct": true,
+    "main_code": "def consecutive_duplicates(lst):\n    if not lst:\n        return []\n    \n    result = [lst[0]]\n    for i in range(1, len(lst)):\n        if lst[i] != lst[i - 1]:\n            result.append(lst[i])\n    return result",
+    "sample_codes": [
+      "def consecutive_duplicates(lst):\n    if not lst:\n        return []\n    \n    result = [lst[0]]\n    for i in range(1, len(lst)):\n        if lst[i] != lst[i - 1]:\n            result.append(lst[i])\n    \n    return result",
+      "def remove_consecutive_duplicates(lst):\n    if not lst:\n        return []\n    result = [lst[0]]\n    for i in range(1, len(lst)):\n        if lst[i] != lst[i-1]:\n            result.append(lst[i])\n    return result",
+      "def consecutive_duplicates(lst):\n    if not lst:\n        return []\n    \n    result = [lst[0]]\n    for i in range(1, len(lst)):\n        if lst[i] != lst[i-1]:\n            result.append(lst[i])\n    return result",
+      "def consecutive_duplicates(lst):\n    if not lst:\n        return []\n    result = [lst[0]]\n    for i in range(1, len(lst)):\n        if lst[i] != lst[i - 1]:\n            result.append(lst[i])\n    return result",
+      "def consecutive_duplicates(lst):\n    if not lst:\n        return []\n    result = [lst[0]]\n    for i in range(1, len(lst)):\n        if lst[i] != lst[i - 1]:\n            result.append(lst[i])\n    return result"
+    ],
+    "n_inputs": 112,
+    "prompt_responses": [
+      "Yes, the construct is behaviorally consistent with the implementation above because it contains identical logic and structure, differing only in the placement of the `return` statement which does not affect the function's output.",
+      "Yes, the two implementations are functionally identical because they use the exact same logic, variable names, and control flow to filter out consecutive duplicate elements from the input list.",
+      "Yes, the construct is behaviorally consistent with the implementation above because the code provided in the \"Construct\" section is identical to the code in the \"Implementation\" section.",
+      "Yes, the construct is identical to the implementation above and therefore exhibits exactly the same behavior.",
+      "Yes, the construct is identical to the provided implementation, so it exhibits exactly the same behavior."
+    ]
+  },
+  {
+    "task_id": "Mbpp/3",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.4,
+      "ast": 0.34322414366478216
+    },
+    "is_correct": true,
+    "main_code": "def is_not_prime(n):\n    if n <= 1:\n        return True\n    if n == 2:\n        return False\n    if n % 2 == 0:\n        return True\n    for i in range(3, int(n**0.5) + 1, 2):\n        if n % i == 0:\n            return True\n    return False",
+    "sample_codes": [
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return True\n    return False",
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    if n <= 3:\n        return False\n    if n % 2 == 0 or n % 3 == 0:\n        return True\n    i = 5\n    while i * i <= n:\n        if n % i == 0 or n % (i + 2) == 0:\n            return True\n        i += 6\n    return False",
+      "def is_not_prime(n: int) -> bool:\n    if n <= 1:\n        return True\n    if n <= 3:\n        return False\n    if n % 2 == 0 or n % 3 == 0:\n        return True\n    i = 5\n    while i * i <= n:\n        if n % i == 0 or n % (i + 2) == 0:\n            return True\n        i += 6\n    return False",
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return True\n    return False",
+      "def is_not_prime(n):\n    if n <= 1:\n        return True\n    if n <= 3:\n        return False\n    if n % 2 == 0 or n % 3 == 0:\n        return True\n    i = 5\n    while i * i <= n:\n        if n % i == 0 or n % (i + 2) == 0:\n            return True\n        i += 6\n    return False"
+    ],
+    "n_inputs": 108,
+    "prompt_responses": [
+      "No, the construct is not consistent because it fails to efficiently skip even numbers, resulting in redundant modulo operations for even inputs greater than 2.",
+      "Yes, the construct is behaviorally consistent with the original implementation because both functions correctly identify non-prime numbers by checking divisibility up to the square root of n, despite using different optimization strategies (checking only odd numbers versus checking numbers of the form 6k±1).",
+      "Yes, the construct is behaviorally consistent with the original implementation because both functions correctly identify non-prime numbers by checking divisibility up to the square root of n, with the construct using a more optimized 6k±1 pattern that covers the same set of potential divisors.",
+      "No, the construct is inconsistent because it fails to return `False` for the prime number 2, whereas the original implementation correctly identifies 2 as not being a non-prime.",
+      "Yes, the construct is behaviorally consistent with the original implementation because both functions correctly identify non-prime numbers by checking divisibility up to the square root of n, despite using different optimization strategies (checking only odd numbers versus checking numbers of the form 6k±1)."
+    ]
+  },
+  {
+    "task_id": "Mbpp/785",
+    "scores": {
+      "exec": 0.3735537190082645,
+      "prompt": 1.0,
+      "ast": 0.4055205686528286
+    },
+    "is_correct": false,
+    "main_code": "def tuple_str_int(s: str):\n    s = s.strip()\n    if not s.startswith('(') or not s.endswith(')'):\n        raise ValueError(\"Invalid tuple string format\")\n    inner = s[1:-1].strip()\n    if not inner:\n        return ()\n    parts = inner.split(',')\n    return tuple(int(part.strip()) for part in parts)",
+    "sample_codes": [
+      "def tuple_str_int(s: str):\n    s = s.strip()\n    if not s.startswith(\"(\") or not s.endswith(\")\"):\n        raise ValueError(\"Input string must start with '(' and end with ')'\")\n    inner = s[1:-1].strip()\n    if not inner:\n        return ()\n    items = []\n    current = \"\"\n    for char in inner:\n        if char == \",\":\n            items.append(int(current.strip()))\n            current = \"\"\n        else:\n            current += char\n    items.append(int(current.strip()))\n    return tuple(items)",
+      "def tuple_str_int(tuple_str):\n    if not isinstance(tuple_str, str):\n        raise TypeError(\"Input must be a string\")\n    try:\n        return tuple(map(int, tuple_str.replace(\" \", \"\").split(\",\")))\n    except Exception:\n        raise ValueError(\"Invalid tuple string format\")",
+      "def tuple_str_int(s: str):\n    s = s.strip()\n    if s.startswith(\"(\") and s.endswith(\")\"):\n        s = s[1:-1]\n    items = s.split(\", \")\n    return tuple(int(item.strip()) for item in items)",
+      "def tuple_str_int(s):\n    import re\n    # Remove whitespace and split by comma\n    s = s.strip()\n    parts = []\n    depth = 0\n    current = \"\"\n    for ch in s:\n        if ch == '(':\n            depth += 1\n            if depth == 1:\n                continue\n            current += ch\n        elif ch == ')':\n            depth -= 1\n            current += ch\n        elif ch == ',' and depth == 0:\n            if current.strip():\n                parts.append(current.strip())\n            current = \"\"\n            continue\n        else:\n            current += ch\n    if current.strip():\n        parts.append(current.strip())\n    \n    result = []\n    for part in parts:\n        part = part.strip()\n        if part == \"\":\n            continue\n        # Only allow digits and optional negative sign, no scientific notation\n        if re.match(r'^-?\\d+$', part):\n            result.append(int(part))\n        else:\n            raise ValueError(f\"Invalid integer format: {part}\")\n    \n    return tuple(result)",
+      "def tuple_str_int(s):\n    s = s.strip()\n    if not s.startswith('(') or not s.endswith(')'):\n        raise ValueError(\"Invalid format. Argument must start with '(' and end with ')'\")\n    inner = s[1:-1].strip()\n    if not inner:\n        return ()\n    parts = inner.split(',')\n    result = []\n    for part in parts:\n        part = part.strip()\n        if not part:\n            continue\n        try:\n            result.append(int(part))\n        except ValueError:\n            raise ValueError(f\"Invalid integer in tuple string: {part}\")\n    return tuple(result)"
+    ],
+    "n_inputs": 121,
+    "prompt_responses": [
+      "No, the construct is inconsistent because it fails to handle negative numbers correctly, as splitting on commas without respecting sign boundaries would incorrectly parse \"-1, 2\" as two separate integers instead of a single negative integer followed by a positive one.",
+      "No, the construct is not consistent because it fails to validate that the input string is properly enclosed in parentheses, which is a required format check in the original implementation.",
+      "No, the construct is inconsistent because it fails to handle tuples containing single-digit numbers or negative numbers correctly due to its reliance on \", \" as the delimiter instead of a generic comma.",
+      "No, the construct is not consistent because it fails to raise an error for strings missing surrounding parentheses (e.g., \"1,2,3\") whereas the reference implementation explicitly validates that the input must start with '(' and end with ')'.",
+      "No, the constructs are not consistent because the second implementation raises a ValueError for non-integer strings within the tuple, whereas the first implementation would successfully convert such strings to integers (or fail later with a different error) without explicitly validating that each part is an integer before conversion."
+    ]
+  },
+  {
+    "task_id": "Mbpp/477",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.05714285714285714
+    },
+    "is_correct": true,
+    "main_code": "def is_lower(s):\n    return s.lower()",
+    "sample_codes": [
+      "def is_lower(s):\n    return s.lower()",
+      "def is_lower(s):\n    return s.lower()",
+      "def is_lower(s: str) -> str:\n    return s.lower()",
+      "def is_lower(s):\n    return s.lower()",
+      "def is_lower(s):\n    return s.lower()"
+    ],
+    "n_inputs": 113,
+    "prompt_responses": [
+      "Yes, the construct is behaviorally consistent because it is identical to the provided implementation.",
+      "Yes, the construct has behavior consistent with the implementation above because both definitions are identical and perform the exact same operation of converting the input string to lowercase.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions return the lowercase version of the input string, with the only difference being the addition of type hints in the construct.",
+      "Yes, the construct is consistent because it is identical to the provided implementation, performing the exact same operation of returning the lowercase version of the input string.",
+      "Yes, the construct has behavior consistent with the implementation above because both definitions are identical and perform the exact same operation of converting the input string to lowercase."
+    ]
+  },
+  {
+    "task_id": "Mbpp/274",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.4,
+      "ast": 0.6293220056638347
+    },
+    "is_correct": true,
+    "main_code": "def even_binomial_Coeff_Sum(n):\n    return 2**(n-1)",
+    "sample_codes": [
+      "def even_binomial_Coeff_Sum(n):\n    return 2 ** (n - 1)",
+      "def even_binomial_Coeff_Sum(n):\n    \"\"\"\n    Returns the sum of binomial coefficients at even indices for a given n.\n    Sum = C(n,0) + C(n,2) + C(n,4) + ...\n    This sum equals 2^(n-1) for n > 0.\n    \"\"\"\n    if n <= 0:\n        return 0\n    return 1 << (n - 1)",
+      "def even_binomial_Coeff_Sum(n):\n    total = sum(1 << k for k in range(0, n) if bin(1 << k).count('1') == 1 and (k + 1) % 2 == 0)\n    return 0\n\ndef even_binomial_Coeff_Sum(n):\n    from math import comb\n    total = sum(comb(n, i) for i in range(0, n + 1) if i % 2 == 0)\n    return total",
+      "def even_binomial_Coeff_Sum(n):\n    result = 0\n    for k in range(0, n + 1):\n        if k % 2 == 0 and k <= n:\n            coeff = 1\n            for i in range(k):\n                coeff = coeff * (n - i) // (i + 1)\n            result += coeff\n    return result\n\n# Verification\nassert even_binomial_Coeff_Sum(4) == 8",
+      "def even_binomial_Coeff_Sum(n):\n    result = 0\n    for i in range(0, n + 1):\n        if i % 2 == 0:\n            result += binom(n, i)\n    return result\n\ndef binom(n, k):\n    if k < 0 or k > n:\n        return 0\n    numerator = 1\n    for i in range(k):\n        numerator *= (n - i)\n    denominator = 1\n    for i in range(1, k + 1):\n        denominator *= i\n    return numerator // denominator"
+    ],
+    "n_inputs": 106,
+    "prompt_responses": [
+      "Yes, the construct is behaviorally consistent because it uses the identical mathematical formula and Python syntax to compute the sum of even binomial coefficients.",
+      "Yes, the construct is consistent because it correctly handles the n ≤ 0 edge case by returning 0 while using a bitwise shift to compute 2^(n-1) for positive n, matching the mathematical result of the original implementation.",
+      "No, the first construct always returns 0 while the second correctly computes the sum of even-indexed binomial coefficients as $2^{n-1}$ for $n \\ge 1$.",
+      "No, the construct is inconsistent because it contains a redundant condition (`k <= n`) inside a loop that already iterates only up to `n`, and more critically, it fails to correctly compute binomial coefficients for `k > 0` due to an incorrect iterative calculation that does not reset the numerator or properly handle the factorial logic, leading to wrong results for inputs other than small cases like `n=4`.",
+      "Yes, the construct is consistent because it explicitly sums the even-indexed binomial coefficients, which mathematically equals $2^{n-1}$ for $n \\geq 1$ (and both return 0 for $n=0$)."
+    ]
+  },
+  {
+    "task_id": "Mbpp/800",
+    "scores": {
+      "exec": 0.06129032258064515,
+      "prompt": 0.2,
+      "ast": 0.2525806451612903
+    },
+    "is_correct": true,
+    "main_code": "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+    "sample_codes": [
+      "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+      "def remove_all_spaces(s: str) -> str:\n    return s.replace(\" \", \"\").replace(\"\\t\", \"\").replace(\"\\n\", \"\").replace(\"\\r\", \"\")",
+      "def remove_all_spaces(s):\n    return s.replace(\" \", \"\")",
+      "def remove_all_spaces(s):\n    return s.replace(' ', '')\n\nassert remove_all_spaces('python  program') == ('pythonprogram')",
+      "def remove_all_spaces(s: str) -> str:\n    return s.replace(\" \", \"\")"
+    ],
+    "n_inputs": 124,
+    "prompt_responses": [
+      "Yes, the construct is identical to the provided implementation, so it exhibits exactly the same behavior of removing all space characters from the input string.",
+      "No, the construct is not consistent because it removes additional whitespace characters like tabs, newlines, and carriage returns, whereas the original implementation only removes standard space characters.",
+      "Yes, the construct is identical to the provided implementation, so it exhibits exactly the same behavior of removing all space characters from the input string.",
+      "Yes, the construct is consistent because both implementations use the `replace` method to remove all space characters from the input string, producing the same result.",
+      "Yes, the construct has consistent behavior because it performs the exact same string replacement operation and returns the same result as the original implementation."
+    ]
+  },
+  {
+    "task_id": "Mbpp/252",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 1.0,
+      "ast": 0.1708245225831955
+    },
+    "is_correct": true,
+    "main_code": "import cmath\nimport math\n\ndef convert(z):\n    if isinstance(z, (int, float)):\n        z = complex(z)\n    r = abs(z)\n    theta = cmath.phase(z)\n    return (r, theta)",
+    "sample_codes": [
+      "import cmath\nimport math\n\ndef convert(z):\n    \"\"\"\n    Converts a complex number z to polar coordinates (r, theta).\n    \n    Args:\n        z: A complex number. If an integer or float is provided, it is converted to a complex number with imaginary part 0.\n        \n    Returns:\n        A tuple (r, theta) where r is the magnitude and theta is the phase angle in radians.\n    \"\"\"\n    # Ensure input is a complex number for atan2 calculation\n    if isinstance(z, (int, float)):\n        z = complex(z)\n    \n    r = abs(z)\n    theta = cmath.phase(z)\n    \n    return (float(r), float(theta))",
+      "import math\nimport cmath\n\ndef convert(z: float | complex) -> tuple[float, float]:\n    if z == 0:\n        return (0.0, 0.0)\n    r = abs(z)\n    theta = cmath.phase(z)\n    return (r, theta)",
+      "import cmath\n\ndef convert(complex_num):\n    if not isinstance(complex_num, (int, float, complex)):\n        raise TypeError(\"Input must be a number.\")\n    \n    magnitude = abs(complex_num)\n    angle = cmath.phase(complex_num)\n    \n    return (magnitude, angle)",
+      "def convert(z):\n    import cmath\n    if isinstance(z, int):\n        z = float(z)\n    polar = cmath.polar(complex(z))\n    return (polar[0], polar[1])",
+      "import cmath\nimport math\n\ndef convert(z):\n    if isinstance(z, int):\n        z = complex(z)\n    magnitude = abs(z)\n    angle = cmath.phase(z)\n    return (magnitude, angle)"
+    ],
+    "n_inputs": 125,
+    "prompt_responses": [
+      "No, the construct is not fully consistent because it explicitly casts the magnitude and phase to floats before returning, whereas the original implementation returns them as their native types (which may be floats or complex numbers depending on the input).",
+      "No, the constructs are not consistent because the first implementation converts integers to complex numbers before calculating the phase, whereas the second explicitly handles the zero case and relies on type hints that may not enforce the same runtime behavior for non-complex numeric types.",
+      "No, the construct is not consistent because it raises a TypeError for integer or float inputs, whereas the original implementation explicitly converts them to complex numbers before processing.",
+      "No, the construct is not consistent because it fails to handle float inputs directly, whereas the original implementation explicitly converts floats to complex numbers before processing.",
+      "No, the construct is inconsistent because it fails to convert float inputs to complex numbers, which would cause `cmath.phase` to raise a TypeError when a float is passed directly."
+    ]
+  },
+  {
+    "task_id": "Mbpp/644",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.2,
+      "ast": 0.27187622567680425
+    },
+    "is_correct": true,
+    "main_code": "def reverse_Array_Upto_K(arr, k):\n    if k <= 0 or k > len(arr):\n        return arr\n    arr[:k] = arr[:k][::-1]\n    return arr",
+    "sample_codes": [
+      "def reverse_Array_Upto_K(arr, k):\n    if not arr or k <= 0 or k > len(arr):\n        return arr\n    \n    # Reverse the sub-array from index 0 to k-1\n    left = 0\n    right = k - 1\n    \n    while left < right:\n        arr[left], arr[right] = arr[right], arr[left]\n        left += 1\n        right -= 1\n    \n    return arr",
+      "def reverse_Array_Upto_K(arr, k):\n    if k <= 0 or k > len(arr):\n        return arr\n    reversed_part = arr[:k][::-1]\n    remaining_part = arr[k:]\n    return reversed_part + remaining_part",
+      "def reverse_Array_Upto_K(arr, k):\n    if k <= 0 or k > len(arr):\n        return arr\n    for i in range(k // 2):\n        arr[i], arr[k - 1 - i] = arr[k - 1 - i], arr[i]\n    return arr",
+      "def reverse_Array_Upto_K(arr, k):\n    if k > len(arr):\n        k = len(arr)\n    \n    # Reverse the first k elements\n    arr[:k] = arr[:k][::-1]\n    \n    return arr",
+      "def reverse_Array_Upto_K(arr, k):\n    if k > len(arr) or k <= 0:\n        return arr\n    arr[:k] = arr[:k][::-1]\n    return arr"
+    ],
+    "n_inputs": 105,
+    "prompt_responses": [
+      "Yes, the construct has behavior consistent with the implementation above because both functions return the input array with the first `k` elements reversed while leaving the rest unchanged, handling edge cases like empty arrays or invalid `k` values identically.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions return a new list where the first k elements are reversed while the remaining elements stay in their original order, without modifying the input list in place.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions reverse the first k elements of the array while leaving the rest unchanged, handling edge cases where k is invalid in the same way.",
+      "No, the construct is not consistent because it modifies the input parameter `k` to match the array length when `k` is too large, whereas the original implementation returns the array unchanged in that scenario.",
+      "Yes, the two implementations are behaviorally consistent because the logical condition `k <= 0 or k > len(arr)` is mathematically equivalent to `k > len(arr) or k <= 0` due to the commutative property of logical OR."
+    ]
+  },
+  {
+    "task_id": "Mbpp/99",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.20801151515827762
+    },
+    "is_correct": false,
+    "main_code": "def decimal_to_binary(n):\n    if n == 0:\n        return '0'\n    binary = ''\n    while n > 0:\n        binary = str(n % 2) + binary\n        n = n // 2\n    return binary",
+    "sample_codes": [
+      "def decimal_to_binary(n: int) -> str:\n    if n == 0:\n        return \"0\"\n    binary = \"\"\n    number = n\n    while number > 0:\n        remainder = number % 2\n        binary = str(remainder) + binary\n        number = number // 2\n    return binary",
+      "def decimal_to_binary(n):\n    if n == 0:\n        return '0'\n    binary = ''\n    while n > 0:\n        binary = str(n % 2) + binary\n        n //= 2\n    return binary",
+      "def decimal_to_binary(n):\n    if n == 0:\n        return '0'\n    bits = []\n    while n > 0:\n        bits.append(str(n % 2))\n        n //= 2\n    return ''.join(reversed(bits))",
+      "def decimal_to_binary(n):\n    if n == 0:\n        return '0'\n    bits = []\n    while n > 0:\n        bits.append(str(n % 2))\n        n //= 2\n    return ''.join(reversed(bits))",
+      "def decimal_to_binary(n):\n    if n == 0:\n        return '0'\n    binary = ''\n    while n > 0:\n        binary = str(n % 2) + binary\n        n //= 2\n    return binary"
+    ],
+    "n_inputs": 107,
+    "prompt_responses": [
+      "Yes, the construct is behaviorally consistent because it implements the exact same iterative division-by-2 algorithm with identical base cases and string concatenation logic.",
+      "Yes, the behavior is consistent because the only difference is the use of `//` instead of `/` for integer division, which produces the same result in Python 3 as the original implementation.",
+      "Yes, the construct is consistent because it correctly accumulates binary digits in reverse order and then reverses the list before joining them to produce the same result as the string concatenation method.",
+      "Yes, the construct produces behavior consistent with the original implementation because it generates the same binary digits in reverse order and then reverses them back to the correct sequence.",
+      "Yes, the behavior is consistent because the only difference is the use of the `//` operator instead of `//` (which are functionally identical in Python for integer division), resulting in the same output."
+    ]
+  },
+  {
+    "task_id": "Mbpp/310",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.1673076923076923
+    },
+    "is_correct": false,
+    "main_code": "def string_to_tuple(s):\n    return tuple(s)",
+    "sample_codes": [
+      "def string_to_tuple(s):\n    return tuple(s)",
+      "def string_to_tuple(s):\n    return tuple(list(s))",
+      "def string_to_tuple(s):\n    return tuple(list(s))",
+      "def string_to_tuple(s: str) -> tuple:\n    \"\"\"\n    Converts a given string to a tuple of its characters.\n    \n    Args:\n        s (str): The input string to convert.\n        \n    Returns:\n        tuple: A tuple containing each character of the input string as a separate element.\n    \"\"\"\n    return tuple(s)",
+      "def string_to_tuple(s):\n    return tuple(s)"
+    ],
+    "n_inputs": 116,
+    "prompt_responses": [
+      "Yes, the construct has behavior consistent with the implementation above because both functions perform the identical operation of converting a string into a tuple of its individual characters.",
+      "Yes, because converting a string to a list and then to a tuple produces the same sequence of characters as converting the string directly to a tuple.",
+      "Yes, because converting a string to a list and then to a tuple produces the same sequence of characters as converting the string directly to a tuple.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions return a tuple of the input string's characters using the identical `tuple(s)` operation.",
+      "Yes, the construct is behaviorally consistent because it is an identical function definition that performs the exact same operation of converting a string into a tuple of its characters."
+    ]
+  },
+  {
+    "task_id": "Mbpp/56",
+    "scores": {
+      "exec": 0.009375000000000022,
+      "prompt": 0.2,
+      "ast": 0.09724310776942355
+    },
+    "is_correct": true,
+    "main_code": "def check(n):\n    reverse_n = int(str(n)[::-1])\n    return n == 2 * reverse_n - 1",
+    "sample_codes": [
+      "def check(n):\n    if n < 0:\n        return False\n    reversed_n = int(str(n)[::-1])\n    return n == 2 * reversed_n - 1",
+      "def check(n):\n    reversed_n = int(str(n)[::-1])\n    return n == 2 * reversed_n - 1",
+      "def check(n):\n    reversed_n = int(str(n)[::-1])\n    return (2 * reversed_n) == (n - 1)",
+      "def check(num: int) -> bool:\n    reverse_num = int(str(num)[::-1])\n    return (reverse_num * 2) == (num - 1)",
+      "def check(n):\n    rev = int(str(n)[::-1])\n    return n == 2 * rev - 1\n\nassert check(70) == False"
+    ],
+    "n_inputs": 128,
+    "prompt_responses": [
+      "No, the construct is not consistent because it explicitly returns False for negative inputs, whereas the original implementation would evaluate the condition for negative numbers without that specific guard.",
+      "Yes, the construct has behavior consistent with the implementation above because it performs the exact same operations using only variable name differences.",
+      "Yes, the construct is consistent because the equation `(2 * reversed_n) == (n - 1)` is algebraically equivalent to `n == 2 * reversed_n - 1`.",
+      "Yes, the construct is behaviorally consistent because the equation `reverse_num * 2 == num - 1` is algebraically equivalent to `num == 2 * reverse_num - 1`.",
+      "Yes, the construct has behavior consistent with the implementation above because both functions perform identical operations and yield the same result for the test case `check(70)`, which correctly returns `False` since 70 is not equal to 2 * 07 - 1."
+    ]
+  },
+  {
+    "task_id": "Mbpp/17",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.033333333333333326
+    },
+    "is_correct": true,
+    "main_code": "def square_perimeter(side_length):\n    return 4 * side_length",
+    "sample_codes": [
+      "def square_perimeter(side_length):\n    return side_length * 4",
+      "def square_perimeter(side_length):\n    return side_length * 4",
+      "def square_perimeter(side):\n    \"\"\"\n    Returns the perimeter of a square given its side length.\n    \n    :param side: Length of the side of the square (float or int)\n    :return: Perimeter of the square\n    \"\"\"\n    return side * 4",
+      "def square_perimeter(side):\n    return 4 * side",
+      "def square_perimeter(side_length):\n    return side_length * 4"
+    ],
+    "n_inputs": 104,
+    "prompt_responses": [
+      "Yes, because both functions perform the identical mathematical operation of multiplying the side length by four to calculate the perimeter.",
+      "Yes, because both functions perform the identical mathematical operation of multiplying the side length by four to calculate the perimeter.",
+      "Yes, the construct is behaviorally consistent because both functions calculate the perimeter of a square by multiplying the side length by 4, regardless of the variable name used.",
+      "Yes, the construct is behaviorally consistent because it performs the exact same calculation (multiplying the input side length by 4) and returns the result, despite using a different parameter name.",
+      "Yes, because both functions calculate the perimeter of a square by multiplying the side length by 4, yielding identical results for any valid input."
+    ]
+  },
+  {
+    "task_id": "Mbpp/19",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.4
+    },
+    "is_correct": true,
+    "main_code": "def test_duplicate(arr):\n    seen = set()\n    for num in arr:\n        if num in seen:\n            return True\n        seen.add(num)\n    return False",
+    "sample_codes": [
+      "def test_duplicate(arr):\n    return len(arr) != len(set(arr))",
+      "def test_duplicate(nums):\n    seen = set()\n    for num in nums:\n        if num in seen:\n            return True\n        seen.add(num)\n    return False",
+      "def test_duplicate(arr):\n    return len(arr) != len(set(arr))",
+      "def test_duplicate(arr):\n    return len(arr) != len(set(arr))",
+      "def test_duplicate(arr):\n    return len(arr) != len(set(arr))"
+    ],
+    "n_inputs": 105,
+    "prompt_responses": [
+      "Yes, both implementations correctly identify whether a list contains duplicate elements by comparing the count of unique items to the total count.",
+      "Yes, the two implementations are functionally identical because they use the same algorithmic logic, variable names, and control flow to detect duplicates in a list.",
+      "Yes, both implementations correctly identify whether a list contains duplicate elements by comparing the count of unique items to the total count.",
+      "Yes, both implementations correctly identify whether a list contains duplicate elements by comparing the count of unique items to the total number of items.",
+      "Yes, both implementations correctly identify whether a list contains duplicate elements by comparing the count of unique items to the total count."
+    ]
+  },
+  {
+    "task_id": "Mbpp/754",
+    "scores": {
+      "exec": 0.0,
+      "prompt": 0.0,
+      "ast": 0.09465724149268455
+    },
+    "is_correct": true,
+    "main_code": "def extract_index_list(l1, l2, l3):\n    result = []\n    min_len = min(len(l1), len(l2), len(l3))\n    for i in range(min_len):\n        if l1[i] == l2[i] == l3[i]:\n            result.append(l1[i])\n    return result",
+    "sample_codes": [
+      "def extract_index_list(l1, l2, l3):\n    result = []\n    min_len = min(len(l1), len(l2), len(l3))\n    for i in range(min_len):\n        if l1[i] == l2[i] == l3[i]:\n            result.append(l1[i])\n    return result",
+      "def extract_index_list(l1, l2, l3):\n    common = []\n    for index in range(min(len(l1), len(l2), len(l3))):\n        if l1[index] == l2[index] == l3[index]:\n            common.append(l1[index])  # can use l2[index] or l3[index]\n    return common",
+      "def extract_index_list(l1, l2, l3):\n    common_elements = []\n    for i in range(min(len(l1), len(l2), len(l3))):\n        if l1[i] == l2[i] == l3[i]:\n            common_elements.append(l1[i])\n    return common_elements",
+      "def extract_index_list(l1, l2, l3):\n    return [l1[i] for i in range(min(len(l1), len(l2), len(l3))) if l1[i] == l2[i] == l3[i]]",
+      "def extract_index_list(l1, l2, l3):\n    common_elements = []\n    for i in range(min(len(l1), len(l2), len(l3))):\n        if l1[i] == l2[i] == l3[i]:\n            common_elements.append(l1[i])\n    return common_elements"
+    ],
+    "n_inputs": 119,
+    "prompt_responses": [
+      "Yes, the construct is identical to the provided implementation, so it exhibits exactly the same behavior.",
+      "Yes, the two implementations are behaviorally consistent because they both iterate over the same range of indices and append the same value to the result list whenever the corresponding elements in all three input lists are equal.",
+      "Yes, the two implementations are functionally equivalent because they iterate over the same range and append identical values to a list under the same conditional logic.",
+      "Yes, the construct is behaviorally consistent because it iterates over the same range of indices and appends the same values to the result list under identical conditions.",
+      "Yes, the two implementations are functionally equivalent because they iterate over the same range and append identical values to a list under the exact same conditional logic."
+    ]
+  }
+]
