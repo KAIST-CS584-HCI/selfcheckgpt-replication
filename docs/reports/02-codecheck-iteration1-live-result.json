@@ -1,0 +1,11 @@
+[
+  {
+    "task_id": "Mbpp/435",
+    "exec_score": 0.3584905660377359,
+    "is_correct": false,
+    "main_code": "def last_Digit(n):\n    return n % 10",
+    "sample_codes": [
+      "def last_Digit(n):\n    return abs(n) % 10"
+    ]
+  }
+]
