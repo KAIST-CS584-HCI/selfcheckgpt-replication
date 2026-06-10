@@ -16,4 +16,6 @@ python-dotenv
 
 # Repository demos / experiments
 datasets
+evalplus
+scikit-learn
 scipy

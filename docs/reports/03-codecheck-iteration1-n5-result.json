@@ -1,0 +1,67 @@
+[
+  {
+    "task_id": "Mbpp/435",
+    "exec_score": 0.3433962264150944,
+    "is_correct": true,
+    "main_code": "def last_Digit(n):\n    return abs(n) % 10",
+    "sample_codes": [
+      "\"\"\"\nWrite a python function to find the last digit of a given number.\nassert last_Digit(123) == 3\n\"\"\"\n\ndef last_Digit(n):\n    return abs(n) % 10",
+      "def last_Digit(n):\n    return n % 10",
+      "def last_digit(n):\n    return abs(n) % 10",
+      "def last_Digit(n):\n    return abs(n) % 10",
+      "def last_Digit(n):\n    return n % 10"
+    ]
+  },
+  {
+    "task_id": "Mbpp/459",
+    "exec_score": 0.44150943396226416,
+    "is_correct": true,
+    "main_code": "def remove_uppercase(s: str) -> str:\n    return ''.join(c for c in s if c.islower())",
+    "sample_codes": [
+      "def remove_uppercase(s):\n    result = []\n    for char in s:\n        if char.isupper():\n            continue\n        result.append(char)\n    return ''.join(result)",
+      "def remove_uppercase(s: str) -> str:\n    result = []\n    for char in s:\n        if not char.isupper():\n            result.append(char)\n    return ''.join(result)",
+      "def remove_uppercase(s: str) -> str:\n    return ''.join(c for c in s if c.islower())",
+      "def remove_uppercase(s):\n    result = []\n    for char in s:\n        if char.isupper():\n            continue\n        result.append(char)\n    return ''.join(result)",
+      "def remove_uppercase(s):\n    return ''.join(ch for ch in s if ch.islower())"
+    ]
+  },
+  {
+    "task_id": "Mbpp/62",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def smallest_num(lst):\n    return min(lst)",
+    "sample_codes": [
+      "def smallest_num(lst):\n    if not lst:\n        raise ValueError(\"List cannot be empty\")\n    min_val = lst[0]\n    for num in lst[1:]:\n        if num < min_val:\n            min_val = num\n    return min_val",
+      "def smallest_num(lst):\n    return min(lst)",
+      "def smallest_num(nums):\n    if not nums:\n        raise ValueError(\"List must not be empty\")\n    return min(nums)",
+      "def smallest_num(numbers):\n    if not numbers:\n        raise ValueError(\"List cannot be empty.\")\n    smallest = numbers[0]\n    for num in numbers[1:]:\n        if num < smallest:\n            smallest = num\n    return smallest",
+      "def smallest_num(numbers):\n    return min(numbers)"
+    ]
+  },
+  {
+    "task_id": "Mbpp/270",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def sum_even_and_even_index(lst):\n    total = 0\n    for index, value in enumerate(lst):\n        if index % 2 == 0 and value % 2 == 0:\n            total += value\n    return total",
+    "sample_codes": [
+      "def sum_even_and_even_index(lst):\n    total = 0\n    for i in range(len(lst)):\n        if i % 2 == 0 and lst[i] % 2 == 0:\n            total += lst[i]\n    return total",
+      "def sum_even_and_even_index(lst):\n    total = 0\n    for i, num in enumerate(lst):\n        if i % 2 == 0 and num % 2 == 0:\n            total += num\n    return total",
+      "def sum_even_and_even_index(lst):\n    return sum(val for idx, val in enumerate(lst) if idx % 2 == 0 and val % 2 == 0)",
+      "def sum_even_and_even_index(lst):\n    return sum(lst[i] for i in range(0, len(lst), 2) if lst[i] % 2 == 0)",
+      "def sum_even_and_even_index(lst):\n    total = 0\n    for index, value in enumerate(lst):\n        if index % 2 == 0 and value % 2 == 0:\n            total += value\n    return total"
+    ]
+  },
+  {
+    "task_id": "Mbpp/591",
+    "exec_score": 0.0,
+    "is_correct": true,
+    "main_code": "def swap_List(lst):\n    if len(lst) <= 1:\n        return lst\n    lst[0], lst[-1] = lst[-1], lst[0]\n    return lst",
+    "sample_codes": [
+      "def swap_List(lst):\n    if len(lst) <= 1:\n        return lst\n    lst[0], lst[-1] = lst[-1], lst[0]\n    return lst",
+      "def swap_List(lst):\n    if len(lst) < 2:\n        return lst\n    lst[0], lst[-1] = lst[-1], lst[0]\n    return lst",
+      "def swap_List(lst):\n    if len(lst) <= 1:\n        return lst\n    lst[0], lst[-1] = lst[-1], lst[0]\n    return lst",
+      "def swap_List(lst):\n    if len(lst) <= 1:\n        return lst\n    lst[0], lst[-1] = lst[-1], lst[0]\n    return lst",
+      "def swap_List(lst):\n    if len(lst) < 2:\n        return lst\n    lst[0], lst[-1] = lst[-1], lst[0]\n    return lst"
+    ]
+  }
+]
