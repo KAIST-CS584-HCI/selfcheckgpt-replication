@@ -12,9 +12,9 @@ extra samples (at temperature 1). From these we get two things: a **consistency 
 
 ## How the methods work
 
-Both variants share the same generation and ground-truth steps; they differ only in how
-they measure consistency between the main answer and the samples. Both produce a score on
-the same scale: **higher = more likely hallucinated (incorrect)**.
+All three variants share the same generation and ground-truth steps; they differ only in
+how they measure consistency between the main answer and the samples. Each produces a score
+on the same scale: **higher = more likely hallucinated (incorrect)**.
 
 ### SelfCheck-Exec — behavioral consistency
 
