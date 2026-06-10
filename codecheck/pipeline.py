@@ -18,14 +18,25 @@ def _run_vector(code: str, problem: CodeProblem, harness, timeout: float) -> lis
     return [normalize_output(o, problem.atol) for o in outcomes]
 
 
-def score_problem(problem, generator, harness, n_samples: int, timeout: float = 5.0) -> CodeResult:
+def score_problem(problem, generator, harness, n_samples: int, timeout: float = 5.0,
+                  methods: set[str] | None = None, judge=None) -> CodeResult:
+    methods = methods or {"exec"}
     main_code, sample_codes = generator.generate(problem, n_samples)
     main_outputs = _run_vector(main_code, problem, harness, timeout)
     sample_outputs = [_run_vector(code, problem, harness, timeout) for code in sample_codes]
     expected = expected_outputs(problem, harness, timeout)
+
+    scores: dict[str, float] = {}
+    if "exec" in methods:
+        scores["exec"] = exec_inconsistency(main_outputs, sample_outputs)
+    if "prompt" in methods:
+        if judge is None:
+            raise ValueError("method 'prompt' requires a judge")
+        scores["prompt"] = judge.score(main_code, sample_codes)
+
     return CodeResult(
         task_id=problem.task_id,
-        exec_score=exec_inconsistency(main_outputs, sample_outputs),
+        scores=scores,
         is_correct=is_correct(main_outputs, expected),
         main_code=main_code,
         sample_codes=sample_codes,
@@ -33,9 +44,10 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
     )
 
 
-def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5.0) -> list[CodeResult]:
-    return [score_problem(p, generator, harness, n_samples, timeout)
-            for p in tqdm(problems, desc="codecheck exec")]
+def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5.0,
+                methods: set[str] | None = None, judge=None) -> list[CodeResult]:
+    return [score_problem(p, generator, harness, n_samples, timeout, methods, judge)
+            for p in tqdm(problems, desc="codecheck")]
 
 
 def save_results(results: list[CodeResult], path: str | os.PathLike) -> None:

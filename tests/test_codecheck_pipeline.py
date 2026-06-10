@@ -32,7 +32,22 @@ def test_incorrect_main_with_divergent_samples():
 
 
 def test_save_and_load_roundtrip(tmp_path):
-    results = [CodeResult("t", 0.5, True, "m", ["s"])]
+    results = [CodeResult("t", {"exec": 0.5}, True, "m", ["s"], 3)]
     path = tmp_path / "out.json"
     save_results(results, path)
     assert load_results(path) == results
+
+
+from codecheck.prompt_score import PromptJudge
+from tests.test_codecheck_prompt_score import FakeJudgeClient
+
+
+def test_score_problem_fills_exec_and_prompt():
+    gen = StubGen("def f(x):\n    return x + 1\n",
+                  ["def f(x):\n    return x + 1\n", "def f(x):\n    return x + 1\n"])
+    judge = PromptJudge(FakeJudgeClient(["No.", "No."]), model="m")  # both inconsistent -> 1.0
+    res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=2, timeout=5.0,
+                        methods={"exec", "prompt"}, judge=judge)
+    assert "exec" in res.scores and "prompt" in res.scores
+    assert res.scores["prompt"] == 1.0
+    assert res.n_inputs == 3
