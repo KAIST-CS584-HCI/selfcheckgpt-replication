@@ -14,6 +14,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
     from codecheck.dataset import load_mbpp_plus
     from codecheck.generation import CodeGenerator
+    from codecheck.prompt_score import PromptJudge
     from codecheck.execution import run_batch_in_subprocess
     from codecheck.pipeline import run_dataset, save_results
 
@@ -26,13 +27,20 @@ def _cmd_run(args: argparse.Namespace) -> None:
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
     generator = CodeGenerator(client, model=model, think=args.think)
 
+    methods = {"exec", "prompt"} if args.method == "both" else {args.method}
+    judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
+
     problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
     try:
-        results = run_dataset(problems, generator, run_batch_in_subprocess, n_samples=args.n, timeout=args.timeout)
+        results = run_dataset(problems, generator, run_batch_in_subprocess,
+                              n_samples=args.n, timeout=args.timeout,
+                              methods=methods, judge=judge)
     except AuthenticationError:
         sys.exit("error: OpenRouter rejected OPENROUTER_API_KEY (expects an sk-or-v1-… key; see .env.example)")
     save_results(results, args.output)
     print(f"Saved {len(results)} results to {args.output}")
+    if judge is not None:
+        print(f"Judge parse failures: {judge.parse_failures}")
 
 
 def _cmd_evaluate(args: argparse.Namespace) -> None:
@@ -63,6 +71,8 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
     run_p.add_argument("--think", action="store_true",
                        help="enable model chain-of-thought reasoning (much slower; default off)")
+    run_p.add_argument("--method", choices=["exec", "prompt", "both"], default="exec",
+                       help="which consistency scorer(s) to run")
     run_p.set_defaults(func=_cmd_run, randomize=True)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")

@@ -20,3 +20,22 @@ def test_evaluate_subcommand_prints_auc(tmp_path):
     assert out.returncode == 0, out.stderr
     assert "AUC-PR" in out.stdout
     assert "n=2" in out.stdout
+
+
+def test_run_parser_accepts_method():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--method", "both", "--limit", "2"])
+    assert args.method == "both"
+
+
+def test_run_parser_method_defaults_to_exec():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["run", "--limit", "2"])
+    assert args.method == "exec"
+
+
+def test_run_parser_rejects_unknown_method():
+    import pytest
+    from run_codecheck import build_parser
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["run", "--method", "ast"])
