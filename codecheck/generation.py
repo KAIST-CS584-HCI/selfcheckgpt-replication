@@ -1,8 +1,8 @@
 from __future__ import annotations
 import re
-from concurrent.futures import ThreadPoolExecutor
 
 from codecheck.api_retry import chat_with_retries
+from codecheck.concurrency import map_staggered
 
 _FENCE = re.compile(r"```(?:python)?\s*(.*?)```", re.S)
 
@@ -48,7 +48,7 @@ class CodeGenerator:
     def generate(self, problem, n_samples: int) -> tuple[str, list[str]]:
         prompt = build_prompt(problem)
         temps = [0.0] + [1.0] * n_samples  # main at T=0, n samples at T=1
-        # Fire the N+1 calls concurrently; ex.map preserves input order.
-        with ThreadPoolExecutor(max_workers=self.max_workers or len(temps)) as ex:
-            outs = list(ex.map(lambda t: self._complete(prompt, t), temps))
+        # Fire the N+1 calls concurrently but staggered, to avoid bursting the rate limit.
+        outs = map_staggered(lambda t: self._complete(prompt, t), temps,
+                             max_workers=self.max_workers)
         return outs[0], outs[1:]

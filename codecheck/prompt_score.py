@@ -1,8 +1,8 @@
 from __future__ import annotations
 import re
-from concurrent.futures import ThreadPoolExecutor
 
 from codecheck.api_retry import APIRetriesExhausted, chat_with_retries
+from codecheck.concurrency import map_staggered
 
 JUDGE_TEMPLATE = (
     "Implementation:\n{main_code}\n\n"
@@ -69,8 +69,8 @@ class PromptJudge:
         sample_codes so callers can record per-sample judge text for variance analysis."""
         if not sample_codes:
             return 0.0, []
-        with ThreadPoolExecutor(max_workers=self.max_workers or len(sample_codes)) as ex:
-            raws = list(ex.map(lambda s: self._judge_one(main_code, s), sample_codes))
+        raws = map_staggered(lambda s: self._judge_one(main_code, s), sample_codes,
+                             max_workers=self.max_workers)
         values = []
         for raw in raws:
             value, matched = parse_judgment(raw)
