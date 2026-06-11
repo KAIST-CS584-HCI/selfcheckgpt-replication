@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import logging
 import os
 import tempfile
 import time
@@ -11,6 +12,8 @@ from codecheck.models import CodeProblem, CodeResult
 from codecheck.execution import normalize_output
 from codecheck.exec_score import exec_inconsistency
 from codecheck.labeling import expected_outputs, is_correct
+
+logger = logging.getLogger("codecheck.pipeline")
 
 
 def _run_vector(code: str, problem: CodeProblem, harness, timeout: float) -> list:
@@ -56,15 +59,28 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
     problems = list(problems)
     total = len(problems)
     results: list[CodeResult] = []
+    failed: list[str] = []
     for i, problem in enumerate(tqdm(problems, desc="codecheck"), start=1):
         started = time.monotonic()
-        result = score_problem(problem, generator, harness, n_samples, timeout, methods, judge, ast_scorer)
+        try:
+            result = score_problem(problem, generator, harness, n_samples, timeout, methods, judge, ast_scorer)
+        except (KeyboardInterrupt, SystemExit):
+            raise  # let the user abort the whole run
+        except Exception:
+            # One problem's failure (e.g. an exhausted-retry API timeout) must not abort
+            # the run. Log the full traceback, skip it, and continue with the rest.
+            logger.exception("problem %s failed; skipping", problem.task_id)
+            failed.append(problem.task_id)
+            continue
         elapsed = time.monotonic() - started
         scores = "  ".join(f"{name}={value:.3f}" for name, value in result.scores.items())
         # tqdm.write keeps these lines from corrupting the live progress bar.
         tqdm.write(f"[{i}/{total}] {result.task_id}  correct={result.is_correct}  "
                    f"{scores}  n_inputs={result.n_inputs}  ({elapsed:.1f}s)")
         results.append(result)
+    if failed:
+        logger.warning("%d/%d problems failed and were skipped: %s",
+                       len(failed), total, ", ".join(failed))
     return results
 
 
