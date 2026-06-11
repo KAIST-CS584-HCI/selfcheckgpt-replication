@@ -204,3 +204,30 @@ def test_run_dataset_calls_on_result_per_success(tmp_path):
     run_dataset(_problems("a", "b", "c"), gen, run_batch_in_subprocess,
                 n_samples=1, timeout=5.0, on_result=seen.append)
     assert [r.task_id for r in seen] == ["a", "c"]   # not called for the failed problem
+
+
+import threading as _threading
+import time as _time
+
+
+def test_sample_execution_runs_in_parallel():
+    # A fake harness that sleeps and records peak concurrency. If sample execution were
+    # sequential, peak would be 1; parallel runs overlap.
+    active = 0
+    peak = 0
+    lock = _threading.Lock()
+
+    def slow_harness(code, entry_point, inputs, timeout):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        _time.sleep(0.2)
+        with lock:
+            active -= 1
+        return [("ok", 1) for _ in inputs]
+
+    samples = [f"def f(x): return {i}" for i in range(5)]
+    gen = StubGen("def f(x): return x", samples)
+    score_problem(PROBLEM, gen, slow_harness, n_samples=5, timeout=5.0, methods={"exec"})
+    assert peak >= 2   # samples overlapped, not serialized one-by-one

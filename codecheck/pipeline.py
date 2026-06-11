@@ -4,6 +4,7 @@ import logging
 import os
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from tqdm import tqdm
@@ -22,6 +23,16 @@ def _run_vector(code: str, problem: CodeProblem, harness, timeout: float) -> lis
     return [normalize_output(o, problem.atol) for o in outcomes]
 
 
+def _run_vectors(codes: list[str], problem: CodeProblem, harness, timeout: float) -> list[list]:
+    """Run several implementations concurrently (each in its own harness subprocess),
+    preserving input order. The heavy work runs in those subprocesses, so threads here
+    just wait on them — one stuck implementation no longer blocks the rest."""
+    if not codes:
+        return []
+    with ThreadPoolExecutor(max_workers=len(codes)) as ex:
+        return list(ex.map(lambda c: _run_vector(c, problem, harness, timeout), codes))
+
+
 def score_problem(problem, generator, harness, n_samples: int, timeout: float = 5.0,
                   methods: set[str] | None = None, judge=None, ast_scorer=None) -> CodeResult:
     methods = methods or {"exec"}
@@ -32,7 +43,7 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
     scores: dict[str, float] = {}
     prompt_responses: list[str] | None = None
     if "exec" in methods:
-        sample_outputs = [_run_vector(code, problem, harness, timeout) for code in sample_codes]
+        sample_outputs = _run_vectors(sample_codes, problem, harness, timeout)
         scores["exec"] = exec_inconsistency(main_outputs, sample_outputs)
     if "prompt" in methods:
         if judge is None:
