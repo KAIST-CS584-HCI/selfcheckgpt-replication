@@ -58,6 +58,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
         sys.exit("error: missing OPENROUTER_API_KEY (see .env.example)")
     model = os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.5-9b").strip()
     base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").strip()
+    print(f"Model: {model}  (set OPENROUTER_MODEL to change)")
 
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
     generator = CodeGenerator(client, model=model, think=args.think)
