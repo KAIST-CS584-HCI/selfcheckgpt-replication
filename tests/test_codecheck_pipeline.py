@@ -135,3 +135,20 @@ def test_run_dataset_propagates_keyboard_interrupt():
     with pytest.raises(KeyboardInterrupt):
         run_dataset(_problems("a", "b"), gen, run_batch_in_subprocess,
                     n_samples=1, timeout=5.0)
+
+
+def test_score_problem_sets_prompt_and_is_error_false_for_clean_main():
+    prob = CodeProblem(task_id="t", prompt="THE PROMPT", entry_point="f",
+                       canonical_solution="def f(x):\n    return x + 1\n",
+                       inputs=[[1], [2], [3]], atol=0.0)
+    gen = StubGen("def f(x):\n    return x + 1\n", ["def f(x):\n    return x + 1\n"])
+    res = score_problem(prob, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0)
+    assert res.prompt == "THE PROMPT"
+    assert res.is_error is False
+
+
+def test_score_problem_is_error_true_when_main_raises():
+    gen = StubGen("def f(x):\n    return undefined_name\n", ["def f(x):\n    return x + 1\n"])
+    res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0)
+    assert res.is_error is True
+    assert res.is_correct is False

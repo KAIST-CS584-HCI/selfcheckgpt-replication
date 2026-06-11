@@ -157,8 +157,10 @@ Example problem (real row `Mbpp/2`):
   - ...plus ~100 more edge-case inputs (empty tuples, large tuples, duplicates)
 - **Tolerance:** `0` (exact match; this problem has no floating-point results)
 
-For each problem we record the consistency score, the correctness label, and the actual
-code that was generated, so results can be inspected later.
+For each problem we record the consistency score, the correctness label (`is_correct`),
+an error flag (`is_error` — the main raised or timed out on any input, vs ran but gave a
+wrong answer), the original problem `prompt`, and the actual code that was generated, so
+results can be inspected later.
 
 ## Running it
 

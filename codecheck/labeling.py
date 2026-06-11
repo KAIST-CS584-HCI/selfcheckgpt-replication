@@ -14,3 +14,12 @@ def expected_outputs(problem, harness, timeout: float = 5.0) -> list:
 
 def is_correct(main_outputs: list, expected: list) -> bool:
     return len(main_outputs) == len(expected) and all(a == b for a, b in zip(main_outputs, expected))
+
+
+def has_error(main_outputs: list) -> bool:
+    """True if the implementation raised or timed out on ANY input.
+
+    `normalize_output` maps a clean return to `("value", ...)` and a failure (exception
+    or timeout) to `("status", ...)`, so a non-ok status anywhere means the code did not
+    run cleanly. Distinguishes an error-out from a ran-but-wrong (semantic) result."""
+    return any(outcome[0] == "status" for outcome in main_outputs)

@@ -11,7 +11,7 @@ from tqdm import tqdm
 from codecheck.models import CodeProblem, CodeResult
 from codecheck.execution import normalize_output
 from codecheck.exec_score import exec_inconsistency
-from codecheck.labeling import expected_outputs, is_correct
+from codecheck.labeling import expected_outputs, is_correct, has_error
 
 logger = logging.getLogger("codecheck.pipeline")
 
@@ -47,10 +47,12 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
         task_id=problem.task_id,
         scores=scores,
         is_correct=is_correct(main_outputs, expected),
+        is_error=has_error(main_outputs),
         main_code=main_code,
         sample_codes=sample_codes,
         n_inputs=len(problem.inputs),
         prompt_responses=prompt_responses,
+        prompt=problem.prompt,
     )
 
 

@@ -59,3 +59,28 @@ def test_coderesult_from_legacy_exec_score_key():
     r = CodeResult.from_dict(legacy)
     assert r.scores == {"exec": 0.358}
     assert r.exec_score == 0.358
+
+
+def test_code_result_prompt_and_is_error_roundtrip():
+    r = CodeResult(task_id="Mbpp/2", scores={"exec": 0.4}, is_correct=False,
+                   main_code="m", sample_codes=["s"], n_inputs=3,
+                   prompt="def f(x):\n    'doc'\n", is_error=True)
+    back = CodeResult.from_dict(r.to_dict())
+    assert back.prompt == "def f(x):\n    'doc'\n"
+    assert back.is_error is True
+    assert back == r
+
+
+def test_code_result_to_dict_includes_prompt_and_is_error():
+    r = CodeResult("t", {"exec": 0.4}, True, "m", ["s"], prompt="P", is_error=False)
+    d = r.to_dict()
+    assert d["prompt"] == "P"
+    assert d["is_error"] is False
+
+
+def test_code_result_defaults_for_legacy_json_without_prompt_or_is_error():
+    legacy = {"task_id": "t", "scores": {"exec": 0.3}, "is_correct": False,
+              "main_code": "m", "sample_codes": ["s"]}
+    r = CodeResult.from_dict(legacy)
+    assert r.prompt == ""
+    assert r.is_error is False
