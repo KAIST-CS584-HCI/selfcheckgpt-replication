@@ -172,7 +172,9 @@ python run_codecheck.py evaluate
 
 **`run` parameters**
 
-- `--limit` — how many problems to use
+- `--limit` — how many problems to use (default 20)
+- `--index` — run only the single problem at this 0-based dataset position; cannot be
+  combined with `--limit`/`--random`/`--seed`
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
 - `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, or `all`
 - `--ast-metric` — AST metric when `ast` runs: `jaccard` (default) or `ted`

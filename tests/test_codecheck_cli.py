@@ -95,3 +95,49 @@ def test_format_evaluation_handles_mixed_method_results():
     ]
     text = format_evaluation(results)        # would KeyError before the fix
     assert "exec" in text and "prompt" in text
+
+
+def test_index_arg_parses():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run", "--index", "0"]).index == 0
+
+
+def test_limit_defaults_to_none():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run"]).limit is None
+
+
+def test_resolve_selection_bare_run_defaults_to_limit_20():
+    from run_codecheck import build_parser, _resolve_selection
+    args = build_parser().parse_args(["run"])
+    assert _resolve_selection(args) == (20, None)
+
+
+def test_resolve_selection_index_mode():
+    from run_codecheck import build_parser, _resolve_selection
+    args = build_parser().parse_args(["run", "--index", "3"])
+    assert _resolve_selection(args) == (None, 3)
+
+
+def test_resolve_selection_index_with_random_errors():
+    import pytest
+    from run_codecheck import build_parser, _resolve_selection
+    args = build_parser().parse_args(["run", "--index", "0", "--random"])
+    with pytest.raises(ValueError):
+        _resolve_selection(args)
+
+
+def test_resolve_selection_index_with_limit_errors():
+    import pytest
+    from run_codecheck import build_parser, _resolve_selection
+    args = build_parser().parse_args(["run", "--index", "0", "--limit", "5"])
+    with pytest.raises(ValueError):
+        _resolve_selection(args)
+
+
+def test_resolve_selection_index_with_seed_errors():
+    import pytest
+    from run_codecheck import build_parser, _resolve_selection
+    args = build_parser().parse_args(["run", "--index", "0", "--seed", "1"])
+    with pytest.raises(ValueError):
+        _resolve_selection(args)
