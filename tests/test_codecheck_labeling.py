@@ -1,6 +1,6 @@
 from codecheck.models import CodeProblem
 from codecheck.execution import run_batch_in_subprocess, normalize_output
-from codecheck.labeling import expected_outputs, is_correct, has_error, passed_count
+from codecheck.labeling import expected_outputs, is_correct, has_error, count_outcomes
 
 PROBLEM = CodeProblem(
     task_id="t", prompt="", entry_point="f",
@@ -39,18 +39,29 @@ def test_has_error_true_when_code_does_not_load():
     assert has_error(_norm_run("def f(x):\n    return undefined_name\n")) is True
 
 
-def test_passed_count_all_match():
+def test_count_outcomes_all_pass():
     expected = expected_outputs(PROBLEM, run_batch_in_subprocess)
-    assert passed_count(_norm_run("def f(x):\n    return 1 + x\n"), expected) == (3, 3)
+    assert count_outcomes(_norm_run("def f(x):\n    return 1 + x\n"), expected) == \
+        {"total": 3, "pass": 3, "fail": 0, "error": 0}
 
 
-def test_passed_count_partial_match():
+def test_count_outcomes_wrong_value_is_fail():
     expected = expected_outputs(PROBLEM, run_batch_in_subprocess)
-    # correct except on x == 2 -> matches 2 of 3
+    # correct except on x == 2 (returns a wrong value, not an error) -> one fail
     code = "def f(x):\n    return x + 1 if x != 2 else 0\n"
-    assert passed_count(_norm_run(code), expected) == (2, 3)
+    assert count_outcomes(_norm_run(code), expected) == \
+        {"total": 3, "pass": 2, "fail": 1, "error": 0}
 
 
-def test_passed_count_none_match():
+def test_count_outcomes_raise_is_error():
     expected = expected_outputs(PROBLEM, run_batch_in_subprocess)
-    assert passed_count(_norm_run("def f(x):\n    return x\n"), expected) == (0, 3)
+    # raises on x == 2 (ZeroDivisionError) -> one error, the rest pass
+    code = "def f(x):\n    return x + 1 if x != 2 else 1 // 0\n"
+    assert count_outcomes(_norm_run(code), expected) == \
+        {"total": 3, "pass": 2, "fail": 0, "error": 1}
+
+
+def test_count_outcomes_all_error_when_code_does_not_load():
+    expected = expected_outputs(PROBLEM, run_batch_in_subprocess)
+    assert count_outcomes(_norm_run("def f(x):\n    return undefined_name\n"), expected) == \
+        {"total": 3, "pass": 0, "fail": 0, "error": 3}

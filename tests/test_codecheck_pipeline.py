@@ -32,7 +32,8 @@ def test_incorrect_main_with_divergent_samples():
 
 
 def test_save_and_load_roundtrip(tmp_path):
-    results = [CodeResult("t", {"exec": 0.5}, True, "m", ["s"], passed="3/3")]
+    results = [CodeResult("t", {"exec": 0.5}, True, "m", ["s"],
+                          count={"total": 3, "pass": 3, "fail": 0, "error": 0})]
     path = tmp_path / "out.json"
     save_results(results, path)
     assert load_results(path) == results
@@ -50,7 +51,7 @@ def test_score_problem_fills_exec_and_prompt():
                         methods={"exec", "prompt"}, judge=judge)
     assert "exec" in res.scores and "prompt" in res.scores
     assert res.scores["prompt"] == 1.0
-    assert res.passed == "3/3"
+    assert res.count == {"total": 3, "pass": 3, "fail": 0, "error": 0}
 
 
 def test_prompt_only_skips_sample_execution():
@@ -65,7 +66,7 @@ def test_prompt_only_skips_sample_execution():
     assert "exec" not in res.scores
     assert res.scores["prompt"] == 0.0
     assert res.is_correct is True
-    assert res.passed == "3/3"
+    assert res.count == {"total": 3, "pass": 3, "fail": 0, "error": 0}
 
 
 from codecheck.ast_score import ASTScorer
@@ -80,7 +81,7 @@ def test_score_problem_fills_ast():
     assert "exec" not in res.scores          # ast-only run skips sample execution
     assert res.scores["ast"] == 0.0          # samples structurally identical to main
     assert res.is_correct is True            # labeling still runs (main vs canonical)
-    assert res.passed == "3/3"
+    assert res.count == {"total": 3, "pass": 3, "fail": 0, "error": 0}
 
 
 def test_score_problem_ast_requires_scorer():
@@ -154,9 +155,9 @@ def test_score_problem_is_error_true_when_main_raises():
     assert res.is_correct is False
 
 
-def test_score_problem_passed_reflects_partial_match():
-    # correct on x in {1,3}, wrong on x == 2 -> 2 of 3 inputs match canonical
+def test_score_problem_count_reflects_partial_match():
+    # correct on x in {1,3}, wrong VALUE on x == 2 -> 2 pass, 1 fail, 0 error
     gen = StubGen("def f(x):\n    return x + 1 if x != 2 else 0\n", ["def f(x):\n    return x + 1\n"])
     res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0)
-    assert res.passed == "2/3"
+    assert res.count == {"total": 3, "pass": 2, "fail": 1, "error": 0}
     assert res.is_correct is False

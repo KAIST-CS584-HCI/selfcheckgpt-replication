@@ -11,7 +11,7 @@ from tqdm import tqdm
 from codecheck.models import CodeProblem, CodeResult
 from codecheck.execution import normalize_output
 from codecheck.exec_score import exec_inconsistency
-from codecheck.labeling import expected_outputs, is_correct, has_error, passed_count
+from codecheck.labeling import expected_outputs, is_correct, has_error, count_outcomes
 
 logger = logging.getLogger("codecheck.pipeline")
 
@@ -43,13 +43,12 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
             raise ValueError("method 'ast' requires an ast_scorer")
         scores["ast"], _ = ast_scorer.evaluate(main_code, sample_codes)
 
-    matched, total = passed_count(main_outputs, expected)
     return CodeResult(
         task_id=problem.task_id,
         scores=scores,
         is_correct=is_correct(main_outputs, expected),
         is_error=has_error(main_outputs),
-        passed=f"{matched}/{total}",
+        count=count_outcomes(main_outputs, expected),
         main_code=main_code,
         sample_codes=sample_codes,
         prompt_responses=prompt_responses,
@@ -78,8 +77,10 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
         elapsed = time.monotonic() - started
         scores = "  ".join(f"{name}={value:.3f}" for name, value in result.scores.items())
         # tqdm.write keeps these lines from corrupting the live progress bar.
+        c = result.count
         tqdm.write(f"[{i}/{total}] {result.task_id}  correct={result.is_correct}  "
-                   f"{scores}  passed={result.passed}  ({elapsed:.1f}s)")
+                   f"{scores}  pass={c['pass']}/{c['total']} fail={c['fail']} err={c['error']}  "
+                   f"({elapsed:.1f}s)")
         results.append(result)
     if failed:
         logger.warning("%d/%d problems failed and were skipped: %s",

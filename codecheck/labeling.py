@@ -16,13 +16,20 @@ def is_correct(main_outputs: list, expected: list) -> bool:
     return len(main_outputs) == len(expected) and all(a == b for a, b in zip(main_outputs, expected))
 
 
-def passed_count(main_outputs: list, expected: list) -> tuple[int, int]:
-    """(matched, total): how many inputs the main matches the canonical on, and the
-    total. Uses the same per-input comparison as `is_correct`, counted instead of
-    all-reduced."""
-    total = len(expected)
-    matched = sum(1 for a, b in zip(main_outputs, expected) if a == b)
-    return matched, total
+def count_outcomes(main_outputs: list, expected: list) -> dict[str, int]:
+    """Per-input breakdown of the main vs the canonical, partitioned to sum to `total`:
+    `pass` (matched the canonical), `error` (a non-match where the main raised/timed out),
+    `fail` (a non-match where the main returned a wrong value). `pass` uses the same
+    comparison as `is_correct`."""
+    counts = {"total": len(expected), "pass": 0, "fail": 0, "error": 0}
+    for main, exp in zip(main_outputs, expected):
+        if main == exp:
+            counts["pass"] += 1
+        elif main[0] == "status":   # ("status", "err"|"timeout") = raised or timed out
+            counts["error"] += 1
+        else:
+            counts["fail"] += 1
+    return counts
 
 
 def has_error(main_outputs: list) -> bool:

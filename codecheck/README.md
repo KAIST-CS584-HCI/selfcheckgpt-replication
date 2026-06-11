@@ -159,9 +159,10 @@ Example problem (real row `Mbpp/2`):
 
 For each problem we record the consistency score, the correctness label (`is_correct`),
 an error flag (`is_error` — the main raised or timed out on any input, vs ran but gave a
-wrong answer), `passed` (a `"correct/all"` string — how many inputs the main matched the
-canonical on, out of the total), the original problem `prompt`, and the actual code that
-was generated, so results can be inspected later.
+wrong answer), `count` (a per-input breakdown vs the canonical: `{total, pass, fail,
+error}` — `pass` matched, `fail` ran but wrong, `error` raised/timed out, summing to
+`total`), the original problem `prompt`, and the actual code that was generated, so
+results can be inspected later.
 
 ## Running it
 

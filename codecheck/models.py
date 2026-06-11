@@ -1,5 +1,9 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+def _empty_count() -> dict[str, int]:
+    return {"total": 0, "pass": 0, "fail": 0, "error": 0}
 
 
 @dataclass
@@ -35,7 +39,9 @@ class CodeResult:
     prompt_responses: list[str] | None = None   # raw judge text per sample (prompt method only)
     prompt: str = ""              # the original problem prompt shown to the model
     is_error: bool = False        # main raised/timed out on any input (vs ran-but-wrong)
-    passed: str = "0/0"           # "correct/all": inputs the main matched canonical on / total
+    # per-input breakdown vs the canonical: {total, pass (matched), fail (wrong value),
+    # error (raised/timed out)}; pass + fail + error == total
+    count: dict[str, int] = field(default_factory=_empty_count)
 
     @property
     def exec_score(self) -> float:
@@ -44,7 +50,7 @@ class CodeResult:
     def to_dict(self) -> dict:
         d = {
             "task_id": self.task_id, "scores": self.scores, "is_correct": self.is_correct,
-            "is_error": self.is_error, "passed": self.passed, "prompt": self.prompt,
+            "is_error": self.is_error, "count": self.count, "prompt": self.prompt,
             "main_code": self.main_code, "sample_codes": self.sample_codes,
         }
         if self.prompt_responses is not None:
@@ -64,5 +70,5 @@ class CodeResult:
             main_code=d["main_code"], sample_codes=d["sample_codes"],
             prompt_responses=d.get("prompt_responses"),
             prompt=d.get("prompt", ""), is_error=d.get("is_error", False),
-            passed=d.get("passed", "0/0"),
+            count=d.get("count") or _empty_count(),
         )
