@@ -89,3 +89,49 @@ def test_score_problem_ast_requires_scorer():
     with pytest.raises(ValueError):
         score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0,
                       methods={"ast"})
+
+
+from codecheck.pipeline import run_dataset
+
+
+class RaisingGen:
+    """Generator that raises on a target task_id, else returns trivial valid code."""
+
+    def __init__(self, fail_task_id, exc=None):
+        self.fail_task_id = fail_task_id
+        self.exc = exc or RuntimeError("boom")
+
+    def generate(self, problem, n_samples):
+        if problem.task_id == self.fail_task_id:
+            raise self.exc
+        code = "def f(x):\n    return x + 1\n"
+        return code, [code]
+
+
+def _problems(*ids):
+    return [CodeProblem(task_id=i, prompt="", entry_point="f",
+                        canonical_solution="def f(x):\n    return x + 1\n",
+                        inputs=[[1], [2]], atol=0.0) for i in ids]
+
+
+def test_run_dataset_skips_failing_problem_and_continues():
+    gen = RaisingGen(fail_task_id="b")
+    results = run_dataset(_problems("a", "b", "c"), gen, run_batch_in_subprocess,
+                          n_samples=1, timeout=5.0)
+    assert [r.task_id for r in results] == ["a", "c"]   # b skipped, run completed
+
+
+def test_run_dataset_reports_failed_task_ids(caplog):
+    gen = RaisingGen(fail_task_id="b")
+    with caplog.at_level("WARNING", logger="codecheck.pipeline"):
+        run_dataset(_problems("a", "b", "c"), gen, run_batch_in_subprocess,
+                    n_samples=1, timeout=5.0)
+    assert any("b" in r.message and "failed" in r.message for r in caplog.records)
+
+
+def test_run_dataset_propagates_keyboard_interrupt():
+    import pytest
+    gen = RaisingGen(fail_task_id="a", exc=KeyboardInterrupt())
+    with pytest.raises(KeyboardInterrupt):
+        run_dataset(_problems("a", "b"), gen, run_batch_in_subprocess,
+                    n_samples=1, timeout=5.0)
