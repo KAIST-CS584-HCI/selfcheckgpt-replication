@@ -52,3 +52,29 @@ def test_same_seed_is_reproducible(monkeypatch, tmp_path):
     a = ds.load_mbpp_plus(limit=5, seed=7, cache_path=tmp_path / "a.json")
     b = ds.load_mbpp_plus(limit=5, seed=7, cache_path=tmp_path / "b.json")
     assert [p.task_id for p in a] == [p.task_id for p in b]
+
+
+def test_index_selects_single_problem_in_order(monkeypatch, tmp_path):
+    monkeypatch.setattr(ds, "get_mbpp_plus", lambda: _fake_many(10))
+    problems = ds.load_mbpp_plus(index=0, cache_path=tmp_path / "c.json")
+    assert [p.task_id for p in problems] == ["Mbpp/0"]
+
+
+def test_index_selects_nth_problem(monkeypatch, tmp_path):
+    monkeypatch.setattr(ds, "get_mbpp_plus", lambda: _fake_many(10))
+    problems = ds.load_mbpp_plus(index=4, cache_path=tmp_path / "c.json")
+    assert [p.task_id for p in problems] == ["Mbpp/4"]
+
+
+def test_index_out_of_range_raises(monkeypatch, tmp_path):
+    import pytest
+    monkeypatch.setattr(ds, "get_mbpp_plus", lambda: _fake_many(10))
+    with pytest.raises(IndexError):
+        ds.load_mbpp_plus(index=10, cache_path=tmp_path / "c.json")
+
+
+def test_index_negative_raises(monkeypatch, tmp_path):
+    import pytest
+    monkeypatch.setattr(ds, "get_mbpp_plus", lambda: _fake_many(10))
+    with pytest.raises(IndexError):
+        ds.load_mbpp_plus(index=-1, cache_path=tmp_path / "c.json")
