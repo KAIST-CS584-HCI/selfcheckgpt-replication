@@ -32,13 +32,19 @@ def load_mbpp_plus(
     limit: int | None = None,
     randomize: bool = False,
     seed: int | None = None,
+    index: int | None = None,
     cache_path: Path = DEFAULT_CACHE,
 ) -> list[CodeProblem]:
     """Load MBPP+ problems. With a limit, take the first `limit` in dataset order by
     default (set randomize=True for a random sample; pass `seed` for a reproducible
-    one)."""
+    one). With `index` set, return only the single problem at that 0-based dataset
+    position (limit/randomize/seed are ignored)."""
     problems = [_to_problem(item) for item in get_mbpp_plus().values()]
-    if limit is not None:
+    if index is not None:
+        if not 0 <= index < len(problems):
+            raise IndexError(f"--index {index} out of range (dataset has {len(problems)} problems)")
+        problems = [problems[index]]
+    elif limit is not None:
         problems = _select(problems, limit, randomize, seed)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     # default=str keeps the write-only debug cache tolerant of non-JSON inputs
