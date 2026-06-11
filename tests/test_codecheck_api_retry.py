@@ -152,3 +152,16 @@ def test_clean_success_emits_no_warning(caplog):
     with caplog.at_level("WARNING", logger="codecheck.api"):
         chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False)
     assert [r for r in caplog.records if r.levelname == "WARNING"] == []
+
+
+def test_abandoned_call_runs_on_a_daemon_thread():
+    # A wall-clock-abandoned call leaves its underlying thread still blocked in the SDK.
+    # That thread MUST be a daemon, or the interpreter force-joins it at exit and the
+    # program hangs after the run finishes (the real bug this guards).
+    import threading
+    c = StarvingClient(slow_times=1, block_seconds=5.0)
+    chat_with_retries(c, model="m", messages=[], temperature=0.0, think=False,
+                      attempts=2, call_timeout=0.05)
+    lingering = [t for t in threading.enumerate() if t.name.startswith("chat-") and t.is_alive()]
+    assert lingering                      # the starved call's thread is still blocking
+    assert all(t.daemon for t in lingering)

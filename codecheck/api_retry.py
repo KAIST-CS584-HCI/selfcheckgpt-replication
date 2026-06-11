@@ -1,8 +1,8 @@
 from __future__ import annotations
 import json
 import logging
+import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 
 from openai import APIConnectionError, InternalServerError, RateLimitError
 
@@ -48,45 +48,54 @@ def chat_with_retries(client, *, model, messages, temperature, think,
 
     Each attempt is bounded by `call_timeout` seconds of WALL-CLOCK time. The SDK's own
     timeout keys off the gap *between* received bytes, so under load a gateway that
-    trickles keepalive bytes can wedge a request indefinitely without ever raising. The
-    watchdog here runs the call on a worker thread and abandons it after `call_timeout`,
-    treating the stall as a transient failure and retrying. The abandoned thread is left
-    to unwind on the SDK's own timeout; `max_workers=attempts` keeps a stalled thread from
-    blocking the next attempt.
+    trickles keepalive bytes can wedge a request indefinitely without ever raising. Each
+    attempt runs the call on a **daemon** thread and abandons it after `call_timeout`,
+    treating the stall as a transient failure and retrying. The abandoned daemon thread
+    unwinds on the SDK's own timeout — and, being a daemon, never keeps the interpreter
+    alive at exit (a `ThreadPoolExecutor` would force-join it, hanging the program after
+    the run finished).
 
     Returns the SDK response. Raises APIRetriesExhausted if every attempt hit a transient
     error or stalled; re-raises non-transient errors (e.g. AuthenticationError) immediately.
     """
     last: Exception | None = None
-    executor = ThreadPoolExecutor(max_workers=attempts, thread_name_prefix="chat")
-    try:
-        for attempt in range(attempts):
-            started = time.monotonic()
-            future = executor.submit(
-                client.chat.completions.create,
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                extra_body={"reasoning": {"enabled": think}},
-            )
+    for attempt in range(attempts):
+        box: dict = {}
+        done = threading.Event()
+
+        def _call() -> None:
             try:
-                resp = future.result(timeout=call_timeout)
-            except FuturesTimeout as exc:
-                last = exc
-                future.cancel()
-                logger.warning("API call exceeded %.0fs wall-clock; abandoning and retrying %d/%d",
-                               call_timeout, attempt + 1, attempts - 1)
-            except _TRANSIENT as exc:
-                last = exc
-                if attempt < attempts - 1:
-                    delay = base_delay * (2 ** attempt)
-                    logger.warning("transient API error %s; retry %d/%d after %.1fs",
-                                   type(exc).__name__, attempt + 1, attempts - 1, delay)
-                    time.sleep(delay)
-            else:
-                _log_response(resp, time.monotonic() - started)
-                return resp
-        logger.error("API call failed after %d attempts (%s)", attempts, type(last).__name__)
-        raise APIRetriesExhausted(repr(last)) from last
-    finally:
-        executor.shutdown(wait=False)
+                box["resp"] = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    extra_body={"reasoning": {"enabled": think}},
+                )
+            except Exception as exc:  # noqa: BLE001 — inspected by the waiting thread
+                box["exc"] = exc
+            finally:
+                done.set()
+
+        started = time.monotonic()
+        threading.Thread(target=_call, name=f"chat-{attempt}", daemon=True).start()
+        if not done.wait(call_timeout):
+            last = TimeoutError()
+            logger.warning("API call exceeded %.0fs wall-clock; abandoning and retrying %d/%d",
+                           call_timeout, attempt + 1, attempts - 1)
+            continue
+        exc = box.get("exc")
+        if exc is None:
+            _log_response(box["resp"], time.monotonic() - started)
+            return box["resp"]
+        if isinstance(exc, _TRANSIENT):
+            last = exc
+            if attempt < attempts - 1:
+                delay = base_delay * (2 ** attempt)
+                logger.warning("transient API error %s; retry %d/%d after %.1fs",
+                               type(exc).__name__, attempt + 1, attempts - 1, delay)
+                time.sleep(delay)
+            continue
+        raise exc  # non-transient (e.g. AuthenticationError): surface immediately
+
+    logger.error("API call failed after %d attempts (%s)", attempts, type(last).__name__)
+    raise APIRetriesExhausted(repr(last)) from last
