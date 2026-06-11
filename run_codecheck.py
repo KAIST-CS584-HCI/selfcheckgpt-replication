@@ -33,6 +33,17 @@ def _setup_run_logging(verbose: bool = False) -> None:
     root.propagate = False
 
 
+def _resolve_selection(args: argparse.Namespace) -> tuple[int | None, int | None]:
+    """Resolve problem selection into (limit, index). `--index` runs a single problem and
+    is mutually exclusive with `--limit`/`--random`/`--seed`; a bare run defaults to the
+    first 20. Raises ValueError on a conflicting combination."""
+    if args.index is not None:
+        if args.limit is not None or args.randomize or args.seed is not None:
+            raise ValueError("--index cannot be combined with --limit, --random, or --seed")
+        return None, args.index
+    return (args.limit if args.limit is not None else 20), None
+
+
 def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
     from codecheck.dataset import load_mbpp_plus
@@ -58,8 +69,16 @@ def _cmd_run(args: argparse.Namespace) -> None:
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
     ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
 
+    try:
+        limit, index = _resolve_selection(args)
+    except ValueError as exc:
+        sys.exit(f"error: {exc}")
+
     _setup_run_logging(verbose=args.verbose)
-    problems = load_mbpp_plus(limit=args.limit, randomize=args.randomize, seed=args.seed)
+    try:
+        problems = load_mbpp_plus(limit=limit, randomize=args.randomize, seed=args.seed, index=index)
+    except IndexError as exc:
+        sys.exit(f"error: {exc}")
     ast_note = f", ast-metric={args.ast_metric}" if ast_scorer is not None else ""
     print(f"Running methods={sorted(methods)} on {len(problems)} problems "
           f"(n={args.n}, timeout={args.timeout}s, model={model}{ast_note})")
@@ -120,7 +139,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     run_p = sub.add_parser("run", help="generate, score, and save")
-    run_p.add_argument("--limit", type=int, default=20, help="number of MBPP+ problems")
+    run_p.add_argument("--limit", type=int, default=None, help="number of MBPP+ problems (default 20)")
+    run_p.add_argument("--index", type=int, default=None,
+                       help="run only the single problem at this 0-based dataset position; "
+                            "cannot be combined with --limit/--random/--seed")
     run_p.add_argument("--n", type=int, default=5, help="samples per problem (T=1)")
     run_p.add_argument("--timeout", type=float, default=5.0, help="per-call execution timeout (s)")
     run_p.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")
