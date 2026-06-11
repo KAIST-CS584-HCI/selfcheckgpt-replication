@@ -122,3 +122,18 @@ def test_batch_raises_on_worker_crash_before_output():
     crash = "import os\nos._exit(1)\n"
     with pytest.raises(RuntimeError):
         run_batch_in_subprocess(crash, "f", [[1], [2]], timeout=2.0)
+
+
+def test_batch_logs_warning_on_timeout(caplog):
+    with caplog.at_level("WARNING", logger="codecheck.execution"):
+        out = run_batch_in_subprocess(HANG, "f", [[1], [2]], timeout=1.0)
+    assert all(o == ("timeout", None) for o in out)
+    msgs = [r.message for r in caplog.records if r.levelname == "WARNING"]
+    assert any("timed out" in m for m in msgs)
+    assert any("2/2" in m for m in msgs)   # count of timed-out inputs / total
+
+
+def test_batch_no_timeout_log_on_clean_run(caplog):
+    with caplog.at_level("WARNING", logger="codecheck.execution"):
+        run_batch_in_subprocess(ADD, "f", [[1], [2]], timeout=5.0)
+    assert [r for r in caplog.records if r.levelname == "WARNING"] == []

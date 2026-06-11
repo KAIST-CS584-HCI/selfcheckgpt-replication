@@ -1,9 +1,12 @@
 from __future__ import annotations
+import logging
 import math
 import multiprocessing as mp
 import os
 import queue as _queue
 import time
+
+logger = logging.getLogger("codecheck.execution")
 
 # Spawned workers compute outputs whose ordering can depend on string/bytes hashing
 # (e.g. `tuple(set(...))`). Each spawn is a fresh interpreter with a random hash seed by
@@ -131,6 +134,10 @@ def run_batch_in_subprocess(code: str, entry_point: str, args_list: list, timeou
             '(spawn/bootstrap failure — is the caller under `if __name__ == "__main__"`?)'
         )
     outcomes.extend(("timeout", None) for _ in range(n - len(outcomes)))
+    n_timeouts = sum(1 for o in outcomes if o[0] == "timeout")
+    if n_timeouts:
+        reason = "worker killed after no progress" if killed else f">{timeout:g}s each"
+        logger.warning("%s: %d/%d inputs timed out (%s)", entry_point, n_timeouts, n, reason)
     return outcomes
 
 
