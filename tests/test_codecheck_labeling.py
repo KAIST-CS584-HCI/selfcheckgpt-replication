@@ -1,6 +1,6 @@
 from codecheck.models import CodeProblem
 from codecheck.execution import run_batch_in_subprocess, normalize_output
-from codecheck.labeling import expected_outputs, is_correct, has_error
+from codecheck.labeling import expected_outputs, is_correct, has_error, passed_count
 
 PROBLEM = CodeProblem(
     task_id="t", prompt="", entry_point="f",
@@ -37,3 +37,20 @@ def test_has_error_true_when_any_input_raises():
 def test_has_error_true_when_code_does_not_load():
     # undefined name -> every input errors at call time
     assert has_error(_norm_run("def f(x):\n    return undefined_name\n")) is True
+
+
+def test_passed_count_all_match():
+    expected = expected_outputs(PROBLEM, run_batch_in_subprocess)
+    assert passed_count(_norm_run("def f(x):\n    return 1 + x\n"), expected) == (3, 3)
+
+
+def test_passed_count_partial_match():
+    expected = expected_outputs(PROBLEM, run_batch_in_subprocess)
+    # correct except on x == 2 -> matches 2 of 3
+    code = "def f(x):\n    return x + 1 if x != 2 else 0\n"
+    assert passed_count(_norm_run(code), expected) == (2, 3)
+
+
+def test_passed_count_none_match():
+    expected = expected_outputs(PROBLEM, run_batch_in_subprocess)
+    assert passed_count(_norm_run("def f(x):\n    return x\n"), expected) == (0, 3)

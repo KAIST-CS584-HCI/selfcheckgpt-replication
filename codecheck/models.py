@@ -32,10 +32,10 @@ class CodeResult:
     is_correct: bool
     main_code: str
     sample_codes: list[str]
-    n_inputs: int = 0             # size of the shared input set all impls ran on
     prompt_responses: list[str] | None = None   # raw judge text per sample (prompt method only)
     prompt: str = ""              # the original problem prompt shown to the model
     is_error: bool = False        # main raised/timed out on any input (vs ran-but-wrong)
+    passed: str = "0/0"           # "correct/all": inputs the main matched canonical on / total
 
     @property
     def exec_score(self) -> float:
@@ -44,8 +44,8 @@ class CodeResult:
     def to_dict(self) -> dict:
         d = {
             "task_id": self.task_id, "scores": self.scores, "is_correct": self.is_correct,
-            "is_error": self.is_error, "prompt": self.prompt,
-            "main_code": self.main_code, "sample_codes": self.sample_codes, "n_inputs": self.n_inputs,
+            "is_error": self.is_error, "passed": self.passed, "prompt": self.prompt,
+            "main_code": self.main_code, "sample_codes": self.sample_codes,
         }
         if self.prompt_responses is not None:
             d["prompt_responses"] = self.prompt_responses
@@ -61,7 +61,8 @@ class CodeResult:
             scores = {}
         return cls(
             task_id=d["task_id"], scores=scores, is_correct=d["is_correct"],
-            main_code=d["main_code"], sample_codes=d["sample_codes"], n_inputs=d.get("n_inputs", 0),
+            main_code=d["main_code"], sample_codes=d["sample_codes"],
             prompt_responses=d.get("prompt_responses"),
             prompt=d.get("prompt", ""), is_error=d.get("is_error", False),
+            passed=d.get("passed", "0/0"),
         )

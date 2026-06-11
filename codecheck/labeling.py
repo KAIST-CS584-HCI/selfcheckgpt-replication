@@ -16,6 +16,15 @@ def is_correct(main_outputs: list, expected: list) -> bool:
     return len(main_outputs) == len(expected) and all(a == b for a, b in zip(main_outputs, expected))
 
 
+def passed_count(main_outputs: list, expected: list) -> tuple[int, int]:
+    """(matched, total): how many inputs the main matches the canonical on, and the
+    total. Uses the same per-input comparison as `is_correct`, counted instead of
+    all-reduced."""
+    total = len(expected)
+    matched = sum(1 for a, b in zip(main_outputs, expected) if a == b)
+    return matched, total
+
+
 def has_error(main_outputs: list) -> bool:
     """True if the implementation raised or timed out on ANY input.
 

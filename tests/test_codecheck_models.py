@@ -13,13 +13,13 @@ def test_code_problem_roundtrip():
 def test_code_result_roundtrip():
     r = CodeResult(task_id="Mbpp/2", scores={"exec": 0.4}, is_correct=True,
                    main_code="def f(x): return x", sample_codes=["def f(x): return x", "def f(x): return 0"],
-                   n_inputs=106)
+                   passed="100/106")
     assert CodeResult.from_dict(r.to_dict()) == r
 
 
 def test_code_result_prompt_responses_roundtrip():
     r = CodeResult(task_id="Mbpp/2", scores={"prompt": 0.5}, is_correct=True,
-                   main_code="m", sample_codes=["s1", "s2"], n_inputs=3,
+                   main_code="m", sample_codes=["s1", "s2"], passed="2/3",
                    prompt_responses=["Yes.", "No."])
     assert CodeResult.from_dict(r.to_dict()) == r
 
@@ -31,11 +31,11 @@ def test_code_result_omits_prompt_responses_when_absent():
     assert CodeResult.from_dict(r.to_dict()).prompt_responses is None
 
 
-def test_code_result_n_inputs_defaults_for_legacy_json():
-    # iteration-1 artifacts had no n_inputs key
+def test_code_result_passed_defaults_for_legacy_json():
+    # older artifacts had no passed key
     legacy = {"task_id": "t", "exec_score": 0.3, "is_correct": False,
               "main_code": "m", "sample_codes": ["s"]}
-    assert CodeResult.from_dict(legacy).n_inputs == 0
+    assert CodeResult.from_dict(legacy).passed == "0/0"
 
 
 def test_coderesult_scores_dict_roundtrip():
@@ -63,7 +63,7 @@ def test_coderesult_from_legacy_exec_score_key():
 
 def test_code_result_prompt_and_is_error_roundtrip():
     r = CodeResult(task_id="Mbpp/2", scores={"exec": 0.4}, is_correct=False,
-                   main_code="m", sample_codes=["s"], n_inputs=3,
+                   main_code="m", sample_codes=["s"], passed="2/3",
                    prompt="def f(x):\n    'doc'\n", is_error=True)
     back = CodeResult.from_dict(r.to_dict())
     assert back.prompt == "def f(x):\n    'doc'\n"
@@ -76,6 +76,13 @@ def test_code_result_to_dict_includes_prompt_and_is_error():
     d = r.to_dict()
     assert d["prompt"] == "P"
     assert d["is_error"] is False
+
+
+def test_code_result_to_dict_has_passed_not_n_inputs():
+    r = CodeResult("t", {"exec": 0.4}, True, "m", ["s"], passed="3/3")
+    d = r.to_dict()
+    assert d["passed"] == "3/3"
+    assert "n_inputs" not in d
 
 
 def test_code_result_defaults_for_legacy_json_without_prompt_or_is_error():
