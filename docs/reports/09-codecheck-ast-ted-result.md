@@ -44,20 +44,40 @@ Net: on MBPP+, structural consistency tracks correctness only weakly, and a *coa
 structural metric (Jaccard) is the better discriminator because it ignores the
 correct-but-restructured variation that TED penalizes.
 
-## `--no-random` slice (your intended protocol)
+## `--no-random` slice (larger run) — TED marginally ahead
 
-<!-- FILLED WHEN results/codecheck-ast.json (live --no-random --limit 200 --n 20) LANDS;
-     recomputed offline the same way. -->
-Pending the in-flight `--no-random --limit 200 --n 20` run. Will be recomputed offline
-(both metrics, same codes) and appended. The seed-1 result above is the primary,
-apples-to-apples evidence; the easy low-numbered slice is expected to compress both
-metrics further (fewer positives, more consistent samples), not reverse their ordering.
+Recomputed both metrics offline on `results/codecheck-ast.json`
+(`--no-random --limit 200 --n 20`): 200 problems, 56 incorrect, baseline 0.280, 35
+parse failures (same for both metrics).
 
-## Recommendation — decided
+| Metric  | AUC-PR | rank-AUC | correct mean | incorrect mean |
+|---------|--------|----------|--------------|----------------|
+| jaccard | 0.621  | 0.794    | 0.178 | 0.336 |
+| **ted** | **0.641** | **0.803** | 0.137 | 0.276 |
 
-- **Default switched to `jaccard`** (this evidence). `ted` stays available via
-  `--ast-metric ted`; both remain selectable, so this comparison is cheap to re-run on
-  any future sample (offline, zero API cost).
+Here **TED is slightly better** — the *opposite* of the seed-1 result. The two samples
+disagree on the ordering, and both gaps are small (≤0.02 AUC-PR).
+
+## Synthesis — the metrics are roughly tied
+
+| Sample | n | problems | jaccard AUC-PR | ted AUC-PR | winner |
+|--------|---|----------|----------------|------------|--------|
+| seed-1 (random) | 5 | 30 | 0.591 | 0.485 | jaccard |
+| sequential | 20 | 200 | 0.621 | 0.641 | ted (marginal) |
+
+Neither metric dominates. The difference flips with the sample and stays within noise,
+and both sit only modestly above the ~0.28–0.30 baseline. The likely driver is **N**:
+at N=20 TED's extra shape sensitivity averages out and is no longer net-harmful; at N=5
+its variance on correct-but-restructured samples dominated. Bottom line: **AST is a
+weak-to-moderate signal either way**, and the metric choice is close to a wash.
+
+## Recommendation
+
+- **Default kept at `jaccard`** (the user's decision). It is the cheaper metric (no
+  TED computation; TED is ~O(n²) per pair and noticeably slower at N=20 × 200), it is
+  never worse by more than ~0.02 AUC-PR, and it won the small random sample. `ted` stays
+  available via `--ast-metric ted` for anyone who wants the structure-aware variant on a
+  large/high-N run, where it edges ahead.
 - The deeper takeaway feeds the Improvement-2 narrative: AST (either metric) is a
   weak-to-moderate signal on MBPP+ and shares Exec's confident-consistent blind spot;
   the richer structural metric does not rescue it. A genuinely different signal
@@ -67,5 +87,5 @@ metrics further (fewer positives, more consistent samples), not reverse their or
 
 - `codecheck/ast_score.py`: `ast_to_tree`, `ted_dissimilarity` (zss, unit-cost,
   rename/literal-invariant, normalized to [0,1]); `ASTScorer(metric=...)` dispatch.
-- `run --ast-metric {jaccard,ted}` (default `ted`), run header prints the active metric.
-- `zss` added to `requirements.txt`. 24 AST unit tests; full codecheck suite 107 green.
+- `run --ast-metric {jaccard,ted}` (default `jaccard`), run header prints the active metric.
+- `zss` added to `requirements.txt`. AST unit tests + full codecheck suite green.
