@@ -124,8 +124,8 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--n", type=int, default=5, help="samples per problem (T=1)")
     run_p.add_argument("--timeout", type=float, default=5.0, help="per-call execution timeout (s)")
     run_p.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")
-    run_p.add_argument("--no-random", dest="randomize", action="store_false",
-                       help="use the first --limit problems in dataset order instead of a random sample")
+    run_p.add_argument("--random", dest="randomize", action="store_true",
+                       help="take a random sample of --limit problems instead of the first --limit in dataset order")
     run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
     run_p.add_argument("--think", action="store_true",
                        help="enable model chain-of-thought reasoning (much slower; default off)")
@@ -136,7 +136,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="jaccard",
                        help="AST structural metric: jaccard (bag-of-node-types, default) or "
                             "ted (tree edit distance). Only used when --method includes ast")
-    run_p.set_defaults(func=_cmd_run, randomize=True)
+    run_p.set_defaults(func=_cmd_run, randomize=False)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")
     eval_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")

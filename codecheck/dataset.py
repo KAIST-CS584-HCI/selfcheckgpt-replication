@@ -30,13 +30,13 @@ def _select(problems: list[CodeProblem], limit: int, randomize: bool, seed: int 
 
 def load_mbpp_plus(
     limit: int | None = None,
-    randomize: bool = True,
+    randomize: bool = False,
     seed: int | None = None,
     cache_path: Path = DEFAULT_CACHE,
 ) -> list[CodeProblem]:
-    """Load MBPP+ problems. With a limit, take a random sample by default
-    (set randomize=False for the first `limit` in dataset order; pass `seed`
-    for a reproducible sample)."""
+    """Load MBPP+ problems. With a limit, take the first `limit` in dataset order by
+    default (set randomize=True for a random sample; pass `seed` for a reproducible
+    one)."""
     problems = [_to_problem(item) for item in get_mbpp_plus().values()]
     if limit is not None:
         problems = _select(problems, limit, randomize, seed)
