@@ -42,3 +42,36 @@ def test_score_histogram_splits_by_class():
     last = hist[-1]      # bucket [0.9, 1.0]
     assert first["correct"] == 2 and first["incorrect"] == 0
     assert last["incorrect"] == 1 and last["correct"] == 0
+
+
+from codecheck.evaluate import auc_pr_detect_correct, score_label_correlation
+
+
+def test_factual_auc_detects_correct_class():
+    # exec score is low for correct, high for incorrect -> perfect separation of CORRECT
+    results = [_r(0.9, False), _r(0.8, False), _r(0.1, True), _r(0.0, True)]
+    assert auc_pr_detect_correct(results) == 1.0
+
+
+def test_factual_auc_single_class_is_nan():
+    results = [_r(0.5, False), _r(0.4, False)]
+    assert math.isnan(auc_pr_detect_correct(results))
+
+
+def test_correlation_positive_when_score_tracks_incorrectness():
+    # higher score on incorrect mains -> positive correlation with incorrectness
+    results = [_r(0.9, False), _r(0.7, False), _r(0.2, True), _r(0.0, True)]
+    pearson, spearman = score_label_correlation(results)
+    assert pearson > 0 and spearman > 0
+
+
+def test_correlation_negative_when_score_anticorrelates():
+    results = [_r(0.0, False), _r(0.1, False), _r(0.8, True), _r(0.9, True)]
+    pearson, spearman = score_label_correlation(results)
+    assert pearson < 0 and spearman < 0
+
+
+def test_correlation_nan_on_constant_scores():
+    results = [_r(0.5, False), _r(0.5, True)]
+    pearson, spearman = score_label_correlation(results)
+    assert math.isnan(pearson) and math.isnan(spearman)

@@ -120,7 +120,8 @@ def _methods_present(results) -> list[str]:
 
 def format_evaluation(results) -> str:
     from codecheck.evaluate import (
-        auc_pr_detect_incorrect, prevalence_baseline, score_histogram,
+        auc_pr_detect_incorrect, auc_pr_detect_correct, score_label_correlation,
+        prevalence_baseline, score_histogram,
     )
     n = len(results)
     n_incorrect = sum(1 for r in results if not r.is_correct)
@@ -128,8 +129,12 @@ def format_evaluation(results) -> str:
              f"baseline (incorrect prevalence): {prevalence_baseline(results):.4f}", ""]
     for method in _methods_present(results):
         method_results = [r for r in results if method in r.scores]
-        auc_pr = auc_pr_detect_incorrect(method_results, method=method)
-        lines.append(f"[{method}] AUC-PR (detect incorrect): {auc_pr:.4f}  (n={len(method_results)})")
+        auc_inc = auc_pr_detect_incorrect(method_results, method=method)
+        auc_cor = auc_pr_detect_correct(method_results, method=method)
+        pearson, spearman = score_label_correlation(method_results, method=method)
+        lines.append(f"[{method}] AUC-PR detect-incorrect: {auc_inc:.4f}  "
+                     f"detect-correct: {auc_cor:.4f}  (n={len(method_results)})")
+        lines.append(f"  corr(score, incorrect): pearson={pearson:.4f}  spearman={spearman:.4f}")
         lines.append(f"  {method} score histogram (bin: correct/incorrect):")
         for b in score_histogram(method_results, method=method, bins=10):
             lines.append(f"    [{b['lo']:.1f},{b['hi']:.1f}) {b['correct']}/{b['incorrect']}")

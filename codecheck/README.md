@@ -118,10 +118,13 @@ python run_codecheck.py evaluate --results output/iter3-all.json
 
 - Sample problems **randomly across the full set** with a capable model — never the
   low-numbered slice (it is unrepresentatively easy and yields a single class).
-- `evaluate` prints, per method, the AUC-PR, the **prevalence baseline** (the PR
-  no-skill floor), and a **per-class score histogram**. Read AUC-PR against the
-  baseline, not in isolation; the histogram exposes tie pile-ups at 0 that make
-  the scalar fragile.
+- `evaluate` prints, per method, two trapezoidal **AUC-PR** numbers — detect-incorrect
+  (the paper's `nonfact`, scores as-is) and detect-correct (the paper's `factual`,
+  negated scores) — the **Pearson/Spearman** correlation of score vs incorrectness, the
+  **prevalence baseline** (the PR no-skill floor), and a **per-class score histogram**.
+  Same `precision_recall_curve` + `auc` as the WikiBio replication
+  (`replication/evaluation/metrics.py`). Read AUC-PR against the baseline, not in
+  isolation; the histogram exposes tie pile-ups at 0 that make the scalar fragile.
 
 ## Dataset in use: MBPP+ (378 problems)
 
