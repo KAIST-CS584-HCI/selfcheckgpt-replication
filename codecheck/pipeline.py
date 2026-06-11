@@ -91,41 +91,29 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
     return results
 
 
-def append_result(result: CodeResult, path: str | os.PathLike) -> None:
-    """Append one result as a JSONL line, flushed to disk. O(1) per problem; a crash
-    mid-write leaves at most a torn final line, which `load_results` skips."""
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(result.to_dict(), ensure_ascii=False) + "\n")
-
-
 def save_results(results: list[CodeResult], path: str | os.PathLike) -> None:
-    """Write the whole list as JSONL (one object per line), atomically."""
+    """Write the whole list as a JSON array, atomically (temp file + replace)."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False, suffix=".tmp", encoding="utf-8") as tmp:
-        for result in results:
-            tmp.write(json.dumps(result.to_dict(), ensure_ascii=False) + "\n")
+        json.dump([r.to_dict() for r in results], tmp, indent=2, ensure_ascii=False)
         tmp_path = tmp.name
     os.replace(tmp_path, path)
 
 
+def append_result(result: CodeResult, path: str | os.PathLike) -> None:
+    """Add one result to the JSON-array file, rewritten atomically. The dataset is small,
+    so the O(n) rewrite per problem is negligible; the atomic replace keeps the file a
+    complete, valid array even if a run is interrupted mid-write."""
+    existing = load_results(path) if Path(path).exists() else []
+    existing.append(result)
+    save_results(existing, path)
+
+
 def load_results(path: str | os.PathLike) -> list[CodeResult]:
-    """Read results from a JSONL file. Tolerates a legacy JSON-array file (first non-space
-    char `[`) and skips blank/unparseable lines — including a torn trailing line left by a
-    crash mid-append."""
+    """Read results from a JSON-array file. A blank file counts as no results (a
+    non-empty but malformed file still raises, rather than silently dropping data)."""
     text = Path(path).read_text(encoding="utf-8")
-    if text.lstrip().startswith("["):
-        return [CodeResult.from_dict(item) for item in json.loads(text)]
-    results: list[CodeResult] = []
-    for line in text.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            item = json.loads(line)
-        except json.JSONDecodeError:
-            continue   # torn final line from an interrupted append
-        results.append(CodeResult.from_dict(item))
-    return results
+    if not text.strip():
+        return []
+    return [CodeResult.from_dict(item) for item in json.loads(text)]

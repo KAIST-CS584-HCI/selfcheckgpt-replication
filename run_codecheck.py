@@ -8,7 +8,7 @@ from pathlib import Path
 from score import load_environment  # reuse existing env loader
 
 REPO_ROOT = Path(__file__).resolve().parent
-DEFAULT_OUTPUT = REPO_ROOT / "output" / "codecheck.jsonl"
+DEFAULT_OUTPUT = REPO_ROOT / "output" / "codecheck.json"
 
 
 class _TqdmLoggingHandler(logging.Handler):
@@ -51,7 +51,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from codecheck.prompt_score import PromptJudge
     from codecheck.ast_score import ASTScorer
     from codecheck.execution import run_batch_in_subprocess
-    from codecheck.pipeline import run_dataset, save_results, load_results, append_result
+    from codecheck.pipeline import run_dataset, load_results, append_result
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     if not api_key:
@@ -80,12 +80,10 @@ def _cmd_run(args: argparse.Namespace) -> None:
     except IndexError as exc:
         sys.exit(f"error: {exc}")
     # Auto-resume: if the output file exists, skip problems already recorded (by task_id)
-    # and append only the remainder. Normalize the file to clean JSONL first (converts a
-    # legacy array, drops any torn final line).
+    # and add only the remainder.
     done_count = 0
     if Path(args.output).exists():
         existing = load_results(args.output)
-        save_results(existing, args.output)
         done = {r.task_id for r in existing}
         problems = [p for p in problems if p.task_id not in done]
         done_count = len(done)
@@ -160,7 +158,7 @@ def build_parser() -> argparse.ArgumentParser:
                             "cannot be combined with --limit/--random/--seed")
     run_p.add_argument("--n", type=int, default=5, help="samples per problem (T=1)")
     run_p.add_argument("--timeout", type=float, default=5.0, help="per-call execution timeout (s)")
-    run_p.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="results JSONL path")
+    run_p.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")
     run_p.add_argument("--random", dest="randomize", action="store_true",
                        help="take a random sample of --limit problems instead of the first --limit in dataset order")
     run_p.add_argument("--seed", type=int, default=None, help="random seed for a reproducible sample")
@@ -176,7 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.set_defaults(func=_cmd_run, randomize=False)
 
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")
-    eval_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT), help="results JSONL path")
+    eval_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")
     eval_p.set_defaults(func=_cmd_evaluate)
     return parser
 

@@ -15,8 +15,10 @@ the final save loses every completed problem — exactly the pain behind the 1h-
 `docs/issues/01`. We want each problem persisted the moment it finishes, and a re-run of
 the same command to continue where it left off rather than redo finished problems.
 
-Decisions (from brainstorming): **JSONL** append-only format; **auto-resume** when the
-output file already exists; identity key is `task_id`.
+Decisions (from brainstorming): **auto-resume** when the output file already exists;
+identity key is `task_id`. (Originally JSONL; later refactored back to a **JSON array**
+rewritten atomically after each problem — the dataset is small, so the O(n) rewrite is
+negligible and the atomic replace gives the same crash-safety without a second format.)
 
 ## Design
 
