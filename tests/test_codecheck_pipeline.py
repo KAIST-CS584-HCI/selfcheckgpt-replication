@@ -161,3 +161,51 @@ def test_score_problem_count_reflects_partial_match():
     res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0)
     assert res.count == {"total": 3, "pass": 2, "fail": 1, "error": 0}
     assert res.is_correct is False
+
+
+from codecheck.pipeline import append_result
+import json as _json
+
+
+def test_append_result_then_load_roundtrips_in_order(tmp_path):
+    path = tmp_path / "r.jsonl"
+    a = CodeResult("a", {"exec": 0.1}, True, "m", ["s"])
+    b = CodeResult("b", {"exec": 0.9}, False, "m", ["s"])
+    append_result(a, path)
+    append_result(b, path)
+    assert load_results(path) == [a, b]
+
+
+def test_save_results_jsonl_roundtrip(tmp_path):
+    path = tmp_path / "r.jsonl"
+    results = [CodeResult("a", {"exec": 0.1}, True, "m", ["s"]),
+               CodeResult("b", {"exec": 0.9}, False, "m", ["s"])]
+    save_results(results, path)
+    assert path.read_text().count("\n") == 2     # one line per result
+    assert load_results(path) == results
+
+
+def test_load_results_reads_legacy_json_array(tmp_path):
+    path = tmp_path / "legacy.json"
+    legacy = [{"task_id": "a", "scores": {"exec": 0.3}, "is_correct": True,
+               "main_code": "m", "sample_codes": ["s"]}]
+    path.write_text(_json.dumps(legacy))
+    loaded = load_results(path)
+    assert [r.task_id for r in loaded] == ["a"]
+
+
+def test_load_results_skips_torn_final_line(tmp_path):
+    path = tmp_path / "r.jsonl"
+    good = CodeResult("a", {"exec": 0.1}, True, "m", ["s"])
+    append_result(good, path)
+    with open(path, "a") as f:
+        f.write('{"task_id": "b", "scor')   # crash mid-write: torn line, no newline
+    assert [r.task_id for r in load_results(path)] == ["a"]
+
+
+def test_run_dataset_calls_on_result_per_success(tmp_path):
+    seen = []
+    gen = RaisingGen(fail_task_id="b")   # b fails, a and c succeed
+    run_dataset(_problems("a", "b", "c"), gen, run_batch_in_subprocess,
+                n_samples=1, timeout=5.0, on_result=seen.append)
+    assert [r.task_id for r in seen] == ["a", "c"]   # not called for the failed problem

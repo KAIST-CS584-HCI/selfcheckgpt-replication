@@ -183,7 +183,9 @@ python run_codecheck.py evaluate
 - `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, or `all`
 - `--ast-metric` — AST metric when `ast` runs: `jaccard` (default) or `ted`
 - `--timeout` — max seconds per code execution before it's killed
-- `--output` — where to save the results file
+- `--output` — where to save the results (JSONL, one result per line, appended as each
+  problem finishes). If the file already exists, the run **auto-resumes**: problems whose
+  `task_id` is already recorded are skipped and only the remainder is appended.
 - `--seed` — random seed for a reproducible sample (only with `--random`)
 - `--random` — take a random sample of `--limit` problems instead of the first `--limit` in order
 - `-v` / `--verbose` — log per-call API detail (latency, `finish_reason`, completion tokens)

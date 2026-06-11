@@ -57,7 +57,8 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
 
 
 def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5.0,
-                methods: set[str] | None = None, judge=None, ast_scorer=None) -> list[CodeResult]:
+                methods: set[str] | None = None, judge=None, ast_scorer=None,
+                on_result=None) -> list[CodeResult]:
     problems = list(problems)
     total = len(problems)
     results: list[CodeResult] = []
@@ -81,6 +82,8 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
         tqdm.write(f"[{i}/{total}] {result.task_id}  correct={result.is_correct}  "
                    f"{scores}  pass={c['pass']}/{c['total']} fail={c['fail']} err={c['error']}  "
                    f"({elapsed:.1f}s)")
+        if on_result is not None:
+            on_result(result)   # persist immediately (incremental save)
         results.append(result)
     if failed:
         logger.warning("%d/%d problems failed and were skipped: %s",
@@ -88,15 +91,41 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
     return results
 
 
+def append_result(result: CodeResult, path: str | os.PathLike) -> None:
+    """Append one result as a JSONL line, flushed to disk. O(1) per problem; a crash
+    mid-write leaves at most a torn final line, which `load_results` skips."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(result.to_dict(), ensure_ascii=False) + "\n")
+
+
 def save_results(results: list[CodeResult], path: str | os.PathLike) -> None:
+    """Write the whole list as JSONL (one object per line), atomically."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False, suffix=".tmp", encoding="utf-8") as tmp:
-        json.dump([r.to_dict() for r in results], tmp, indent=2, ensure_ascii=False)
+        for result in results:
+            tmp.write(json.dumps(result.to_dict(), ensure_ascii=False) + "\n")
         tmp_path = tmp.name
     os.replace(tmp_path, path)
 
 
 def load_results(path: str | os.PathLike) -> list[CodeResult]:
-    with open(path, encoding="utf-8") as f:
-        return [CodeResult.from_dict(item) for item in json.load(f)]
+    """Read results from a JSONL file. Tolerates a legacy JSON-array file (first non-space
+    char `[`) and skips blank/unparseable lines — including a torn trailing line left by a
+    crash mid-append."""
+    text = Path(path).read_text(encoding="utf-8")
+    if text.lstrip().startswith("["):
+        return [CodeResult.from_dict(item) for item in json.loads(text)]
+    results: list[CodeResult] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue   # torn final line from an interrupted append
+        results.append(CodeResult.from_dict(item))
+    return results
