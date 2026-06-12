@@ -128,9 +128,15 @@ def append_result(result: CodeResult, path: str | os.PathLike) -> None:
 
 
 def load_results(path: str | os.PathLike) -> list[CodeResult]:
-    """Read results from a JSON-array file. A blank file counts as no results (a
-    non-empty but malformed file still raises, rather than silently dropping data)."""
+    """Read results from a JSON-array file. A blank file counts as no results. A
+    non-empty file that is not valid JSON, or is missing required result fields, raises
+    ValueError (rather than a raw JSONDecodeError/KeyError) so callers can surface a clean
+    message instead of silently dropping data."""
     text = Path(path).read_text(encoding="utf-8")
     if not text.strip():
         return []
-    return [CodeResult.from_dict(item) for item in json.loads(text)]
+    try:
+        items = json.loads(text)
+        return [CodeResult.from_dict(item) for item in items]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise ValueError(f"invalid or corrupt results file: {path} ({exc})") from exc

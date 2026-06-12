@@ -88,7 +88,10 @@ def _cmd_run(args: argparse.Namespace) -> None:
     # and add only the remainder.
     done_count = 0
     if Path(args.output).exists():
-        existing = load_results(args.output)
+        try:
+            existing = load_results(args.output)
+        except ValueError as exc:
+            sys.exit(f"error: {exc}")
         done = {r.task_id for r in existing}
         problems = [p for p in problems if p.task_id not in done]
         done_count = len(done)
@@ -155,6 +158,8 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
         results = load_results(args.results)
     except FileNotFoundError:
         sys.exit(f"error: results file not found: {args.results}")
+    except ValueError as exc:
+        sys.exit(f"error: {exc}")
     print(format_evaluation(results))
 
 
@@ -170,6 +175,8 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
         results = load_results(args.results)
     except FileNotFoundError:
         sys.exit(f"error: results file not found: {args.results}")
+    except ValueError as exc:
+        sys.exit(f"error: {exc}")
     scorer = CodeBERTScorer()
     for r in results:
         r.scores["code_bert"] = scorer.score(r.main_code, r.sample_codes)

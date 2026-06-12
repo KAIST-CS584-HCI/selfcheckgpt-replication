@@ -190,6 +190,22 @@ def test_load_results_blank_file_is_empty(tmp_path):
     assert load_results(path) == []
 
 
+def test_load_results_malformed_json_raises_valueerror(tmp_path):
+    import pytest
+    path = tmp_path / "bad.json"
+    path.write_text("{not valid json")
+    with pytest.raises(ValueError):
+        load_results(path)
+
+
+def test_load_results_missing_fields_raises_valueerror(tmp_path):
+    import pytest
+    path = tmp_path / "missing.json"
+    path.write_text('[{"task_id": "x", "scores": {"exec": 0.1}, "is_correct": true}]')
+    with pytest.raises(ValueError):
+        load_results(path)
+
+
 def test_save_results_json_roundtrip(tmp_path):
     path = tmp_path / "r.json"
     results = [CodeResult("a", {"exec": 0.1}, True, "m", ["s"]),
