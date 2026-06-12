@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -23,33 +24,70 @@ def _run_vector(code: str, problem: CodeProblem, harness, timeout: float) -> lis
     return [normalize_output(o, problem.atol) for o in outcomes]
 
 
-def _run_vectors(codes: list[str], problem: CodeProblem, harness, timeout: float) -> list[list]:
+def _run_vectors(codes: list[str], problem: CodeProblem, harness, timeout: float,
+                 on_done=None) -> list[list]:
     """Run several implementations concurrently (each in its own harness subprocess),
     preserving input order. The heavy work runs in those subprocesses, so threads here
-    just wait on them — one stuck implementation no longer blocks the rest."""
+    just wait on them — one stuck implementation no longer blocks the rest. `on_done` ticks
+    once per finished implementation for live per-problem progress."""
     if not codes:
         return []
+
+    def run_one(code: str) -> list:
+        out = _run_vector(code, problem, harness, timeout)
+        if on_done is not None:
+            on_done()
+        return out
+
     with ThreadPoolExecutor(max_workers=len(codes)) as ex:
-        return list(ex.map(lambda c: _run_vector(c, problem, harness, timeout), codes))
+        return list(ex.map(run_one, codes))
+
+
+def _phase_ticker(progress, phase: str, total: int):
+    """Build a thread-safe per-unit tick for one phase. Each call increments a shared count
+    and reports progress(phase, count, total). Returns None when there is no progress sink
+    (so the concurrency layer skips the callback entirely). Best-effort: a display error
+    never propagates into a worker thread."""
+    if progress is None:
+        return None
+    count = 0
+    lock = threading.Lock()
+
+    def tick() -> None:
+        nonlocal count
+        with lock:
+            count += 1
+            current = count
+        try:
+            progress(phase, current, total)
+        except Exception:  # noqa: BLE001 — a progress hiccup must not fail a problem
+            pass
+
+    return tick
 
 
 def score_problem(problem, generator, harness, n_samples: int, timeout: float = 5.0,
                   methods: set[str] | None = None, judge=None, ast_scorer=None,
-                  codebert_scorer=None) -> CodeResult:
+                  codebert_scorer=None, progress=None) -> CodeResult:
     methods = methods or {"exec"}
-    main_code, sample_codes = generator.generate(problem, n_samples)
+    # progress(phase, done, total): live per-problem worker progress for the slow concurrent
+    # phases (gen = N+1 generations, exec = N sample runs, judge = N judge calls).
+    main_code, sample_codes = generator.generate(
+        problem, n_samples, on_unit=_phase_ticker(progress, "gen", n_samples + 1))
     main_outputs = _run_vector(main_code, problem, harness, timeout)
     expected = expected_outputs(problem, harness, timeout)
 
     scores: dict[str, float] = {}
     prompt_responses: list[str] | None = None
     if "exec" in methods:
-        sample_outputs = _run_vectors(sample_codes, problem, harness, timeout)
+        sample_outputs = _run_vectors(sample_codes, problem, harness, timeout,
+                                      on_done=_phase_ticker(progress, "exec", n_samples))
         scores["exec"] = exec_inconsistency(main_outputs, sample_outputs)
     if "prompt" in methods:
         if judge is None:
             raise ValueError("method 'prompt' requires a judge")
-        scores["prompt"], prompt_responses = judge.evaluate(main_code, sample_codes)
+        scores["prompt"], prompt_responses = judge.evaluate(
+            main_code, sample_codes, on_unit=_phase_ticker(progress, "judge", n_samples))
     if "ast" in methods:
         if ast_scorer is None:
             raise ValueError("method 'ast' requires an ast_scorer")
@@ -79,29 +117,37 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
     total = len(problems)
     results: list[CodeResult] = []
     failed: list[str] = []
-    for i, problem in enumerate(tqdm(problems, desc="codecheck"), start=1):
-        started = time.monotonic()
-        try:
-            result = score_problem(problem, generator, harness, n_samples, timeout, methods,
-                                   judge, ast_scorer, codebert_scorer)
-        except (KeyboardInterrupt, SystemExit):
-            raise  # let the user abort the whole run
-        except Exception:
-            # One problem's failure (e.g. an exhausted-retry API timeout) must not abort
-            # the run. Log the full traceback, skip it, and continue with the rest.
-            logger.exception("problem %s failed; skipping", problem.task_id)
-            failed.append(problem.task_id)
-            continue
-        elapsed = time.monotonic() - started
-        scores = "  ".join(f"{name}={value:.3f}" for name, value in result.scores.items())
-        # tqdm.write keeps these lines from corrupting the live progress bar.
-        c = result.count
-        tqdm.write(f"[{i}/{total}] {result.task_id}  correct={result.is_correct}  "
-                   f"{scores}  pass={c['pass']}/{c['total']} fail={c['fail']} err={c['error']}  "
-                   f"({elapsed:.1f}s)")
-        if on_result is not None:
-            on_result(result)   # persist immediately (incremental save)
-        results.append(result)
+    with tqdm(problems, desc="codecheck") as bar:
+        # Live per-problem worker progress shown as the bar's postfix (e.g. "judge 9/20").
+        # Postfix updates the bar's own line, so it coexists with the tqdm.write result lines.
+        def progress(phase, done, total_units):
+            bar.set_postfix_str(f"{phase} {done}/{total_units}")
+
+        for i, problem in enumerate(bar, start=1):
+            started = time.monotonic()
+            try:
+                result = score_problem(problem, generator, harness, n_samples, timeout, methods,
+                                       judge, ast_scorer, codebert_scorer, progress=progress)
+            except (KeyboardInterrupt, SystemExit):
+                raise  # let the user abort the whole run
+            except Exception:
+                # One problem's failure (e.g. an exhausted-retry API timeout) must not abort
+                # the run. Log the full traceback, skip it, and continue with the rest.
+                logger.exception("problem %s failed; skipping", problem.task_id)
+                failed.append(problem.task_id)
+                bar.set_postfix_str("")
+                continue
+            elapsed = time.monotonic() - started
+            bar.set_postfix_str("")   # clear the worker progress before the result line
+            scores = "  ".join(f"{name}={value:.3f}" for name, value in result.scores.items())
+            # tqdm.write keeps these lines from corrupting the live progress bar.
+            c = result.count
+            tqdm.write(f"[{i}/{total}] {result.task_id}  correct={result.is_correct}  "
+                       f"{scores}  pass={c['pass']}/{c['total']} fail={c['fail']} err={c['error']}  "
+                       f"({elapsed:.1f}s)")
+            if on_result is not None:
+                on_result(result)   # persist immediately (incremental save)
+            results.append(result)
     if failed:
         logger.warning("%d/%d problems failed and were skipped: %s",
                        len(failed), total, ", ".join(failed))

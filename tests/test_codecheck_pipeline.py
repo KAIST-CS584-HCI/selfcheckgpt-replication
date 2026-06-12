@@ -11,7 +11,10 @@ class StubGen:
     def __init__(self, main, samples):
         self._main, self._samples = main, samples
 
-    def generate(self, problem, n_samples):
+    def generate(self, problem, n_samples, on_unit=None):
+        if on_unit is not None:               # mimic the real generator's per-call ticks
+            for _ in range(n_samples + 1):
+                on_unit()
         return self._main, self._samples
 
 
@@ -102,7 +105,7 @@ class RaisingGen:
         self.fail_task_id = fail_task_id
         self.exc = exc or RuntimeError("boom")
 
-    def generate(self, problem, n_samples):
+    def generate(self, problem, n_samples, on_unit=None):
         if problem.task_id == self.fail_task_id:
             raise self.exc
         code = "def f(x):\n    return x + 1\n"
@@ -272,3 +275,28 @@ def test_score_problem_code_bert_requires_scorer():
     with pytest.raises(ValueError):
         score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0,
                       methods={"code_bert"})
+
+
+def test_score_problem_reports_phase_progress():
+    # progress(phase, done, total) must fire for each slow concurrent phase and reach its
+    # total: gen = n+1, exec = n, judge = n.
+    gen = StubGen("def f(x):\n    return x + 1\n",
+                  ["def f(x):\n    return x + 1\n", "def f(x):\n    return x + 1\n"])
+    judge = PromptJudge(FakeJudgeClient(["Yes.", "Yes."]), model="m")
+    seen = []
+    score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=2, timeout=5.0,
+                  methods={"exec", "prompt"}, judge=judge,
+                  progress=lambda phase, done, total: seen.append((phase, done, total)))
+    maxima = {}
+    for phase, done, total in seen:
+        maxima[phase] = (max(maxima.get(phase, (0, total))[0], done), total)
+    assert maxima["gen"] == (3, 3)     # main + 2 samples
+    assert maxima["exec"] == (2, 2)    # 2 sample executions
+    assert maxima["judge"] == (2, 2)   # 2 judge calls
+
+
+def test_score_problem_progress_defaults_to_noop():
+    # No progress callback -> behaves exactly as before (no crash, scores produced).
+    gen = StubGen("def f(x):\n    return x + 1\n", ["def f(x):\n    return x + 1\n"])
+    res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0)
+    assert res.is_correct is True

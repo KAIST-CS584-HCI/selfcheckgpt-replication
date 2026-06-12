@@ -18,10 +18,13 @@ def map_staggered(
     *,
     delay: float = STAGGER_DELAY,
     max_workers: int | None = None,
+    on_done: Callable[[], None] | None = None,
 ) -> list[R]:
     """Run `fn` over `items` concurrently, staggering each call's start: item i waits
     `i * delay` seconds before firing. Preserves input order, like
-    `ThreadPoolExecutor.map`. With `delay=0` it is a plain concurrent map."""
+    `ThreadPoolExecutor.map`. With `delay=0` it is a plain concurrent map. `on_done`, if
+    given, is called once (from the worker thread) after each item's `fn` returns — used to
+    report live per-unit progress."""
     items = list(items)
     if not items:
         return []
@@ -30,7 +33,10 @@ def map_staggered(
         i, item = indexed
         if i and delay:
             time.sleep(i * delay)
-        return fn(item)
+        result = fn(item)
+        if on_done is not None:
+            on_done()
+        return result
 
     with ThreadPoolExecutor(max_workers=max_workers or len(items)) as ex:
         return list(ex.map(run, enumerate(items)))

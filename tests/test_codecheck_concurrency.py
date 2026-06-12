@@ -29,3 +29,18 @@ def test_zero_delay_does_not_stagger():
     started = time.monotonic()
     map_staggered(lambda x: x, list(range(10)), delay=0.0)
     assert time.monotonic() - started < 0.1
+
+
+def test_on_done_fires_once_per_item():
+    import threading
+    count = 0
+    lock = threading.Lock()
+
+    def tick():
+        nonlocal count
+        with lock:
+            count += 1
+
+    out = map_staggered(lambda x: x * 2, [1, 2, 3, 4], delay=0.0, on_done=tick)
+    assert out == [2, 4, 6, 8]   # order preserved
+    assert count == 4            # one tick per item

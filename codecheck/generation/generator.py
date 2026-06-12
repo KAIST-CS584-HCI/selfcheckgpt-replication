@@ -45,10 +45,11 @@ class CodeGenerator:
             return ""
         return extract_code(resp.choices[0].message.content)
 
-    def generate(self, problem, n_samples: int) -> tuple[str, list[str]]:
+    def generate(self, problem, n_samples: int, on_unit=None) -> tuple[str, list[str]]:
         prompt = build_prompt(problem)
         temps = [0.0] + [1.0] * n_samples  # main at T=0, n samples at T=1
         # Fire the N+1 calls concurrently but staggered, to avoid bursting the rate limit.
+        # on_unit ticks once per completed call for live per-problem progress.
         outs = map_staggered(lambda t: self._complete(prompt, t), temps,
-                             max_workers=self.max_workers)
+                             max_workers=self.max_workers, on_done=on_unit)
         return outs[0], outs[1:]

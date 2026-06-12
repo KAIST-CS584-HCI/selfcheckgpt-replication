@@ -82,13 +82,14 @@ class PromptJudge:
             return ""
         return resp.choices[0].message.content or ""
 
-    def evaluate(self, main_code: str, sample_codes: list[str]) -> tuple[float, list[str]]:
+    def evaluate(self, main_code: str, sample_codes: list[str], on_unit=None) -> tuple[float, list[str]]:
         """(mean_inconsistency, raw_responses). raw_responses runs parallel to
-        sample_codes so callers can record per-sample judge text for variance analysis."""
+        sample_codes so callers can record per-sample judge text for variance analysis.
+        on_unit ticks once per completed judge call for live per-problem progress."""
         if not sample_codes:
             return 0.0, []
         raws = map_staggered(lambda s: self._judge_one(main_code, s), sample_codes,
-                             max_workers=self.max_workers)
+                             max_workers=self.max_workers, on_done=on_unit)
         values = []
         for raw in raws:
             value, matched = parse_judgment(raw)
