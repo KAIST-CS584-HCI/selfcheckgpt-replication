@@ -50,7 +50,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from codecheck.generation import CodeGenerator
     from codecheck.prompt_score import PromptJudge
     from codecheck.ast_score import ASTScorer
-    from codecheck.codebert_score import CodeBERTScorer
+    from codecheck.codebert_score import CodeBERTScorer, torch_available
     from codecheck.execution import run_batch_in_subprocess
     from codecheck.pipeline import run_dataset, load_results, append_result
 
@@ -68,6 +68,8 @@ def _cmd_run(args: argparse.Namespace) -> None:
         methods = {"exec", "prompt", "ast", "code_bert"}
     else:
         methods = {args.method}
+    if "code_bert" in methods and not torch_available():
+        sys.exit("error: method 'code_bert' requires torch — pip install torch")
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
     ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
     codebert_scorer = CodeBERTScorer() if "code_bert" in methods else None
@@ -159,9 +161,11 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
 def _cmd_codebert(args: argparse.Namespace) -> None:
     """Offline: add a `code_bert` consistency score to an existing results file, reusing
     the stored main_code + sample_codes (no regeneration, no API). Rewrites in place."""
-    from codecheck.codebert_score import CodeBERTScorer
+    from codecheck.codebert_score import CodeBERTScorer, torch_available
     from codecheck.pipeline import load_results, save_results
 
+    if not torch_available():
+        sys.exit("error: 'codebert' requires torch — pip install torch")
     try:
         results = load_results(args.results)
     except FileNotFoundError:
@@ -174,7 +178,7 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="SelfCheck for code (Exec + Prompt) on MBPP+.")
+    parser = argparse.ArgumentParser(description="SelfCheck for code (Exec, Prompt, AST, CodeBERT) on MBPP+.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     run_p = sub.add_parser("run", help="generate, score, and save")

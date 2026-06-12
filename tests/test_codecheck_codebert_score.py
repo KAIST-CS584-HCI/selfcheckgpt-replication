@@ -61,6 +61,21 @@ def test_score_wraps_evaluate():
     assert s.score("main", []) == 0.0
 
 
+def test_nan_embedding_is_max_divergence():
+    # A degenerate (NaN) embedding must not collapse to 0.0 ("most consistent").
+    s = CodeBERTScorer()
+    s._embed = lambda codes: np.full((len(codes), 2), np.nan)
+    assert s.score("main", ["s"]) == 1.0
+
+
+def test_embed_row_count_mismatch_raises():
+    import pytest
+    s = CodeBERTScorer()
+    s._embed = lambda codes: np.ones((1, 2))   # too few rows for main + 2 samples
+    with pytest.raises(ValueError):
+        s.evaluate("main", ["a", "b"])
+
+
 @pytest.mark.skipif(os.environ.get("CODEBERT_INTEGRATION") != "1",
                     reason="set CODEBERT_INTEGRATION=1 to download + run the real model")
 def test_real_model_identical_low_dissimilarity():

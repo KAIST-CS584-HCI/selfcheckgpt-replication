@@ -166,6 +166,7 @@ def test_cmd_codebert_augments_results_in_place(tmp_path, monkeypatch):
             return 0.42
 
     monkeypatch.setattr(cbs, "CodeBERTScorer", FakeScorer)
+    monkeypatch.setattr(cbs, "torch_available", lambda: True)  # fake scorer stands in for the model
     path = tmp_path / "r.json"
     save_results([CodeResult("a", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"])], path)
 
@@ -174,3 +175,14 @@ def test_cmd_codebert_augments_results_in_place(tmp_path, monkeypatch):
     out = load_results(path)
     assert out[0].scores["code_bert"] == 0.42
     assert out[0].scores["exec"] == 0.1   # existing scores preserved
+
+
+def test_cmd_codebert_exits_clean_when_torch_missing(tmp_path, monkeypatch):
+    import codecheck.codebert_score as cbs
+    import run_codecheck
+    import pytest
+
+    monkeypatch.setattr(cbs, "torch_available", lambda: False)
+    with pytest.raises(SystemExit) as exc:
+        run_codecheck._cmd_codebert(SimpleNamespace(results=str(tmp_path / "missing.json")))
+    assert "torch" in str(exc.value)   # fails fast with a clear message, not a traceback

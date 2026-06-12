@@ -1,8 +1,17 @@
 from __future__ import annotations
 
+import importlib.util
+import math
+
 import numpy as np
 
 _MODEL_NAME = "microsoft/codebert-base"
+
+
+def torch_available() -> bool:
+    """True if torch is importable. code_bert needs the real model, so the CLI checks this
+    up front and fails fast with a clear message instead of crashing mid-run."""
+    return importlib.util.find_spec("torch") is not None
 
 
 class CodeBERTScorer:
@@ -62,14 +71,20 @@ class CodeBERTScorer:
             # The main is a non-answer; nothing to compare against -> maximally divergent.
             return 1.0, [1.0] * len(sample_codes)
         embeddings = np.asarray(self._embed([main_code] + list(sample_codes)), dtype=float)
+        expected_rows = len(sample_codes) + 1
+        if embeddings.shape[0] != expected_rows:
+            raise ValueError(f"_embed returned {embeddings.shape[0]} rows, "
+                             f"expected {expected_rows} (main + samples)")
         main_vec = embeddings[0]
         per_sample: list[float] = []
         for i, code in enumerate(sample_codes, start=1):
             if not code or not code.strip():
                 per_sample.append(1.0)
                 continue
-            cosine = float(np.dot(main_vec, embeddings[i]))
-            per_sample.append(min(1.0, max(0.0, 1.0 - cosine)))
+            dissim = 1.0 - float(np.dot(main_vec, embeddings[i]))
+            # A degenerate (non-finite) embedding is treated as maximally divergent, not
+            # accidentally consistent: the clamp alone would map NaN to 0.0 ("most correct").
+            per_sample.append(1.0 if not math.isfinite(dissim) else min(1.0, max(0.0, dissim)))
         return sum(per_sample) / len(per_sample), per_sample
 
     def score(self, main_code: str, sample_codes: list[str]) -> float:
