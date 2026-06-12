@@ -383,6 +383,41 @@ def test_cmd_prompt_rescore_overwrites_prompt_in_place(tmp_path, monkeypatch):
     assert out[0].scores["exec"] == 0.1      # other scores preserved
 
 
+def test_cmd_prompt_saves_incrementally_so_a_crash_keeps_finished_scores(tmp_path, monkeypatch):
+    # The judge scores result 0, then raises on result 1. The per-result save must have
+    # persisted result 0's new score before the crash.
+    import codecheck.score.prompt as ps
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results, load_results
+    import run_codecheck
+
+    class CrashingJudge:
+        n = 0
+        def __init__(self, *a, **kw):
+            self.parse_failures = 0
+        def score(self, main_code, sample_codes):
+            CrashingJudge.n += 1
+            if CrashingJudge.n == 2:
+                raise RuntimeError("boom on second result")
+            return 0.55
+
+    monkeypatch.setattr(ps, "PromptJudge", CrashingJudge)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    path = tmp_path / "r.json"
+    save_results([
+        CodeResult("HumanEval/0", {"exec": 0.1, "prompt": 0.0}, True, "m", ["s"]),
+        CodeResult("HumanEval/1", {"exec": 0.2, "prompt": 0.0}, True, "m", ["s"]),
+    ], path)
+
+    import pytest
+    with pytest.raises(RuntimeError):
+        run_codecheck._cmd_prompt(SimpleNamespace(results=str(path), dataset=None))
+
+    out = load_results(path)
+    assert out[0].scores["prompt"] == 0.55   # result 0 persisted before the crash
+    assert out[1].scores["prompt"] == 0.0    # result 1 untouched (crashed mid-score)
+
+
 def test_cmd_prompt_auto_detects_template_by_task_id(tmp_path, monkeypatch):
     from codecheck.models import CodeResult
     from codecheck.pipeline import save_results

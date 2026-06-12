@@ -227,6 +227,7 @@ def _cmd_prompt(args: argparse.Namespace) -> None:
     so the new HumanEval prompt applies to HumanEval results without touching MBPP+ ones.
     Rewrites in place."""
     from openai import OpenAI
+    from tqdm import tqdm
     from codecheck.score.prompt import PromptJudge, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
     from codecheck.pipeline import load_results, save_results
 
@@ -246,13 +247,15 @@ def _cmd_prompt(args: argparse.Namespace) -> None:
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
     # One judge per distinct template; reuse it across the results that map to it.
     judges: dict[str, object] = {}
-    parse_failures = 0
-    for r in results:
-        tmpl = _judge_template_for(r.task_id, args.dataset, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE)
-        if tmpl not in judges:
-            judges[tmpl] = PromptJudge(client, model=model, template=tmpl)
-        r.scores["prompt"] = judges[tmpl].score(r.main_code, r.sample_codes)
-    save_results(results, args.results)
+    # Re-scoring is API-bound (one judge round-trip per sample, ~minutes for a full file), so
+    # show a live bar and save after each result — a Ctrl-C keeps the scores done so far.
+    with tqdm(results, desc="prompt") as bar:
+        for r in bar:
+            tmpl = _judge_template_for(r.task_id, args.dataset, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE)
+            if tmpl not in judges:
+                judges[tmpl] = PromptJudge(client, model=model, template=tmpl)
+            r.scores["prompt"] = judges[tmpl].score(r.main_code, r.sample_codes)
+            save_results(results, args.results)   # incremental: never lose finished scores
     parse_failures = sum(getattr(j, "parse_failures", 0) for j in judges.values())
     print(f"Re-scored prompt on {len(results)} results in {args.results}")
     print(f"Judge parse failures: {parse_failures}")
