@@ -146,10 +146,11 @@ def test_limit_defaults_to_none():
     assert build_parser().parse_args(["run"]).limit is None
 
 
-def test_resolve_selection_bare_run_defaults_to_limit_20():
+def test_resolve_selection_bare_run_is_entire_dataset():
+    # No --limit -> limit=None, which the loaders treat as the whole dataset.
     from run_codecheck import build_parser, _resolve_selection
     args = build_parser().parse_args(["run"])
-    assert _resolve_selection(args) == (20, None)
+    assert _resolve_selection(args) == (None, None)
 
 
 def test_resolve_selection_index_mode():

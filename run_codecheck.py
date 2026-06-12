@@ -35,13 +35,14 @@ def _setup_run_logging(verbose: bool = False) -> None:
 
 def _resolve_selection(args: argparse.Namespace) -> tuple[int | None, int | None]:
     """Resolve problem selection into (limit, index). `--index` runs a single problem and
-    is mutually exclusive with `--limit`/`--random`/`--seed`; a bare run defaults to the
-    first 20. Raises ValueError on a conflicting combination."""
+    is mutually exclusive with `--limit`/`--random`/`--seed`; a bare run (no `--limit`)
+    selects the **entire dataset** (limit=None). Raises ValueError on a conflicting
+    combination."""
     if args.index is not None:
         if args.limit is not None or args.randomize or args.seed is not None:
             raise ValueError("--index cannot be combined with --limit, --random, or --seed")
         return None, args.index
-    return (args.limit if args.limit is not None else 20), None
+    return args.limit, None   # None -> whole dataset
 
 
 def _cmd_run(args: argparse.Namespace) -> None:
@@ -190,7 +191,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     run_p = sub.add_parser("run", help="generate, score, and save")
-    run_p.add_argument("--limit", type=int, default=None, help="number of MBPP+ problems (default 20)")
+    run_p.add_argument("--limit", type=int, default=None,
+                       help="number of problems to use (default: the entire dataset)")
     run_p.add_argument("--index", type=int, default=None,
                        help="run only the single problem at this 0-based dataset position; "
                             "cannot be combined with --limit/--random/--seed")

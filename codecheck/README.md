@@ -209,7 +209,7 @@ python run_codecheck.py evaluate
 **`run` parameters**
 
 - `--dataset` — which EvalPlus dataset: `mbpp` (default, MBPP+) or `humaneval` (HumanEval+)
-- `--limit` — how many problems to use (default 20)
+- `--limit` — how many problems to use (default: the entire dataset)
 - `--index` — run only the single problem at this 0-based dataset position; cannot be
   combined with `--limit`/`--random`/`--seed`
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
@@ -226,9 +226,10 @@ python run_codecheck.py evaluate
   at DEBUG. Without it, a run still warns on truncated (`finish_reason != stop`) or empty
   responses.
 
-By default the run uses the first `--limit` problems in dataset order. Pass `--random` for
-a random sample (add `--seed` to reproduce it). The saved results record which problems
-were used, so any run is reproducible from its output.
+By default the run uses the **entire dataset** in order; pass `--limit N` to take the first
+`N` in dataset order, and `--random` for a random sample of that size (add `--seed` to
+reproduce it). The saved results record which problems were used, so any run is reproducible
+from its output.
 
 **`evaluate` parameters**
 
