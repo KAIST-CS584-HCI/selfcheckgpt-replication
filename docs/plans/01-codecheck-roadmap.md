@@ -92,7 +92,7 @@ not detailed until a gate run closes it:
   per-main-implementation** in `04-codecheck-methods.md` (only the T=0 main impl
   is a scored unit; the N samples are evidence only). Paper-faithful; applies to
   all three variants incl. AST. Low-positive-count fragility is handled by
-  scaling problem count (iter 4), not by redefining the unit.
+  scaling problem count (the manual `--limit 300` run), not by redefining the unit.
 - **Exec false-positive hardening — partly a determinism artifact.** The
   hashseed bug confirmed part of iter-1's "false positives" was nondeterministic
   ordering (now fixed), the rest is genuine edge-case divergence on EvalPlus
@@ -154,9 +154,12 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 | 2.5 | Validation run *(gate)* | ✅ done. Post-hashseed-fix run re-established trustworthy Exec + first real Prompt numbers; head-to-head produced. |
 | 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
 | 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
-| 4 | Hardening backlog *(optional, non-gating)* | Scale is produced manually (`--limit 300`, ≈80% of 378 — sufficient; full set not required). Remaining items are small/optional: default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser, finish gemma `code_bert`. |
 | 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. **(next)** |
 | 6 | Analysis + report | Four-method × dataset synthesis; the structure/embedding negative result + blind-spot cross-link to Improvement 1. *(light)* |
+
+*(No iteration 4: scale is produced manually via a `--limit 300` MBPP+ run, not a
+gated iteration. Leftover small/optional items are parked under "Deferred items"
+below — none block iter 5/6.)*
 
 ---
 
@@ -218,7 +221,7 @@ now carry a real **four-method** readout. This revision folds that evidence in.
     and whether judge is affordable on the full set).
   - Whether the judge prompt needs code-specific tuning.
 - **Risks / open decisions:**
-  - Judge cost at full N × full dataset (feeds iteration 4).
+  - Judge cost at full N × full dataset (informed the manual `--limit 300` sizing).
   - OPEN: is the per-problem unit (label = main-impl correctness) the right
     granularity, or should samples be scored as units too? Affects all variants;
     settle in the methods doc, not here.
@@ -315,22 +318,21 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 - **Carried gap:** code_bert coverage is full on the qwen file but partial (54/254)
   on gemma; complete it so the four-way table is uniform before the report.
 
-## Iteration 4 — Hardening backlog *(optional, non-gating)*
+## Deferred items *(non-blocking — not an iteration)*
 
-- **Scale is handled manually**, not as an iteration: a `--limit 300` MBPP+ run
-  (≈80% of 378) gives the paper-comparable four-method table. `evaluate` already
-  emits trapezoidal AUC-PR + Pearson/Spearman, so no new run-iteration is needed —
-  the full 378 set is not required for the comparison to hold.
-- **Remaining items are small and optional** (do them if/when they pay off, none
-  block iter 5/6):
-  1. **Default `--timeout 2`** (down from 5) — cheaply bounds the all-inputs-looping
-     worst case (per-batch K-timeout was considered and dropped as unneeded).
-  2. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
-     `exec_score` on correct mains whose samples differ on edge cases. Decide
-     reference-vs-filtered inputs (deferred iter-1 item).
-  3. **Optional:** anchor the Prompt Yes/No/N-A regex to the verdict line (defensive
-     for weaker/ramblier judges; current data parses clean, so low priority).
-  4. Finish gemma `code_bert` coverage (carried from iter 3.5).
+Scale is handled manually (a `--limit 300` MBPP+ run, ≈80% of 378, gives the
+paper-comparable four-method table; `evaluate` already emits trapezoidal AUC-PR +
+Pearson/Spearman), so there is no scale iteration. These small items remain optional
+and gate nothing — pick them up if they pay off:
+
+1. **Default `--timeout 2`** (down from 5) — cheaply bounds the all-inputs-looping
+   worst case (per-batch K-timeout was considered and dropped as unneeded).
+2. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
+   `exec_score` on correct mains whose samples differ on edge cases. Decide
+   reference-vs-filtered inputs (deferred iter-1 item).
+3. **Anchored Prompt parser** — pin the Yes/No/N-A regex to the verdict line
+   (defensive for weaker/ramblier judges; current data parses clean → low priority).
+4. **Finish gemma `code_bert` coverage** (carried from the CodeBERT variant).
 
 ## Iteration 5 — Hallucination-targeted datasets *(now the highest-value direction)*
 
