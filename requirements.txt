@@ -16,6 +16,7 @@ python-dotenv
 
 # Repository demos / experiments
 datasets
+huggingface_hub
 evalplus
 scikit-learn
 scipy

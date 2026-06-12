@@ -28,6 +28,19 @@ HUMANEVAL_JUDGE_TEMPLATE = (
     "Answer Yes (always identical behavior) / No (they can differ) / N/A, with a one-sentence reason."
 )
 
+# CodeHaluEval is whole-program stdin->stdout (Codeforces-style), not a function call. Same
+# oracle-free, divergence-seeking framing as the HumanEval template, but over programs that
+# read stdin and print to stdout. Same Yes/No/N-A mapping (Yes = identical output = 0.0).
+CODEHALU_JUDGE_TEMPLATE = (
+    "Two Python programs that read from stdin and write to stdout for the same task:\n\n"
+    "Program A:\n{main_code}\n\n"
+    "Program B:\n{sample_code}\n\n"
+    "Ignoring comments, would A and B print the SAME output for EVERY valid stdin, including "
+    "edge cases (empty, zero, negatives, large, duplicates, boundary sizes)? Look hard for any "
+    "single stdin on which their output would differ or one would error/loop.\n"
+    "Answer Yes (always identical output) / No (they can differ) / N/A, with a one-sentence reason."
+)
+
 # Map a matched answer token to an inconsistency score (higher = more likely incorrect).
 _ANSWER = re.compile(r"\b(yes|no|n/?a)\b", re.IGNORECASE)
 

@@ -17,6 +17,15 @@ def test_humaneval_template_is_divergence_seeking():
     assert "every input" in p.lower() and "edge cases" in p.lower()
 
 
+def test_codehalu_template_is_program_oriented_and_divergence_seeking():
+    from codecheck.score.prompt import CODEHALU_JUDGE_TEMPLATE
+    p = build_judge_prompt("print(1)", "print(2)", CODEHALU_JUDGE_TEMPLATE)
+    assert "print(1)" in p and "print(2)" in p
+    assert "Yes" in p and "No" in p
+    assert "stdin" in p.lower() and "stdout" in p.lower()
+    assert "every valid stdin" in p.lower() and "edge cases" in p.lower()
+
+
 def test_parse_yes_means_consistent_zero():
     score, matched = parse_judgment("Yes, the behavior is identical.")
     assert score == 0.0 and matched is True

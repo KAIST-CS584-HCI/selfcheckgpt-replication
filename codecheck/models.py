@@ -14,18 +14,26 @@ class CodeProblem:
     canonical_solution: str
     inputs: list[list]
     atol: float = 1e-6
+    # Pre-supplied normalized ground-truth outcomes (one per input), for datasets that ship
+    # expected outputs (e.g. CodeHaluEval stdin/stdout). None = run the canonical solution to
+    # derive ground truth, the function-call default. `entry_point` may be "" for stdio.
+    expected: list | None = None
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "task_id": self.task_id, "prompt": self.prompt, "entry_point": self.entry_point,
             "canonical_solution": self.canonical_solution, "inputs": self.inputs, "atol": self.atol,
         }
+        if self.expected is not None:
+            d["expected"] = self.expected
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "CodeProblem":
         return cls(
             task_id=d["task_id"], prompt=d["prompt"], entry_point=d["entry_point"],
             canonical_solution=d["canonical_solution"], inputs=d["inputs"], atol=d.get("atol", 1e-6),
+            expected=d.get("expected"),
         )
 
 

@@ -45,14 +45,32 @@ def _resolve_selection(args: argparse.Namespace) -> tuple[int | None, int | None
     return args.limit, None   # None -> whole dataset
 
 
+def _dataset_config(dataset: str):
+    """Resolve the per-dataset pieces a run needs: (loader, batch harness, generation
+    prompt builder, judge template). MBPP+ and HumanEval+ are function-call (shared harness,
+    different judge wording); CodeHaluEval is whole-program stdin->stdout (its own harness and
+    prompt builder)."""
+    from codecheck.dataset import load_mbpp_plus, load_human_eval_plus, load_codehalu_eval
+    from codecheck.generation.generator import build_prompt, build_stdio_prompt
+    from codecheck.score.prompt import JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE, CODEHALU_JUDGE_TEMPLATE
+    from codecheck.execution.sandbox import run_batch_in_subprocess
+    from codecheck.execution.stdio_sandbox import run_stdio_batch_in_subprocess
+
+    if dataset == "codehalu":
+        return load_codehalu_eval, run_stdio_batch_in_subprocess, build_stdio_prompt, CODEHALU_JUDGE_TEMPLATE
+    if dataset == "humaneval":
+        # HumanEval+ uses a sharper, divergence-seeking judge prompt (still oracle-free).
+        return load_human_eval_plus, run_batch_in_subprocess, build_prompt, HUMANEVAL_JUDGE_TEMPLATE
+    # MBPP+ keeps the original consistency prompt so its committed numbers stay comparable.
+    return load_mbpp_plus, run_batch_in_subprocess, build_prompt, JUDGE_TEMPLATE
+
+
 def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
-    from codecheck.dataset import load_mbpp_plus, load_human_eval_plus
     from codecheck.generation.generator import CodeGenerator
-    from codecheck.score.prompt import PromptJudge, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
+    from codecheck.score.prompt import PromptJudge
     from codecheck.score.ast import ASTScorer
     from codecheck.score.codebert import CodeBERTScorer, torch_available
-    from codecheck.execution.sandbox import run_batch_in_subprocess
     from codecheck.pipeline import run_dataset, load_results, append_result
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
@@ -62,8 +80,13 @@ def _cmd_run(args: argparse.Namespace) -> None:
     base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").strip()
     print(f"Model: {model}  (set OPENROUTER_MODEL to change)")
 
+    load, harness, prompt_builder, judge_template = _dataset_config(args.dataset)
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
-    generator = CodeGenerator(client, model=model, think=args.think)
+    # CodeHaluEval is whole-program competitive (Codeforces-style) code, far harder than a
+    # single function, so generation reasons by default to get usable programs; --think still
+    # forces it on for the other datasets.
+    gen_think = args.think or args.dataset == "codehalu"
+    generator = CodeGenerator(client, model=model, think=gen_think, prompt_builder=prompt_builder)
 
     if args.method == "all":
         methods = {"exec", "prompt", "ast", "code_bert"}
@@ -71,9 +94,6 @@ def _cmd_run(args: argparse.Namespace) -> None:
         methods = {args.method}
     if "code_bert" in methods and not torch_available():
         sys.exit("error: method 'code_bert' requires torch — pip install torch")
-    # HumanEval+ uses a sharper, divergence-seeking judge prompt (still oracle-free); MBPP+
-    # keeps the original consistency prompt so its committed numbers stay comparable.
-    judge_template = HUMANEVAL_JUDGE_TEMPLATE if args.dataset == "humaneval" else JUDGE_TEMPLATE
     judge = (PromptJudge(client, model=model, think=args.think, template=judge_template)
              if "prompt" in methods else None)
     ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
@@ -85,7 +105,6 @@ def _cmd_run(args: argparse.Namespace) -> None:
         sys.exit(f"error: {exc}")
 
     _setup_run_logging(verbose=args.verbose)
-    load = load_human_eval_plus if args.dataset == "humaneval" else load_mbpp_plus
     try:
         problems = load(limit=limit, randomize=args.randomize, seed=args.seed, index=index)
     except IndexError as exc:
@@ -110,7 +129,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
         print("nothing to do — all selected problems already in the output file")
         return
     try:
-        results = run_dataset(problems, generator, run_batch_in_subprocess,
+        results = run_dataset(problems, generator, harness,
                               n_samples=args.n, timeout=args.timeout,
                               methods=methods, judge=judge, ast_scorer=ast_scorer,
                               codebert_scorer=codebert_scorer,
@@ -171,7 +190,10 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
 
 def _cmd_codebert(args: argparse.Namespace) -> None:
     """Offline: add a `code_bert` consistency score to an existing results file, reusing
-    the stored main_code + sample_codes (no regeneration, no API). Rewrites in place."""
+    the stored main_code + sample_codes (no regeneration, no API). Rewrites in place. By
+    default only results lacking a code_bert score are filled (resume a partial pass);
+    --recompute rescores every result."""
+    from tqdm import tqdm
     from codecheck.score.codebert import CodeBERTScorer, torch_available
     from codecheck.pipeline import load_results, save_results
 
@@ -183,11 +205,16 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
         sys.exit(f"error: results file not found: {args.results}")
     except ValueError as exc:
         sys.exit(f"error: {exc}")
+    todo = results if args.recompute else [r for r in results if "code_bert" not in r.scores]
     scorer = CodeBERTScorer()
-    for r in results:
+    # Embedding 300 problems is silent for a while; show a bar and save each result so a
+    # Ctrl-C keeps the scores done so far (matches the `run`/`prompt` subcommands).
+    for r in tqdm(todo, desc="code_bert"):
         r.scores["code_bert"] = scorer.score(r.main_code, r.sample_codes)
-    save_results(results, args.results)
-    print(f"Added code_bert to {len(results)} results in {args.results}")
+        save_results(results, args.results)
+    skipped = len(results) - len(todo)
+    note = "" if args.recompute else f" ({skipped} already scored, skipped)"
+    print(f"Scored code_bert on {len(todo)} results in {args.results}{note}")
 
 
 def _judge_template_for(task_id: str, override, default_tmpl, humaneval_tmpl):
@@ -208,6 +235,7 @@ def _cmd_prompt(args: argparse.Namespace) -> None:
     so the new HumanEval prompt applies to HumanEval results without touching MBPP+ ones.
     Rewrites in place."""
     from openai import OpenAI
+    from tqdm import tqdm
     from codecheck.score.prompt import PromptJudge, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
     from codecheck.pipeline import load_results, save_results
 
@@ -227,13 +255,15 @@ def _cmd_prompt(args: argparse.Namespace) -> None:
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
     # One judge per distinct template; reuse it across the results that map to it.
     judges: dict[str, object] = {}
-    parse_failures = 0
-    for r in results:
-        tmpl = _judge_template_for(r.task_id, args.dataset, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE)
-        if tmpl not in judges:
-            judges[tmpl] = PromptJudge(client, model=model, template=tmpl)
-        r.scores["prompt"] = judges[tmpl].score(r.main_code, r.sample_codes)
-    save_results(results, args.results)
+    # Re-scoring is API-bound (one judge round-trip per sample, ~minutes for a full file), so
+    # show a live bar and save after each result — a Ctrl-C keeps the scores done so far.
+    with tqdm(results, desc="prompt") as bar:
+        for r in bar:
+            tmpl = _judge_template_for(r.task_id, args.dataset, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE)
+            if tmpl not in judges:
+                judges[tmpl] = PromptJudge(client, model=model, template=tmpl)
+            r.scores["prompt"] = judges[tmpl].score(r.main_code, r.sample_codes)
+            save_results(results, args.results)   # incremental: never lose finished scores
     parse_failures = sum(getattr(j, "parse_failures", 0) for j in judges.values())
     print(f"Re-scored prompt on {len(results)} results in {args.results}")
     print(f"Judge parse failures: {parse_failures}")
@@ -259,8 +289,9 @@ def build_parser() -> argparse.ArgumentParser:
                        help="enable model chain-of-thought reasoning (much slower; default off)")
     run_p.add_argument("-v", "--verbose", action="store_true",
                        help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
-    run_p.add_argument("--dataset", choices=["mbpp", "humaneval"], default="mbpp",
-                       help="which EvalPlus dataset to run on (default mbpp = MBPP+)")
+    run_p.add_argument("--dataset", choices=["mbpp", "humaneval", "codehalu"], default="mbpp",
+                       help="dataset: mbpp (MBPP+, default), humaneval (HumanEval+), or "
+                            "codehalu (CodeHaluEval stdin/stdout)")
     run_p.add_argument("--method", choices=["exec", "prompt", "ast", "code_bert", "all"], default="exec",
                        help="which consistency scorer(s) to run")
     run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="jaccard",
@@ -275,6 +306,8 @@ def build_parser() -> argparse.ArgumentParser:
     cb_p = sub.add_parser("codebert", help="add a code_bert score to an existing results file (offline)")
     cb_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT),
                       help="results JSON path to augment in place")
+    cb_p.add_argument("--recompute", action="store_true",
+                      help="rescore every result; default only fills results lacking a code_bert score")
     cb_p.set_defaults(func=_cmd_codebert)
 
     pr_p = sub.add_parser("prompt", help="re-score the prompt (LLM-judge) variant on an existing results file")

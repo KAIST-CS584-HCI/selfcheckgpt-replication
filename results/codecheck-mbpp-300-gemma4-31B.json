@@ -4,7 +4,8 @@
     "scores": {
       "exec": 0.581981981981982,
       "prompt": 0.95,
-      "ast": 0.3518518518518518
+      "ast": 0.3518518518518518,
+      "code_bert": 0.008244030641841048
     },
     "is_correct": false,
     "is_error": false,
@@ -66,7 +67,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -128,7 +130,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 1.5670661546174358e-08
     },
     "is_correct": true,
     "is_error": false,
@@ -190,7 +193,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.06733082706766917
+      "ast": 0.06733082706766917,
+      "code_bert": 0.005005744207689988
     },
     "is_correct": true,
     "is_error": false,
@@ -252,7 +256,8 @@
     "scores": {
       "exec": 0.05142857142857138,
       "prompt": 0.15,
-      "ast": 0.06901781638089954
+      "ast": 0.06901781638089954,
+      "code_bert": 0.003359225081588707
     },
     "is_correct": false,
     "is_error": false,
@@ -314,7 +319,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00033893384411388673
     },
     "is_correct": true,
     "is_error": false,
@@ -376,7 +382,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.05,
-      "ast": 0.35396825396825393
+      "ast": 0.35396825396825393,
+      "code_bert": 0.006459362402961094
     },
     "is_correct": true,
     "is_error": false,
@@ -438,7 +445,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0016880197559117627
     },
     "is_correct": true,
     "is_error": false,
@@ -500,7 +508,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 3.5092913464040976e-08
     },
     "is_correct": true,
     "is_error": false,
@@ -562,7 +571,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.050000000000000024
+      "ast": 0.050000000000000024,
+      "code_bert": 0.01264469584314908
     },
     "is_correct": false,
     "is_error": false,
@@ -624,7 +634,8 @@
     "scores": {
       "exec": 0.24181034482758623,
       "prompt": 0.75,
-      "ast": 0.21822018722018727
+      "ast": 0.21822018722018727,
+      "code_bert": 0.011234331169273476
     },
     "is_correct": false,
     "is_error": true,
@@ -686,7 +697,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.008333333333333331
+      "ast": 0.008333333333333331,
+      "code_bert": 0.0009899833162279937
     },
     "is_correct": true,
     "is_error": false,
@@ -748,7 +760,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.028030303030303027
+      "ast": 0.028030303030303027,
+      "code_bert": 0.0039001639046025716
     },
     "is_correct": true,
     "is_error": false,
@@ -810,7 +823,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0007102097518566497
     },
     "is_correct": true,
     "is_error": false,
@@ -872,7 +886,8 @@
     "scores": {
       "exec": 0.0024038461538461453,
       "prompt": 0.25,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0004970557601410186
     },
     "is_correct": true,
     "is_error": false,
@@ -934,7 +949,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.019047619047619046
+      "ast": 0.019047619047619046,
+      "code_bert": 0.0013282695036393676
     },
     "is_correct": true,
     "is_error": false,
@@ -996,7 +1012,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.1,
-      "ast": 0.12811584403876494
+      "ast": 0.12811584403876494,
+      "code_bert": 0.010487450969642691
     },
     "is_correct": true,
     "is_error": false,
@@ -1058,7 +1075,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.034999999999999996
+      "ast": 0.034999999999999996,
+      "code_bert": 0.0015366407242148883
     },
     "is_correct": true,
     "is_error": false,
@@ -1120,7 +1138,8 @@
     "scores": {
       "exec": 0.050000000000000044,
       "prompt": 0.0,
-      "ast": 0.07619617224880383
+      "ast": 0.07619617224880383,
+      "code_bert": 0.01329319798894727
     },
     "is_correct": true,
     "is_error": false,
@@ -1182,7 +1201,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -1244,7 +1264,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.05,
-      "ast": 0.020588235294117647
+      "ast": 0.020588235294117647,
+      "code_bert": 0.001762857017229963
     },
     "is_correct": true,
     "is_error": false,
@@ -1306,7 +1327,8 @@
     "scores": {
       "exec": 0.3129032258064516,
       "prompt": 0.9,
-      "ast": 0.3781357566943897
+      "ast": 0.3781357566943897,
+      "code_bert": 0.013975669858770644
     },
     "is_correct": false,
     "is_error": false,
@@ -1368,7 +1390,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00024148651047262715
     },
     "is_correct": true,
     "is_error": false,
@@ -1430,7 +1453,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00023696019335935902
     },
     "is_correct": true,
     "is_error": false,
@@ -1492,7 +1516,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0017444083117800547
     },
     "is_correct": true,
     "is_error": false,
@@ -1554,7 +1579,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.05,
-      "ast": 0.05484607984607985
+      "ast": 0.05484607984607985,
+      "code_bert": 0.004325158942807411
     },
     "is_correct": true,
     "is_error": false,
@@ -1616,7 +1642,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.13303218520609825
+      "ast": 0.13303218520609825,
+      "code_bert": 0.013148424055350666
     },
     "is_correct": true,
     "is_error": false,
@@ -1678,7 +1705,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.02898550724637681
+      "ast": 0.02898550724637681,
+      "code_bert": 0.0008324946732768291
     },
     "is_correct": true,
     "is_error": false,
@@ -1740,7 +1768,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0002323576628900814
     },
     "is_correct": true,
     "is_error": false,
@@ -1802,7 +1831,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.016293706293706293
+      "ast": 0.016293706293706293,
+      "code_bert": 0.0010166275403963143
     },
     "is_correct": true,
     "is_error": false,
@@ -1864,7 +1894,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.27999999999999997
+      "ast": 0.27999999999999997,
+      "code_bert": 0.0027762459110142077
     },
     "is_correct": true,
     "is_error": false,
@@ -1926,7 +1957,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.01132075471698113
+      "ast": 0.01132075471698113,
+      "code_bert": 0.002789041601676512
     },
     "is_correct": false,
     "is_error": false,
@@ -1988,7 +2020,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0019362622648734728
     },
     "is_correct": true,
     "is_error": false,
@@ -2050,7 +2083,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.033333333333333326
+      "ast": 0.033333333333333326,
+      "code_bert": 0.0052772290356565225
     },
     "is_correct": true,
     "is_error": false,
@@ -2112,7 +2146,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -2174,7 +2209,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0038461538461538438
+      "ast": 0.0038461538461538438,
+      "code_bert": 0.002844734580012881
     },
     "is_correct": true,
     "is_error": false,
@@ -2236,7 +2272,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0038461538461538438
+      "ast": 0.0038461538461538438,
+      "code_bert": 0.0005308642271326047
     },
     "is_correct": true,
     "is_error": false,
@@ -2298,7 +2335,8 @@
     "scores": {
       "exec": 0.3891891891891892,
       "prompt": 0.45,
-      "ast": 0.25532014975062817
+      "ast": 0.25532014975062817,
+      "code_bert": 0.008466121277652533
     },
     "is_correct": false,
     "is_error": false,
@@ -2360,7 +2398,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -2422,7 +2461,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.054545454545454564
+      "ast": 0.054545454545454564,
+      "code_bert": 0.010078557845852366
     },
     "is_correct": true,
     "is_error": false,
@@ -2484,7 +2524,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.49411764705882355
+      "ast": 0.49411764705882355,
+      "code_bert": 0.013115321744906228
     },
     "is_correct": true,
     "is_error": false,
@@ -2546,7 +2587,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.002522068921610293
     },
     "is_correct": true,
     "is_error": false,
@@ -2608,7 +2650,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.008333333333333331
+      "ast": 0.008333333333333331,
+      "code_bert": 0.0013242427463889927
     },
     "is_correct": true,
     "is_error": false,
@@ -2670,7 +2713,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -2732,7 +2776,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.03774928774928775
+      "ast": 0.03774928774928775,
+      "code_bert": 0.00252559689794189
     },
     "is_correct": true,
     "is_error": false,
@@ -2794,7 +2839,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.15620617886530924
+      "ast": 0.15620617886530924,
+      "code_bert": 0.009095369102304246
     },
     "is_correct": false,
     "is_error": false,
@@ -2856,7 +2902,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -2918,7 +2965,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00020794625550564217
     },
     "is_correct": true,
     "is_error": false,
@@ -2980,7 +3028,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.2,
-      "ast": 0.053846153846153856
+      "ast": 0.053846153846153856,
+      "code_bert": 0.003692387937496283
     },
     "is_correct": true,
     "is_error": false,
@@ -3042,7 +3091,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0016393442622950837
+      "ast": 0.0016393442622950837,
+      "code_bert": 6.18871339542193e-06
     },
     "is_correct": true,
     "is_error": false,
@@ -3104,7 +3154,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.000495384283622935
     },
     "is_correct": true,
     "is_error": false,
@@ -3166,7 +3217,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00022135480550231624
     },
     "is_correct": true,
     "is_error": false,
@@ -3228,7 +3280,8 @@
     "scores": {
       "exec": 0.14299065420560753,
       "prompt": 0.05,
-      "ast": 0.23655303030303027
+      "ast": 0.23655303030303027,
+      "code_bert": 0.01213589481936137
     },
     "is_correct": false,
     "is_error": false,
@@ -3290,7 +3343,8 @@
     "scores": {
       "exec": 0.0014285714285714457,
       "prompt": 0.3,
-      "ast": 0.5025446522888182
+      "ast": 0.5025446522888182,
+      "code_bert": 0.03473172448672442
     },
     "is_correct": true,
     "is_error": false,
@@ -3352,7 +3406,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 6.070100093791275e-06
     },
     "is_correct": false,
     "is_error": false,
@@ -3414,7 +3469,8 @@
     "scores": {
       "exec": 0.10973451327433636,
       "prompt": 0.4,
-      "ast": 0.025862068965517244
+      "ast": 0.025862068965517244,
+      "code_bert": 0.000982395914883638
     },
     "is_correct": false,
     "is_error": false,
@@ -3476,7 +3532,8 @@
     "scores": {
       "exec": 0.009615384615384692,
       "prompt": 0.25,
-      "ast": 0.2490471647886138
+      "ast": 0.2490471647886138,
+      "code_bert": 0.004787021727518442
     },
     "is_correct": false,
     "is_error": false,
@@ -3538,7 +3595,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0001529365684007411
     },
     "is_correct": true,
     "is_error": false,
@@ -3600,7 +3658,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00153799569262405
     },
     "is_correct": true,
     "is_error": false,
@@ -3662,7 +3721,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.012221403783277563
     },
     "is_correct": true,
     "is_error": false,
@@ -3724,7 +3784,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.10964285714285711
+      "ast": 0.10964285714285711,
+      "code_bert": 0.005649848687221437
     },
     "is_correct": true,
     "is_error": false,
@@ -3786,7 +3847,8 @@
     "scores": {
       "exec": 0.13333333333333341,
       "prompt": 0.05,
-      "ast": 0.03942130666268599
+      "ast": 0.03942130666268599,
+      "code_bert": 0.0031496756255882776
     },
     "is_correct": false,
     "is_error": false,
@@ -3848,7 +3910,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.05849018003273322
+      "ast": 0.05849018003273322,
+      "code_bert": 0.004006534094118591
     },
     "is_correct": true,
     "is_error": false,
@@ -3910,7 +3973,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.009090909090909089
+      "ast": 0.009090909090909089,
+      "code_bert": 0.00011033419597083482
     },
     "is_correct": false,
     "is_error": false,
@@ -3972,7 +4036,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0014900684478232785
     },
     "is_correct": true,
     "is_error": false,
@@ -4034,7 +4099,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00030688079395064795
     },
     "is_correct": true,
     "is_error": false,
@@ -4096,7 +4162,8 @@
     "scores": {
       "exec": 0.1681818181818182,
       "prompt": 0.1,
-      "ast": 0.25485582337367074
+      "ast": 0.25485582337367074,
+      "code_bert": 0.012360407776928956
     },
     "is_correct": false,
     "is_error": true,
@@ -4158,7 +4225,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.3,
-      "ast": 0.20724633448215438
+      "ast": 0.20724633448215438,
+      "code_bert": 0.010546507667778893
     },
     "is_correct": true,
     "is_error": false,
@@ -4220,7 +4288,8 @@
     "scores": {
       "exec": 0.06809523809523799,
       "prompt": 0.375,
-      "ast": 0.22817425866068358
+      "ast": 0.22817425866068358,
+      "code_bert": 0.05414784572416198
     },
     "is_correct": true,
     "is_error": false,
@@ -4282,7 +4351,8 @@
     "scores": {
       "exec": 0.4,
       "prompt": 0.3,
-      "ast": 0.17500000000000004
+      "ast": 0.17500000000000004,
+      "code_bert": 0.016976879006549473
     },
     "is_correct": false,
     "is_error": false,
@@ -4344,7 +4414,8 @@
     "scores": {
       "exec": 0.0009523809523809268,
       "prompt": 0.1,
-      "ast": 0.2994814642984764
+      "ast": 0.2994814642984764,
+      "code_bert": 0.00633540367959437
     },
     "is_correct": false,
     "is_error": false,
@@ -4406,7 +4477,8 @@
     "scores": {
       "exec": 0.25,
       "prompt": 0.1,
-      "ast": 0.30382302189619287
+      "ast": 0.30382302189619287,
+      "code_bert": 0.012334083215582242
     },
     "is_correct": false,
     "is_error": true,
@@ -4468,7 +4540,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.021428571428571436
+      "ast": 0.021428571428571436,
+      "code_bert": 0.003036458939853526
     },
     "is_correct": true,
     "is_error": false,
@@ -4530,7 +4603,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 5.5640649865296155e-09
     },
     "is_correct": true,
     "is_error": false,
@@ -4592,7 +4666,8 @@
     "scores": {
       "exec": 0.0009345794392523477,
       "prompt": 0.75,
-      "ast": 0.09300712429370454
+      "ast": 0.09300712429370454,
+      "code_bert": 0.0034361101085047473
     },
     "is_correct": true,
     "is_error": false,
@@ -4654,7 +4729,8 @@
     "scores": {
       "exec": 0.005714285714285672,
       "prompt": 0.05,
-      "ast": 0.08746938775510205
+      "ast": 0.08746938775510205,
+      "code_bert": 0.001958559800147419
     },
     "is_correct": false,
     "is_error": false,
@@ -4716,7 +4792,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.003252032520325199
+      "ast": 0.003252032520325199,
+      "code_bert": 0.000471717160670998
     },
     "is_correct": true,
     "is_error": false,
@@ -4778,7 +4855,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.007692307692307693
+      "ast": 0.007692307692307693,
+      "code_bert": 0.004446000999096483
     },
     "is_correct": true,
     "is_error": false,
@@ -4840,7 +4918,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0005071459759312946
     },
     "is_correct": true,
     "is_error": false,
@@ -4902,7 +4981,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.042105263157894736
+      "ast": 0.042105263157894736,
+      "code_bert": 0.009051868230092552
     },
     "is_correct": true,
     "is_error": false,
@@ -4964,7 +5044,8 @@
     "scores": {
       "exec": 0.007017543859649145,
       "prompt": 0.8,
-      "ast": 0.09640468227424752
+      "ast": 0.09640468227424752,
+      "code_bert": 0.0026264619292547253
     },
     "is_correct": false,
     "is_error": false,
@@ -5026,7 +5107,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.017809364548494987
+      "ast": 0.017809364548494987,
+      "code_bert": 0.0031893680515585167
     },
     "is_correct": true,
     "is_error": false,
@@ -5088,7 +5170,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 2.7956029158282547e-08
     },
     "is_correct": true,
     "is_error": false,
@@ -5150,7 +5233,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.03550156739811912
+      "ast": 0.03550156739811912,
+      "code_bert": 0.003134153193762723
     },
     "is_correct": true,
     "is_error": false,
@@ -5212,7 +5296,8 @@
     "scores": {
       "exec": 0.050000000000000044,
       "prompt": 0.05,
-      "ast": 0.07606705470673371
+      "ast": 0.07606705470673371,
+      "code_bert": 0.0016025072911896253
     },
     "is_correct": true,
     "is_error": false,
@@ -5274,7 +5359,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.22941176470588234
+      "ast": 0.22941176470588234,
+      "code_bert": 0.0032640208777728443
     },
     "is_correct": true,
     "is_error": false,
@@ -5336,7 +5422,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0010930584329968073
     },
     "is_correct": true,
     "is_error": false,
@@ -5398,7 +5485,8 @@
     "scores": {
       "exec": 0.20377358490566044,
       "prompt": 0.3,
-      "ast": 0.13283062111819405
+      "ast": 0.13283062111819405,
+      "code_bert": 0.006528055593883258
     },
     "is_correct": false,
     "is_error": false,
@@ -5460,7 +5548,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0016157929959067729
     },
     "is_correct": false,
     "is_error": true,
@@ -5522,7 +5611,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.1,
-      "ast": 0.20124768428380949
+      "ast": 0.20124768428380949,
+      "code_bert": 0.012086277705922965
     },
     "is_correct": true,
     "is_error": false,
@@ -5584,7 +5674,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.075,
-      "ast": 0.1140732618523886
+      "ast": 0.1140732618523886,
+      "code_bert": 0.00200646003140485
     },
     "is_correct": true,
     "is_error": false,
@@ -5646,7 +5737,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.03751598173515981
+      "ast": 0.03751598173515981,
+      "code_bert": 0.003276830840995576
     },
     "is_correct": true,
     "is_error": false,
@@ -5708,7 +5800,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.2,
-      "ast": 0.2069704696394687
+      "ast": 0.2069704696394687,
+      "code_bert": 0.0024297844062092845
     },
     "is_correct": true,
     "is_error": false,
@@ -5770,7 +5863,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00032965760732860393
     },
     "is_correct": true,
     "is_error": false,
@@ -5832,7 +5926,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.004383870792911465
     },
     "is_correct": true,
     "is_error": false,
@@ -5894,7 +5989,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.04999999999999999
+      "ast": 0.04999999999999999,
+      "code_bert": 0.005620873144830507
     },
     "is_correct": true,
     "is_error": false,
@@ -5956,7 +6052,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -6018,7 +6115,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.1,
-      "ast": 0.04336564519491349
+      "ast": 0.04336564519491349,
+      "code_bert": 0.0016193414721665967
     },
     "is_correct": true,
     "is_error": false,
@@ -6080,7 +6178,8 @@
     "scores": {
       "exec": 0.5591346153846154,
       "prompt": 0.05,
-      "ast": 0.29155544498934016
+      "ast": 0.29155544498934016,
+      "code_bert": 0.009418613194534842
     },
     "is_correct": true,
     "is_error": false,
@@ -6142,7 +6241,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0125
+      "ast": 0.0125,
+      "code_bert": 0.002683242153894905
     },
     "is_correct": true,
     "is_error": false,
@@ -6204,7 +6304,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0005676096556755273
     },
     "is_correct": true,
     "is_error": false,
@@ -6266,7 +6367,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 7.058540196780427e-09
     },
     "is_correct": true,
     "is_error": false,
@@ -6328,7 +6430,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0006669354836167707
     },
     "is_correct": true,
     "is_error": false,
@@ -6390,7 +6493,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00031582009692869285
     },
     "is_correct": true,
     "is_error": false,
@@ -6452,7 +6556,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.003999999999999998
+      "ast": 0.003999999999999998,
+      "code_bert": 0.0006623848543413025
     },
     "is_correct": true,
     "is_error": false,
@@ -6514,7 +6619,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.05833333333333333
+      "ast": 0.05833333333333333,
+      "code_bert": 0.007296209774543811
     },
     "is_correct": true,
     "is_error": false,
@@ -6576,7 +6682,8 @@
     "scores": {
       "exec": 0.30000000000000004,
       "prompt": 0.3,
-      "ast": 0.3125051701715788
+      "ast": 0.3125051701715788,
+      "code_bert": 0.009292602755473816
     },
     "is_correct": false,
     "is_error": false,
@@ -6638,7 +6745,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0011997283758134192
     },
     "is_correct": true,
     "is_error": false,
@@ -6700,7 +6808,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0006127620449620452
     },
     "is_correct": true,
     "is_error": false,
@@ -6762,7 +6871,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.2277752627314809
+      "ast": 0.2277752627314809,
+      "code_bert": 0.003249749932877999
     },
     "is_correct": true,
     "is_error": false,
@@ -6824,7 +6934,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.05,
-      "ast": 0.011904761904761908
+      "ast": 0.011904761904761908,
+      "code_bert": 0.0003089712718816917
     },
     "is_correct": true,
     "is_error": false,
@@ -6886,7 +6997,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0008924670256445
     },
     "is_correct": true,
     "is_error": false,
@@ -6948,7 +7060,8 @@
     "scores": {
       "exec": 0.19464285714285712,
       "prompt": 0.0,
-      "ast": 0.07339579120066923
+      "ast": 0.07339579120066923,
+      "code_bert": 0.004656302477844926
     },
     "is_correct": false,
     "is_error": true,
@@ -7010,7 +7123,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.05531139809654808
+      "ast": 0.05531139809654808,
+      "code_bert": 0.0028196513100194275
     },
     "is_correct": true,
     "is_error": false,
@@ -7072,7 +7186,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0002741550424349759
     },
     "is_correct": true,
     "is_error": false,
@@ -7134,7 +7249,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00047808085302064596
     },
     "is_correct": true,
     "is_error": false,
@@ -7196,7 +7312,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -7258,7 +7375,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.057219827586206896
+      "ast": 0.057219827586206896,
+      "code_bert": 0.004203348556955195
     },
     "is_correct": true,
     "is_error": false,
@@ -7320,7 +7438,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0004404004492006619
     },
     "is_correct": true,
     "is_error": false,
@@ -7382,7 +7501,8 @@
     "scores": {
       "exec": 0.008928571428571397,
       "prompt": 0.0,
-      "ast": 0.07619047619047618
+      "ast": 0.07619047619047618,
+      "code_bert": 0.003602444750547229
     },
     "is_correct": true,
     "is_error": false,
@@ -7444,7 +7564,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00017673350872237091
     },
     "is_correct": true,
     "is_error": false,
@@ -7506,7 +7627,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.000718015679584072
     },
     "is_correct": true,
     "is_error": false,
@@ -7568,7 +7690,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.10178848889375205
+      "ast": 0.10178848889375205,
+      "code_bert": 0.0028671460090979872
     },
     "is_correct": true,
     "is_error": false,
@@ -7630,7 +7753,8 @@
     "scores": {
       "exec": 0.33317757009345794,
       "prompt": 0.9,
-      "ast": 0.2307027383524439
+      "ast": 0.2307027383524439,
+      "code_bert": 0.006230235367760839
     },
     "is_correct": false,
     "is_error": true,
@@ -7692,7 +7816,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00012042257848455806
     },
     "is_correct": false,
     "is_error": false,
@@ -7754,7 +7879,8 @@
     "scores": {
       "exec": 0.050000000000000044,
       "prompt": 0.05,
-      "ast": 0.05
+      "ast": 0.05,
+      "code_bert": 0.004144628142416723
     },
     "is_correct": true,
     "is_error": false,
@@ -7816,7 +7942,8 @@
     "scores": {
       "exec": 0.6377358490566037,
       "prompt": 0.8,
-      "ast": 0.2775554726073108
+      "ast": 0.2775554726073108,
+      "code_bert": 0.00944515623179285
     },
     "is_correct": false,
     "is_error": false,
@@ -7878,7 +8005,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 8.626956993218471e-08
     },
     "is_correct": true,
     "is_error": false,
@@ -7940,7 +8068,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.09333333333333331
+      "ast": 0.09333333333333331,
+      "code_bert": 0.013355726249014105
     },
     "is_correct": true,
     "is_error": false,
@@ -8002,7 +8131,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 3.802418075523617e-05
     },
     "is_correct": false,
     "is_error": true,
@@ -8064,7 +8194,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.08483391608391608
+      "ast": 0.08483391608391608,
+      "code_bert": 0.009855875167978312
     },
     "is_correct": true,
     "is_error": false,
@@ -8126,7 +8257,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -8188,7 +8320,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 6.653191661302737e-05
     },
     "is_correct": true,
     "is_error": false,
@@ -8250,7 +8383,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.01976744186046512
+      "ast": 0.01976744186046512,
+      "code_bert": 0.000989675920850991
     },
     "is_correct": true,
     "is_error": false,
@@ -8312,7 +8446,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0007284683457196683
     },
     "is_correct": true,
     "is_error": false,
@@ -8374,7 +8509,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 5.085304197811613e-05
     },
     "is_correct": true,
     "is_error": false,
@@ -8436,7 +8572,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.7,
-      "ast": 0.23181818181818184
+      "ast": 0.23181818181818184,
+      "code_bert": 0.0034162578110564666
     },
     "is_correct": true,
     "is_error": false,
@@ -8498,7 +8635,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": false,
     "is_error": false,
@@ -8560,7 +8698,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00021746454435263572
     },
     "is_correct": true,
     "is_error": false,
@@ -8622,7 +8761,8 @@
     "scores": {
       "exec": 0.01693548387096777,
       "prompt": 0.3,
-      "ast": 0.05383986928104576
+      "ast": 0.05383986928104576,
+      "code_bert": 0.001178556514502338
     },
     "is_correct": false,
     "is_error": false,
@@ -8684,7 +8824,8 @@
     "scores": {
       "exec": 0.95,
       "prompt": 1.0,
-      "ast": 0.09124762113892551
+      "ast": 0.09124762113892551,
+      "code_bert": 0.004283196629965918
     },
     "is_correct": false,
     "is_error": false,
@@ -8746,7 +8887,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0001498564254314272
     },
     "is_correct": true,
     "is_error": false,
@@ -8808,7 +8950,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -8870,7 +9013,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -8932,7 +9076,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.021210407239819005
+      "ast": 0.021210407239819005,
+      "code_bert": 0.00042587288991616234
     },
     "is_correct": true,
     "is_error": false,
@@ -8994,7 +9139,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.026570048309178744
+      "ast": 0.026570048309178744,
+      "code_bert": 0.004483136891389461
     },
     "is_correct": true,
     "is_error": false,
@@ -9056,7 +9202,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.028999999999999998
+      "ast": 0.028999999999999998,
+      "code_bert": 0.0037031292047352725
     },
     "is_correct": true,
     "is_error": false,
@@ -9118,7 +9265,8 @@
     "scores": {
       "exec": 0.20238095238095233,
       "prompt": 0.35,
-      "ast": 0.13130773421329783
+      "ast": 0.13130773421329783,
+      "code_bert": 0.00330440163126417
     },
     "is_correct": true,
     "is_error": false,
@@ -9180,7 +9328,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": false,
     "is_error": false,
@@ -9242,7 +9391,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0008775809622679542
     },
     "is_correct": true,
     "is_error": false,
@@ -9304,7 +9454,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.007726033981031688
     },
     "is_correct": true,
     "is_error": false,
@@ -9366,7 +9517,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.007407407407407407
+      "ast": 0.007407407407407407,
+      "code_bert": 0.0037912455687701906
     },
     "is_correct": true,
     "is_error": false,
@@ -9428,7 +9580,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.1,
-      "ast": 0.032722007722007715
+      "ast": 0.032722007722007715,
+      "code_bert": 0.0019258765974764559
     },
     "is_correct": false,
     "is_error": false,
@@ -9490,7 +9643,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.21425890333521763
+      "ast": 0.21425890333521763,
+      "code_bert": 0.004424531098713058
     },
     "is_correct": true,
     "is_error": false,
@@ -9552,7 +9706,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00021502487777932955
     },
     "is_correct": true,
     "is_error": false,
@@ -9614,7 +9769,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.08615384615384616
+      "ast": 0.08615384615384616,
+      "code_bert": 0.0012924190923671807
     },
     "is_correct": true,
     "is_error": false,
@@ -9676,7 +9832,8 @@
     "scores": {
       "exec": 0.04482758620689664,
       "prompt": 0.0,
-      "ast": 0.00625
+      "ast": 0.00625,
+      "code_bert": 0.0038184728453426685
     },
     "is_correct": false,
     "is_error": true,
@@ -9738,7 +9895,8 @@
     "scores": {
       "exec": 0.5530973451327433,
       "prompt": 0.65,
-      "ast": 0.0664301795643059
+      "ast": 0.0664301795643059,
+      "code_bert": 0.002379785835884757
     },
     "is_correct": false,
     "is_error": false,
@@ -9800,7 +9958,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.03157894736842106
+      "ast": 0.03157894736842106,
+      "code_bert": 0.002393157812788804
     },
     "is_correct": false,
     "is_error": false,
@@ -9862,7 +10021,8 @@
     "scores": {
       "exec": 0.5927884615384615,
       "prompt": 0.75,
-      "ast": 0.1515274185185576
+      "ast": 0.1515274185185576,
+      "code_bert": 0.0038975919205946783
     },
     "is_correct": false,
     "is_error": false,
@@ -9924,7 +10084,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.00784313725490196
+      "ast": 0.00784313725490196,
+      "code_bert": 0.0001109702675460511
     },
     "is_correct": true,
     "is_error": false,
@@ -9986,7 +10147,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.03333333333333334
+      "ast": 0.03333333333333334,
+      "code_bert": 0.0017661090291467342
     },
     "is_correct": true,
     "is_error": false,
@@ -10048,7 +10210,8 @@
     "scores": {
       "exec": 0.021982758620689657,
       "prompt": 0.1,
-      "ast": 0.07745694022289766
+      "ast": 0.07745694022289766,
+      "code_bert": 0.004833881834639575
     },
     "is_correct": false,
     "is_error": false,
@@ -10110,7 +10273,8 @@
     "scores": {
       "exec": 0.09821428571428581,
       "prompt": 0.15,
-      "ast": 0.16808642077470073
+      "ast": 0.16808642077470073,
+      "code_bert": 0.004374278475080856
     },
     "is_correct": false,
     "is_error": false,
@@ -10172,7 +10336,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 1.430510072851776e-05
     },
     "is_correct": true,
     "is_error": false,
@@ -10234,7 +10399,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.25,
-      "ast": 0.03199999999999999
+      "ast": 0.03199999999999999,
+      "code_bert": 0.00023060299840014232
     },
     "is_correct": true,
     "is_error": false,
@@ -10296,7 +10462,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.047619047619047616
+      "ast": 0.047619047619047616,
+      "code_bert": 0.0014262712963341473
     },
     "is_correct": true,
     "is_error": false,
@@ -10358,7 +10525,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0011604837239482136
     },
     "is_correct": true,
     "is_error": false,
@@ -10420,7 +10588,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.05,
-      "ast": 0.6544388706241613
+      "ast": 0.6544388706241613,
+      "code_bert": 0.016350786453328825
     },
     "is_correct": true,
     "is_error": false,
@@ -10482,7 +10651,8 @@
     "scores": {
       "exec": 0.7,
       "prompt": 0.45,
-      "ast": 0.06887679366650175
+      "ast": 0.06887679366650175,
+      "code_bert": 0.00856000451008026
     },
     "is_correct": false,
     "is_error": true,
@@ -10544,7 +10714,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0008458305335864669
     },
     "is_correct": true,
     "is_error": false,
@@ -10606,7 +10777,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0011159584871016427
     },
     "is_correct": true,
     "is_error": false,
@@ -10668,7 +10840,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 3.835572592869596e-08
     },
     "is_correct": true,
     "is_error": false,
@@ -10730,7 +10903,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.029268292682926834
+      "ast": 0.029268292682926834,
+      "code_bert": 0.0011861520722065589
     },
     "is_correct": false,
     "is_error": true,
@@ -10792,7 +10966,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0
     },
     "is_correct": true,
     "is_error": false,
@@ -10854,7 +11029,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 5.0042301191766114e-08
     },
     "is_correct": true,
     "is_error": false,
@@ -10916,7 +11092,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.033333333333333326
+      "ast": 0.033333333333333326,
+      "code_bert": 0.006744984433643975
     },
     "is_correct": true,
     "is_error": false,
@@ -10978,7 +11155,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0003853264008103818
     },
     "is_correct": true,
     "is_error": false,
@@ -11040,7 +11218,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.45,
-      "ast": 0.13378378378378378
+      "ast": 0.13378378378378378,
+      "code_bert": 0.003874780216414725
     },
     "is_correct": false,
     "is_error": false,
@@ -11102,7 +11281,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.000417460401934
     },
     "is_correct": true,
     "is_error": false,
@@ -11164,7 +11344,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0019036696836722045
     },
     "is_correct": true,
     "is_error": false,
@@ -11226,7 +11407,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.15166666666666667
+      "ast": 0.15166666666666667,
+      "code_bert": 0.013082058296846638
     },
     "is_correct": true,
     "is_error": false,
@@ -11288,7 +11470,8 @@
     "scores": {
       "exec": 0.0017241379310345417,
       "prompt": 0.05,
-      "ast": 0.0032258064516129
+      "ast": 0.0032258064516129,
+      "code_bert": 0.0010115156757718401
     },
     "is_correct": false,
     "is_error": false,
@@ -11350,7 +11533,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.005929645625122571
     },
     "is_correct": true,
     "is_error": false,
@@ -11412,7 +11596,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.06911764705882355
+      "ast": 0.06911764705882355,
+      "code_bert": 0.0012872219075019675
     },
     "is_correct": true,
     "is_error": false,
@@ -11474,7 +11659,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.15022127872127872
+      "ast": 0.15022127872127872,
+      "code_bert": 0.007528823695801929
     },
     "is_correct": true,
     "is_error": false,
@@ -11536,7 +11722,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.1,
-      "ast": 0.01578947368421053
+      "ast": 0.01578947368421053,
+      "code_bert": 0.0008420785631825523
     },
     "is_correct": true,
     "is_error": false,
@@ -11598,7 +11785,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.003225806451612906
+      "ast": 0.003225806451612906,
+      "code_bert": 0.003915775695312701
     },
     "is_correct": true,
     "is_error": false,
@@ -11660,7 +11848,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.0015813423404388849
     },
     "is_correct": true,
     "is_error": false,
@@ -11722,7 +11911,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00022771462639106232
     },
     "is_correct": true,
     "is_error": false,
@@ -11784,7 +11974,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 3.0374047503034517e-05
     },
     "is_correct": true,
     "is_error": false,
@@ -11846,7 +12037,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.000556104738366453
     },
     "is_correct": false,
     "is_error": true,
@@ -11908,7 +12100,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 2.918616483639225e-05
     },
     "is_correct": true,
     "is_error": false,
@@ -11970,7 +12163,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00022024853547453205
     },
     "is_correct": true,
     "is_error": false,
@@ -12032,7 +12226,8 @@
     "scores": {
       "exec": 0.3185714285714286,
       "prompt": 0.25,
-      "ast": 0.12782388274992068
+      "ast": 0.12782388274992068,
+      "code_bert": 0.015830429907153533
     },
     "is_correct": false,
     "is_error": true,
@@ -12094,7 +12289,8 @@
     "scores": {
       "exec": 0.06605504587155964,
       "prompt": 0.1,
-      "ast": 0.1444314210022485
+      "ast": 0.1444314210022485,
+      "code_bert": 0.010529976395134134
     },
     "is_correct": true,
     "is_error": false,
@@ -12156,7 +12352,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.06666666666666667
+      "ast": 0.06666666666666667,
+      "code_bert": 0.004895977169808813
     },
     "is_correct": true,
     "is_error": false,
@@ -12218,7 +12415,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.00026452863712407294
     },
     "is_correct": true,
     "is_error": false,
@@ -12280,7 +12478,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.0
+      "ast": 0.0,
+      "code_bert": 0.006211740586649961
     },
     "is_correct": true,
     "is_error": false,
@@ -12342,7 +12541,8 @@
     "scores": {
       "exec": 0.0,
       "prompt": 0.0,
-      "ast": 0.21150793650793648
+      "ast": 0.21150793650793648,
+      "code_bert": 0.009383690746613865
     },
     "is_correct": true,
     "is_error": false,

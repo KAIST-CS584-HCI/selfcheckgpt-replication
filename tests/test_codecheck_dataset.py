@@ -135,3 +135,97 @@ def test_human_eval_index_out_of_range_raises(monkeypatch, tmp_path):
     monkeypatch.setattr(ds, "get_human_eval_plus", lambda: _he_fake_many(10))
     with pytest.raises(IndexError):
         ds.load_human_eval_plus(index=10, cache_path=tmp_path / "c.json")
+
+
+# --- CodeHaluEval (stdin/stdout) ---
+
+import json as _json
+
+# One row per (task_id, test_case). `input`/`output` are RAW stdin/stdout strings; `solutions`
+# is a JSON-encoded list string (`''` when none); `task_id` is an int. Rows with a non-empty
+# `fn_name` are the call-style tasks the stdio harness must skip.
+CHE_FAKE = [
+    {"task_id": 10, "question": "read n, print n+1", "fn_name": None,
+     "solutions": _json.dumps(["print(int(input())+1)"]),
+     "input": "1\n", "output": "2\n"},
+    {"task_id": 10, "question": "read n, print n+1", "fn_name": None,
+     "solutions": _json.dumps(["print(int(input())+1)"]),
+     "input": "5\n", "output": "6 \r\n"},                          # cosmetic ws -> normalized
+    {"task_id": 11, "question": "fn task", "fn_name": "solve",
+     "solutions": _json.dumps(["def solve(): pass"]),
+     "input": "x", "output": "y"},
+]
+
+
+def test_codehalu_groups_filters_and_builds_expected(monkeypatch, tmp_path):
+    monkeypatch.setattr(ds, "_load_codehalu_rows", lambda: CHE_FAKE)
+    problems = ds.load_codehalu_eval(cache_path=tmp_path / "che.json")
+    assert len(problems) == 1                       # task 11 (fn_name) filtered out
+    p = problems[0]
+    assert p.task_id == "CodeHalu/10"               # int task_id -> prefixed string
+    assert p.entry_point == ""                      # stdio, no callable
+    assert p.prompt == "read n, print n+1"
+    assert p.canonical_solution == "print(int(input())+1)"
+    assert p.inputs == ["1\n", "5\n"]               # both test cases, raw stdin
+    assert p.expected == [("value", "2"), ("value", "6")]   # normalized stdout, ground truth
+    assert p.atol == 0.0
+
+
+def test_codehalu_empty_solutions_is_tolerated(monkeypatch, tmp_path):
+    rows = [{"task_id": 1, "question": "q", "fn_name": None,
+             "solutions": "", "input": "a\n", "output": "a\n"}]
+    monkeypatch.setattr(ds, "_load_codehalu_rows", lambda: rows)
+    problems = ds.load_codehalu_eval(cache_path=tmp_path / "c.json")
+    assert problems[0].canonical_solution == ""     # empty solutions -> no canonical, no crash
+
+
+def test_codehalu_list_typed_input_output_joined_with_newlines(monkeypatch, tmp_path):
+    # A few rows store stdin/stdout as a list of lines instead of a raw string.
+    rows = [{"task_id": 5, "question": "q", "fn_name": None,
+             "solutions": _json.dumps(["pass"]),
+             "input": ["1", "64 99"], "output": ["1337"]}]
+    monkeypatch.setattr(ds, "_load_codehalu_rows", lambda: rows)
+    p = ds.load_codehalu_eval(cache_path=tmp_path / "c.json")[0]
+    assert p.inputs == ["1\n64 99"]
+    assert p.expected == [("value", "1337")]
+
+
+def test_codehalu_skips_malformed_task_and_keeps_rest(monkeypatch, tmp_path, caplog):
+    # One task missing `question`, one with unparseable `solutions`, one good -> only the
+    # good one loads; the bad ones are skipped with a warning, not a raised traceback.
+    rows = [
+        {"task_id": 1, "fn_name": None, "solutions": _json.dumps(["pass"]),
+         "input": "a\n", "output": "a\n"},                              # missing 'question'
+        {"task_id": 2, "question": "q", "fn_name": None, "solutions": "{bad json",
+         "input": "a\n", "output": "a\n"},                              # unparseable solutions
+        {"task_id": 3, "question": "q", "fn_name": None, "solutions": _json.dumps(["pass"]),
+         "input": "a\n", "output": "a\n"},                              # good
+    ]
+    monkeypatch.setattr(ds, "_load_codehalu_rows", lambda: rows)
+    with caplog.at_level("WARNING", logger="codecheck.dataset"):
+        problems = ds.load_codehalu_eval(cache_path=tmp_path / "c.json")
+    assert [p.task_id for p in problems] == ["CodeHalu/3"]
+    assert any("malformed" in r.message for r in caplog.records)
+
+
+def test_codehalu_caps_cases_per_task(monkeypatch, tmp_path):
+    rows = [
+        {"task_id": 7, "question": "q", "fn_name": None,
+         "solutions": _json.dumps(["pass"]), "input": f"{i}\n", "output": f"{i}\n"}
+        for i in range(10)
+    ]
+    monkeypatch.setattr(ds, "_load_codehalu_rows", lambda: rows)
+    problems = ds.load_codehalu_eval(max_cases=3, cache_path=tmp_path / "c.json")
+    assert len(problems[0].inputs) == 3
+    assert len(problems[0].expected) == 3
+
+
+def test_codehalu_reuses_limit_selection(monkeypatch, tmp_path):
+    rows = [
+        {"task_id": i, "question": "q", "fn_name": None,
+         "solutions": _json.dumps(["pass"]), "input": "a", "output": "a"}
+        for i in range(5)
+    ]
+    monkeypatch.setattr(ds, "_load_codehalu_rows", lambda: rows)
+    problems = ds.load_codehalu_eval(limit=2, randomize=False, cache_path=tmp_path / "c.json")
+    assert [p.task_id for p in problems] == ["CodeHalu/0", "CodeHalu/1"]
