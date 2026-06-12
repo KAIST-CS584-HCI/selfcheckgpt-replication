@@ -70,12 +70,13 @@ class PromptJudge:
     over the samples; parse_failures accumulates unparseable judgments."""
 
     def __init__(self, client, model: str, think: bool = False, max_workers: int | None = None,
-                 template: str = JUDGE_TEMPLATE) -> None:
+                 template: str = JUDGE_TEMPLATE, call_timeout: float = 60.0) -> None:
         self.client = client
         self.model = model
         self.think = think
         self.max_workers = max_workers
         self.template = template
+        self.call_timeout = call_timeout   # per-call wall-clock budget (raised when think is on)
         self.parse_failures = 0
 
     def _judge_one(self, main_code: str, sample_code: str) -> str:
@@ -86,6 +87,7 @@ class PromptJudge:
                 messages=[{"role": "user", "content": build_judge_prompt(main_code, sample_code, self.template)}],
                 temperature=0.0,
                 think=self.think,
+                call_timeout=self.call_timeout,
             )
         except APIRetriesExhausted:
             # A persistently-failing judge call is an unusable judgment, not a fatal error:
