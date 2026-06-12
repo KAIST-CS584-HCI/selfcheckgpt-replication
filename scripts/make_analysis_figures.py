@@ -75,8 +75,10 @@ def plot_auc_bars(model_data) -> Path:
         ax.set_ylim(0, 1)
         for i, v in enumerate(inc):
             ax.text(i - width / 2, v + 0.01, f"{v:.2f}", ha="center", va="bottom", fontsize=7)
+        # Per-panel legend so each shows its own baseline (gemma 0.25 vs qwen 0.29), not a
+        # single shared label that mismatches the other panel's line.
+        ax.legend(fontsize=8, loc="lower right")
     axes[0].set_ylabel("AUC-PR")
-    axes[-1].legend(fontsize=8, loc="lower right")
     fig.suptitle("AUC-PR by method (MBPP+, n=300) — detect-incorrect vs detect-correct")
     fig.tight_layout()
     return _save(fig, "fig_auc_bars.png")
