@@ -15,13 +15,13 @@ export function ChatDock() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const height = useChatHeight();
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
-  }, [messages, collapsed]);
+  }, [messages]);
 
   const send = async () => {
     const message = input.trim();
@@ -41,6 +41,7 @@ export function ChatDock() {
   // Ends the conversation: tells the server to kill its Claude process and wipes
   // the local transcript so the next message starts fresh.
   const newChat = async () => {
+    setMenuOpen(false);
     if (streaming) return;
     await fetch("/api/chat/reset", { method: "POST" }).catch(() => {});
     setMessages([]);
@@ -62,54 +63,54 @@ export function ChatDock() {
   };
 
   return (
-    <div
-      className={"chat-dock" + (collapsed ? " collapsed" : "")}
-      style={collapsed ? undefined : ({ height: height.value } as CSSProperties)}
-    >
-      {!collapsed && (
-        <div
-          className={"chat-resizer" + (height.dragging ? " dragging" : "")}
-          role="separator"
-          aria-orientation="horizontal"
-          onPointerDown={height.onDragStart}
-        />
-      )}
-      <div className="chat-head">
-        <button className="chat-title" onClick={() => setCollapsed((c) => !c)}>
-          <span>Chat with Claude Code</span>
-          <span className="chat-caret">{collapsed ? "▴" : "▾"}</span>
-        </button>
-        {!collapsed && (
-          <button className="chat-new" onClick={newChat} disabled={streaming || messages.length === 0}>
-            New chat
-          </button>
-        )}
+    <div className="chat-dock" style={{ height: height.value } as CSSProperties}>
+      <div
+        className={"chat-resizer" + (height.dragging ? " dragging" : "")}
+        role="separator"
+        aria-orientation="horizontal"
+        onPointerDown={height.onDragStart}
+      />
+      <div className="chat-log" ref={logRef}>
+        {messages.map((m, i) => (
+          <div key={i} className={"chat-msg chat-" + m.role}>
+            {m.text || (streaming && i === messages.length - 1 ? "…" : "")}
+          </div>
+        ))}
       </div>
-      {!collapsed && (
-        <>
-          <div className="chat-log" ref={logRef}>
-            {messages.map((m, i) => (
-              <div key={i} className={"chat-msg chat-" + m.role}>
-                {m.text || (streaming && i === messages.length - 1 ? "…" : "")}
+      <div className="chat-input-row">
+        <textarea
+          className="chat-input"
+          placeholder="Ask Claude Code to edit slides, or anything…"
+          value={input}
+          disabled={streaming}
+          rows={1}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+        />
+        <div className="chat-send-group">
+          <button className="chat-send" onClick={send} disabled={streaming || !input.trim()}>
+            {streaming ? "…" : "Send"}
+          </button>
+          <button
+            className="chat-send-caret"
+            aria-label="More actions"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            ▾
+          </button>
+          {menuOpen && (
+            <>
+              <div className="chat-menu-backdrop" onClick={() => setMenuOpen(false)} />
+              <div className="chat-menu" role="menu">
+                <button role="menuitem" onClick={newChat} disabled={messages.length === 0}>
+                  New chat
+                </button>
               </div>
-            ))}
-          </div>
-          <div className="chat-input-row">
-            <textarea
-              className="chat-input"
-              placeholder="Ask Claude Code to edit slides, or anything…"
-              value={input}
-              disabled={streaming}
-              rows={1}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-            />
-            <button className="chat-send" onClick={send} disabled={streaming || !input.trim()}>
-              {streaming ? "…" : "Send"}
-            </button>
-          </div>
-        </>
-      )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
