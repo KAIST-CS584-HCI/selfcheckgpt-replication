@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import type { Deck } from "./model/deck";
 import { SlideCanvas } from "./preview/SlideCanvas";
+import { ChatDock } from "./preview/ChatDock";
 import deckJson from "../deck.json";
 
 const deck = deckJson as Deck;
@@ -97,18 +98,21 @@ export default function App() {
       />
 
       <main className="main">
-        <SlideCanvas slide={slides[i]} footerText={deck.meta.footer} />
-        <div className="hud">
-          <button onClick={() => setI((p) => clamp(p - 1))} disabled={i === 0}>
-            ‹
-          </button>
-          <span>
-            {i + 1} / {slides.length} · {deck.slides[i].layout}
-          </span>
-          <button onClick={() => setI((p) => clamp(p + 1))} disabled={i === slides.length - 1}>
-            ›
-          </button>
+        <div className="stage-region">
+          <SlideCanvas slide={slides[i]} footerText={deck.meta.footer} />
+          <div className="hud">
+            <button onClick={() => setI((p) => clamp(p - 1))} disabled={i === 0}>
+              ‹
+            </button>
+            <span>
+              {i + 1} / {slides.length} · {deck.slides[i].layout}
+            </span>
+            <button onClick={() => setI((p) => clamp(p + 1))} disabled={i === slides.length - 1}>
+              ›
+            </button>
+          </div>
         </div>
+        <ChatDock />
       </main>
     </div>
   );
