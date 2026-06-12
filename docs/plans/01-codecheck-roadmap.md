@@ -142,8 +142,8 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 - **Infra that already shipped (enabling, not iterations):** continue-on-failure,
   incremental JSON save + task_id resume, daemon-thread API timeout (clean exit),
   parallel sample execution, torch/NaN/corrupt-file guards, and the flat→subpackage
-  refactor (`score/`, `generation/`, `execution/`). Scale plumbing is ready for the
-  full-set run.
+  refactor (`score/`, `generation/`, `execution/`). Scale is produced manually via a
+  `--limit 300` run; no separate full-set run-iteration is needed.
 
 ## Overview
 
@@ -154,8 +154,8 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 | 2.5 | Validation run *(gate)* | ✅ done. Post-hashseed-fix run re-established trustworthy Exec + first real Prompt numbers; head-to-head produced. |
 | 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
 | 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
-| 4 | Scale + hardening on MBPP+ | Full set (378), larger N, paper-comparable AUC-PR + correlation for all **four** methods. Concrete: default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser. **(next)** |
-| 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. *(light)* |
+| 4 | Hardening backlog *(optional, non-gating)* | Scale is produced manually (`--limit 300`, ≈80% of 378 — sufficient; full set not required). Remaining items are small/optional: default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser, finish gemma `code_bert`. |
+| 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. **(next)** |
 | 6 | Analysis + report | Four-method × dataset synthesis; the structure/embedding negative result + blind-spot cross-link to Improvement 1. *(light)* |
 
 ---
@@ -315,17 +315,16 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 - **Carried gap:** code_bert coverage is full on the qwen file but partial (54/254)
   on gemma; complete it so the four-way table is uniform before the report.
 
-## Iteration 4 — Scale + hardening on MBPP+ *(next — re-plan from feedback)*
+## Iteration 4 — Hardening backlog *(optional, non-gating)*
 
-- **Goal:** produce paper-comparable numbers on the **full MBPP+ set (378)** at
-  larger N for **all four** variants, AUC-PR consistent with the replication
-  (trapezoidal) + correlation (Pearson/Spearman) — already emitted by `evaluate`.
-- **User-facing value:** one full, trustworthy four-method table on MBPP+, with the
-  operational stalls and false-positive noise removed.
-- **Concrete deliverables (from cli-user-test + live-run findings):**
-  1. **Default `--timeout 2`** (down from 5) — recommended on MBPP+; cheaply bounds
-     the all-inputs-looping worst case (per-batch K-timeout was considered and
-     dropped as unneeded).
+- **Scale is handled manually**, not as an iteration: a `--limit 300` MBPP+ run
+  (≈80% of 378) gives the paper-comparable four-method table. `evaluate` already
+  emits trapezoidal AUC-PR + Pearson/Spearman, so no new run-iteration is needed —
+  the full 378 set is not required for the comparison to hold.
+- **Remaining items are small and optional** (do them if/when they pay off, none
+  block iter 5/6):
+  1. **Default `--timeout 2`** (down from 5) — cheaply bounds the all-inputs-looping
+     worst case (per-batch K-timeout was considered and dropped as unneeded).
   2. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
      `exec_score` on correct mains whose samples differ on edge cases. Decide
      reference-vs-filtered inputs (deferred iter-1 item).
