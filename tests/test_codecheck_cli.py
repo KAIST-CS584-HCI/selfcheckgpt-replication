@@ -261,3 +261,112 @@ def test_cmd_codebert_exits_clean_when_torch_missing(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         run_codecheck._cmd_codebert(SimpleNamespace(results=str(tmp_path / "missing.json")))
     assert "torch" in str(exc.value)   # fails fast with a clear message, not a traceback
+
+
+# --- offline `prompt` subcommand ---
+
+def test_prompt_subcommand_parses_results_and_dataset():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["prompt", "--results", "results/x.json", "--dataset", "humaneval"])
+    assert args.results == "results/x.json"
+    assert args.dataset == "humaneval"
+
+
+def test_prompt_subcommand_dataset_defaults_to_none():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["prompt", "--results", "x.json"]).dataset is None
+
+
+def test_prompt_subcommand_rejects_unknown_dataset():
+    import pytest
+    from run_codecheck import build_parser
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["prompt", "--dataset", "bogus"])
+
+
+class _RecordingJudge:
+    """Stand-in for PromptJudge that records the template it was built with and returns a
+    fixed score per (main, samples)."""
+    seen = []
+
+    def __init__(self, client, model, template=None, **kw):
+        self.template = template
+        self.parse_failures = 0
+
+    def score(self, main_code, sample_codes):
+        _RecordingJudge.seen.append(self.template)
+        return 0.77
+
+
+def _prep(monkeypatch):
+    import codecheck.score.prompt as ps
+    monkeypatch.setattr(ps, "PromptJudge", _RecordingJudge)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    _RecordingJudge.seen = []
+
+
+def test_cmd_prompt_rescore_overwrites_prompt_in_place(tmp_path, monkeypatch):
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results, load_results
+    import run_codecheck
+    _prep(monkeypatch)
+    path = tmp_path / "r.json"
+    save_results([CodeResult("HumanEval/0", {"exec": 0.1, "prompt": 0.0}, True, "def m(): pass", ["def s(): pass"])], path)
+
+    run_codecheck._cmd_prompt(SimpleNamespace(results=str(path), dataset=None))
+
+    out = load_results(path)
+    assert out[0].scores["prompt"] == 0.77   # overwritten
+    assert out[0].scores["exec"] == 0.1      # other scores preserved
+
+
+def test_cmd_prompt_auto_detects_template_by_task_id(tmp_path, monkeypatch):
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results
+    from codecheck.score.prompt import JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
+    import run_codecheck
+    _prep(monkeypatch)
+    path = tmp_path / "r.json"
+    save_results([
+        CodeResult("HumanEval/0", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"]),
+        CodeResult("Mbpp/2", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"]),
+    ], path)
+
+    run_codecheck._cmd_prompt(SimpleNamespace(results=str(path), dataset=None))
+
+    # HumanEval result judged with the divergence template, Mbpp with the default.
+    assert HUMANEVAL_JUDGE_TEMPLATE in _RecordingJudge.seen
+    assert JUDGE_TEMPLATE in _RecordingJudge.seen
+
+
+def test_cmd_prompt_dataset_override_forces_template(tmp_path, monkeypatch):
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results
+    from codecheck.score.prompt import JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
+    import run_codecheck
+    _prep(monkeypatch)
+    path = tmp_path / "r.json"
+    save_results([CodeResult("Mbpp/2", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"])], path)
+
+    run_codecheck._cmd_prompt(SimpleNamespace(results=str(path), dataset="humaneval"))
+
+    # --dataset humaneval forces the HumanEval template even on an Mbpp task_id.
+    assert _RecordingJudge.seen == [HUMANEVAL_JUDGE_TEMPLATE]
+
+
+def test_cmd_prompt_exits_clean_without_api_key(tmp_path, monkeypatch):
+    import pytest
+    import run_codecheck
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    with pytest.raises(SystemExit) as exc:
+        run_codecheck._cmd_prompt(SimpleNamespace(results=str(tmp_path / "x.json"), dataset=None))
+    assert "OPENROUTER_API_KEY" in str(exc.value)
+
+
+def test_cmd_prompt_missing_file_exits_clean(tmp_path, monkeypatch):
+    import pytest
+    import run_codecheck
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    with pytest.raises(SystemExit) as exc:
+        run_codecheck._cmd_prompt(SimpleNamespace(results=str(tmp_path / "missing.json"), dataset=None))
+    assert "not found" in str(exc.value)

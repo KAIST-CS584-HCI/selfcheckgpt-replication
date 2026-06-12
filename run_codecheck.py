@@ -190,6 +190,55 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
     print(f"Added code_bert to {len(results)} results in {args.results}")
 
 
+def _judge_template_for(task_id: str, override, default_tmpl, humaneval_tmpl):
+    """Pick the judge template for one result. `override` (the --dataset value) forces a
+    template; otherwise auto-detect from the task_id prefix (HumanEval/* uses the sharper
+    divergence-seeking prompt, everything else the default consistency prompt)."""
+    if override == "humaneval":
+        return humaneval_tmpl
+    if override == "mbpp":
+        return default_tmpl
+    return humaneval_tmpl if str(task_id).startswith("HumanEval/") else default_tmpl
+
+
+def _cmd_prompt(args: argparse.Namespace) -> None:
+    """Re-score the `prompt` (LLM-judge) variant on an existing results file, reusing the
+    stored main_code + sample_codes (no regeneration). Unlike `codebert` this calls the API.
+    The judge template is chosen per result (override via --dataset, else by task_id prefix)
+    so the new HumanEval prompt applies to HumanEval results without touching MBPP+ ones.
+    Rewrites in place."""
+    from openai import OpenAI
+    from codecheck.score.prompt import PromptJudge, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
+    from codecheck.pipeline import load_results, save_results
+
+    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        sys.exit("error: missing OPENROUTER_API_KEY (see .env.example)")
+    model = os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.5-9b").strip()
+    base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").strip()
+
+    try:
+        results = load_results(args.results)
+    except FileNotFoundError:
+        sys.exit(f"error: results file not found: {args.results}")
+    except ValueError as exc:
+        sys.exit(f"error: {exc}")
+
+    client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
+    # One judge per distinct template; reuse it across the results that map to it.
+    judges: dict[str, object] = {}
+    parse_failures = 0
+    for r in results:
+        tmpl = _judge_template_for(r.task_id, args.dataset, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE)
+        if tmpl not in judges:
+            judges[tmpl] = PromptJudge(client, model=model, template=tmpl)
+        r.scores["prompt"] = judges[tmpl].score(r.main_code, r.sample_codes)
+    save_results(results, args.results)
+    parse_failures = sum(getattr(j, "parse_failures", 0) for j in judges.values())
+    print(f"Re-scored prompt on {len(results)} results in {args.results}")
+    print(f"Judge parse failures: {parse_failures}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="SelfCheck for code (Exec, Prompt, AST, CodeBERT) on MBPP+.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -227,6 +276,13 @@ def build_parser() -> argparse.ArgumentParser:
     cb_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT),
                       help="results JSON path to augment in place")
     cb_p.set_defaults(func=_cmd_codebert)
+
+    pr_p = sub.add_parser("prompt", help="re-score the prompt (LLM-judge) variant on an existing results file")
+    pr_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT),
+                      help="results JSON path to augment in place")
+    pr_p.add_argument("--dataset", choices=["mbpp", "humaneval"], default=None,
+                      help="force a judge template; default auto-detects per result from the task_id prefix")
+    pr_p.set_defaults(func=_cmd_prompt)
     return parser
 
 

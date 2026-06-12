@@ -108,6 +108,20 @@ python run_codecheck.py codebert --results results/run.json   # adds code_bert i
 python run_codecheck.py evaluate --results results/run.json    # now shows a [code_bert] block
 ```
 
+**Offline `prompt` (re-score the judge on saved results):** same idea for the Prompt
+variant — recompute `scores["prompt"]` from the stored code without regenerating (useful to
+apply an updated judge template to an existing file). Unlike `codebert` it **calls the API**,
+so it needs `OPENROUTER_API_KEY`. The judge template is chosen per result from the `task_id`
+prefix (HumanEval/* uses the sharper divergence-seeking prompt), or forced with `--dataset`:
+
+```bash
+python run_codecheck.py prompt --results results/run.json                  # auto per task_id
+python run_codecheck.py prompt --results results/run.json --dataset humaneval
+```
+
+It **rewrites the file in place** — point it at a finished or copied results file, not one a
+live run is still writing.
+
 **`--ast-metric {jaccard,ted}`** (only used when `--method` includes `ast`):
 
 - `jaccard` (default) — `1 − multiset Jaccard` of AST node-type counts. Count-based: it
