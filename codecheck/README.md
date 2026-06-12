@@ -87,7 +87,10 @@ method, so the methods are always compared on identical data.
 
 - `exec` (default) — behavioral I/O divergence across samples (described above).
 - `prompt` — LLM-as-judge: per sample, is its behavior consistent with the main
-  implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
+  implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples. On HumanEval+ a
+  sharper, still oracle-free judge prompt is used (it makes the judge hunt for an edge-case
+  input on which the two implementations diverge, instead of affirming surface similarity),
+  because a capable model writes near-identical samples on those canonical problems.
 - `ast` — structural divergence between the main and each sample, rename- and
   literal-invariant, averaged over the N samples. No API cost. The metric is chosen with
   `--ast-metric` (below).

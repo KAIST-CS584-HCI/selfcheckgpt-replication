@@ -49,7 +49,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
     from codecheck.dataset import load_mbpp_plus, load_human_eval_plus
     from codecheck.generation.generator import CodeGenerator
-    from codecheck.score.prompt import PromptJudge
+    from codecheck.score.prompt import PromptJudge, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
     from codecheck.score.ast import ASTScorer
     from codecheck.score.codebert import CodeBERTScorer, torch_available
     from codecheck.execution.sandbox import run_batch_in_subprocess
@@ -71,7 +71,11 @@ def _cmd_run(args: argparse.Namespace) -> None:
         methods = {args.method}
     if "code_bert" in methods and not torch_available():
         sys.exit("error: method 'code_bert' requires torch — pip install torch")
-    judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
+    # HumanEval+ uses a sharper, divergence-seeking judge prompt (still oracle-free); MBPP+
+    # keeps the original consistency prompt so its committed numbers stay comparable.
+    judge_template = HUMANEVAL_JUDGE_TEMPLATE if args.dataset == "humaneval" else JUDGE_TEMPLATE
+    judge = (PromptJudge(client, model=model, think=args.think, template=judge_template)
+             if "prompt" in methods else None)
     ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
     codebert_scorer = CodeBERTScorer() if "code_bert" in methods else None
 

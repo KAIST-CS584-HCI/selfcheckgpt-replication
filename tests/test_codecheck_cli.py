@@ -92,6 +92,42 @@ def test_run_dispatches_to_humaneval_loader(monkeypatch, tmp_path):
     assert "he" in called and "mbpp" not in called
 
 
+def _judge_template_for_dataset(monkeypatch, tmp_path, dataset):
+    """Build a prompt run for the given dataset and capture the template handed to PromptJudge."""
+    import codecheck.dataset as ds
+    import codecheck.score.prompt as ps
+    import run_codecheck
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(ds, "load_human_eval_plus", lambda **kw: [])
+    monkeypatch.setattr(ds, "load_mbpp_plus", lambda **kw: [])
+    monkeypatch.setattr(run_codecheck, "_setup_run_logging", lambda **kw: None)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    captured = {}
+
+    def fake_judge(*a, **kw):
+        captured["template"] = kw.get("template")
+        return object()
+    # _cmd_run does `from codecheck.score.prompt import PromptJudge` at call time, so
+    # patching the attribute on that module is enough.
+    monkeypatch.setattr(ps, "PromptJudge", fake_judge)
+    args = SimpleNamespace(dataset=dataset, limit=2, index=None, randomize=False, seed=None,
+                           n=2, timeout=5.0, think=False, verbose=False, method="prompt",
+                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+    run_codecheck._cmd_run(args)
+    return captured["template"]
+
+
+def test_humaneval_run_selects_divergence_judge_template(monkeypatch, tmp_path):
+    from codecheck.score.prompt import HUMANEVAL_JUDGE_TEMPLATE
+    assert _judge_template_for_dataset(monkeypatch, tmp_path, "humaneval") == HUMANEVAL_JUDGE_TEMPLATE
+
+
+def test_mbpp_run_selects_default_judge_template(monkeypatch, tmp_path):
+    from codecheck.score.prompt import JUDGE_TEMPLATE
+    assert _judge_template_for_dataset(monkeypatch, tmp_path, "mbpp") == JUDGE_TEMPLATE
+
+
 def test_ast_metric_defaults_to_jaccard():
     from run_codecheck import build_parser
     args = build_parser().parse_args(["run"])
