@@ -381,7 +381,7 @@ body {
   right: 0;
   bottom: calc(100% + 6px);
   z-index: 5;
-  min-width: 120px;
+  min-width: 100%;
   padding: 4px;
   border: 1px solid #353b48;
   border-radius: 8px;
@@ -392,13 +392,14 @@ body {
 .chat-menu button {
   display: block;
   width: 100%;
-  padding: 8px 10px;
+  padding: 6px 10px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: #c6ccd8;
   font-size: 13px;
-  text-align: left;
+  text-align: center;
+  white-space: nowrap;
   cursor: pointer;
 }
 
