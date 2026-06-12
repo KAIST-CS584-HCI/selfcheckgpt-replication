@@ -245,16 +245,34 @@ body {
   height: auto;
 }
 
-/* Drag handle along the dock's top edge. */
+/* Drag handle along the dock's top edge. A fat invisible hit zone (12px,
+   straddling the edge) stays easy to grab at any zoom; the visible line is the
+   thin ::after centered inside it. */
 .chat-resizer {
-  height: 5px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  transform: translateY(-50%);
   cursor: row-resize;
+  z-index: 3;
+}
+
+.chat-resizer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
   background: #353b48;
   transition: background 0.12s;
 }
 
-.chat-resizer:hover,
-.chat-resizer.dragging {
+.chat-resizer:hover::after,
+.chat-resizer.dragging::after {
   background: #3b6fd4;
 }
 
