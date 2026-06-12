@@ -1,11 +1,20 @@
 ---
 type: plan
-status: ready
+status: done
 created: 2026-06-12
 source_plan: "[[01-codecheck-roadmap]]"
 ---
 
 # Iteration: CodeHaluEval (stdin/stdout) as a third dataset
+
+> **Implemented.** Schema corrections found during execution (the plan's HF assumptions were
+> partly wrong): CodeHaluEval ships as **8 per-category JSON-list files** that `load_dataset`
+> cannot merge (null-vs-string cast error), so the loader downloads + parses them directly;
+> `input`/`output` are **raw strings** (or occasionally a list of lines), **not** JSON-encoded;
+> `solutions` is a JSON-encoded list string and is often empty/partial; `task_id` is an int
+> (stored as `CodeHalu/<id>`). Verified end-to-end: a shipped solution reproduces the shipped
+> expected stdout (25/25 on real tasks), and a live `--dataset codehalu` run produces all four
+> scores. The canonical is never run, so its fragmentary `solutions` do not affect labeling.
 
 ## Context
 

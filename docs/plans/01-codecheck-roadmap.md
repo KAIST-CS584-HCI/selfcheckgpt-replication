@@ -155,8 +155,8 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 | 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
 | 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
 | 5 | Second dataset (HumanEval+) | ✅ implemented. `--dataset humaneval` (loader-only, reuses pipeline + all four scorers). CodeHaluEval deferred (stdin/stdout path), Collu-Bench dropped (logit-detection benchmark). |
-| 6 | Analysis + report | Four-method × dataset synthesis (MBPP+, HumanEval+); the structure/embedding negative result + blind-spot cross-link to Improvement 1. **(next)** *(light)* |
-| — | *deferred* | CodeHaluEval via a stdin/stdout whole-program exec path — the real confident-consistent stress test. |
+| 5.5 | Third dataset (CodeHaluEval) | ✅ implemented. `--dataset codehalu` — whole-program stdin/stdout harness + program-oriented judge; AST/CodeBERT reused with recorded caveats. Ground truth ships with the data (canonical never run). The real confident-consistent stress test. |
+| 6 | Analysis + report | Four-method × dataset synthesis (MBPP+, HumanEval+, CodeHaluEval); the structure/embedding negative result + blind-spot cross-link to Improvement 1. **(next)** *(light)* |
 
 *(No iteration 4: scale is produced manually via a `--limit 300` MBPP+ run, not a
 gated iteration. Leftover small/optional items are parked under "Deferred items"

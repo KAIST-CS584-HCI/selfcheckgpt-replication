@@ -300,3 +300,17 @@ def test_score_problem_progress_defaults_to_noop():
     gen = StubGen("def f(x):\n    return x + 1\n", ["def f(x):\n    return x + 1\n"])
     res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0)
     assert res.is_correct is True
+
+
+def test_score_problem_uses_supplied_expected_without_running_canonical():
+    # A problem carrying `expected` (datasets that ship ground truth, e.g. CodeHaluEval) must
+    # label from it and NOT run the canonical. The canonical here would raise — if it ran,
+    # expected would be an error status and the main would mislabel as incorrect.
+    prob = CodeProblem(task_id="t", prompt="", entry_point="f",
+                       canonical_solution="def f(x):\n    raise ValueError('should not run')\n",
+                       inputs=[[1], [2]], atol=0.0,
+                       expected=[("value", 2), ("value", 3)])
+    gen = StubGen("def f(x):\n    return x + 1\n", ["def f(x):\n    return x + 1\n"])
+    res = score_problem(prob, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0)
+    assert res.is_correct is True
+    assert res.count == {"total": 2, "pass": 2, "fail": 0, "error": 0}

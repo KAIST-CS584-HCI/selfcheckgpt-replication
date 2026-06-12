@@ -75,7 +75,10 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
     main_code, sample_codes = generator.generate(
         problem, n_samples, on_unit=_phase_ticker(progress, "generate", n_samples + 1))
     main_outputs = _run_vector(main_code, problem, harness, timeout)
-    expected = expected_outputs(problem, harness, timeout)
+    # Ground truth: a pre-supplied `expected` (datasets shipping outputs, e.g. CodeHaluEval)
+    # skips the canonical run; otherwise run the canonical solution (function-call default).
+    expected = (problem.expected if problem.expected is not None
+                else expected_outputs(problem, harness, timeout))
 
     scores: dict[str, float] = {}
     prompt_responses: list[str] | None = None

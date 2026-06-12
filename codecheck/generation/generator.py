@@ -11,6 +11,14 @@ PROMPT_TEMPLATE = (
     "Return only the complete function implementation, no explanation.\n\n{prompt}"
 )
 
+# Whole-program prompt for stdin->stdout datasets (CodeHaluEval): the task is a natural-language
+# problem statement, and the answer is a full program, not a function body.
+STDIO_PROMPT_TEMPLATE = (
+    "Write a complete Python program that solves the following problem. "
+    "The program reads from standard input and writes its answer to standard output. "
+    "Return only the program, no explanation.\n\n{prompt}"
+)
+
 
 def extract_code(text: str | None) -> str:
     if not text:
@@ -23,12 +31,19 @@ def build_prompt(problem) -> str:
     return PROMPT_TEMPLATE.format(prompt=problem.prompt)
 
 
+def build_stdio_prompt(problem) -> str:
+    return STDIO_PROMPT_TEMPLATE.format(prompt=problem.prompt)
+
+
 class CodeGenerator:
-    def __init__(self, client, model: str, think: bool = False, max_workers: int | None = None) -> None:
+    def __init__(self, client, model: str, think: bool = False, max_workers: int | None = None,
+                 prompt_builder=build_prompt) -> None:
         self.client = client
         self.model = model
         self.think = think          # chain-of-thought reasoning; off = far faster
         self.max_workers = max_workers
+        # How a problem becomes a generation prompt; swap for stdin->stdout datasets.
+        self.prompt_builder = prompt_builder
 
     def _complete(self, prompt: str, temperature: float) -> str:
         # Reasoning off by default (enable with --think): reasoning models otherwise spend
@@ -46,7 +61,7 @@ class CodeGenerator:
         return extract_code(resp.choices[0].message.content)
 
     def generate(self, problem, n_samples: int, on_unit=None) -> tuple[str, list[str]]:
-        prompt = build_prompt(problem)
+        prompt = self.prompt_builder(problem)
         temps = [0.0] + [1.0] * n_samples  # main at T=0, n samples at T=1
         # Fire the N+1 calls concurrently but staggered, to avoid bursting the rate limit.
         # on_unit ticks once per completed call for live per-problem progress.

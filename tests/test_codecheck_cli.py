@@ -64,11 +64,40 @@ def test_dataset_humaneval_is_accepted():
     assert build_parser().parse_args(["run", "--dataset", "humaneval"]).dataset == "humaneval"
 
 
+def test_dataset_codehalu_is_accepted():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run", "--dataset", "codehalu"]).dataset == "codehalu"
+
+
 def test_dataset_rejects_unknown():
     import pytest
     from run_codecheck import build_parser
     with pytest.raises(SystemExit):
         build_parser().parse_args(["run", "--dataset", "bogus"])
+
+
+def test_dataset_config_codehalu_wires_stdio_pieces():
+    from run_codecheck import _dataset_config
+    from codecheck.dataset import load_codehalu_eval
+    from codecheck.execution.stdio_sandbox import run_stdio_batch_in_subprocess
+    from codecheck.generation.generator import build_stdio_prompt
+    from codecheck.score.prompt import CODEHALU_JUDGE_TEMPLATE
+    load, harness, prompt_builder, tmpl = _dataset_config("codehalu")
+    assert load is load_codehalu_eval
+    assert harness is run_stdio_batch_in_subprocess
+    assert prompt_builder is build_stdio_prompt
+    assert tmpl == CODEHALU_JUDGE_TEMPLATE
+
+
+def test_dataset_config_mbpp_uses_function_call_harness():
+    from run_codecheck import _dataset_config
+    from codecheck.execution.sandbox import run_batch_in_subprocess
+    from codecheck.generation.generator import build_prompt
+    from codecheck.score.prompt import JUDGE_TEMPLATE
+    load, harness, prompt_builder, tmpl = _dataset_config("mbpp")
+    assert harness is run_batch_in_subprocess
+    assert prompt_builder is build_prompt
+    assert tmpl == JUDGE_TEMPLATE
 
 
 def test_run_dispatches_to_humaneval_loader(monkeypatch, tmp_path):

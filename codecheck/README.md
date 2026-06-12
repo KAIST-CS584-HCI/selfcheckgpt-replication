@@ -155,13 +155,14 @@ python run_codecheck.py evaluate --results output/iter3-all.json
   (`replication/evaluation/metrics.py`). Read AUC-PR against the baseline, not in
   isolation; the histogram exposes tie pile-ups at 0 that make the scalar fragile.
 
-## Datasets: MBPP+ and HumanEval+
+## Datasets: MBPP+, HumanEval+, and CodeHaluEval
 
-Two EvalPlus benchmarks, selected with `run --dataset {mbpp,humaneval}` (default `mbpp`):
-**MBPP+** (378 problems) and **HumanEval+** (164 problems). Both are **function-call**
-datasets — each problem is a function with a rich suite of test inputs that double as the
-shared inputs we run every implementation on — so they share the entire pipeline and all
-four scorers.
+Selected with `run --dataset {mbpp,humaneval,codehalu}` (default `mbpp`). **MBPP+** (378
+problems) and **HumanEval+** (164 problems) are EvalPlus **function-call** datasets — each
+problem is a function with a rich suite of test inputs that double as the shared inputs we
+run every implementation on — so they share the entire pipeline and all four scorers.
+**CodeHaluEval** is a **whole-program stdin→stdout** dataset (Codeforces-style) and adjusts
+the Exec harness and the Prompt template; see its subsection below.
 
 ### MBPP+ (378 problems)
 
@@ -252,6 +253,33 @@ Example problem (real row `HumanEval/0`):
   - ...plus ~1000 more edge-case inputs (7 base + 999 plus inputs)
 - **Tolerance:** `0` (exact match; the result is a boolean)
 
+### CodeHaluEval (stdin/stdout)
+
+CodeHaluEval (`Yuchen111/CodeHaluEval`) is a hallucination-focused benchmark of
+Codeforces-style problems that read **stdin** and write **stdout** (no callable). We run its
+stdin/stdout tasks (the `fn_name`-style call tasks are skipped). It is built to induce
+hallucinations, so unlike the saturated HumanEval+ it gives a real incorrect class to stress
+the confident-consistent blind spot.
+
+Two pieces differ from the function-call datasets; the four scoring metrics are unchanged:
+
+- **Exec — whole-program harness.** Each implementation runs in a fresh `python` subprocess
+  with the task's stdin piped in; its stdout is captured, normalized (unify line endings,
+  strip trailing whitespace), and compared across implementations. Same behavioral-divergence
+  metric, over stdout strings instead of return values.
+- **Prompt — program-oriented judge.** A stdin/stdout variant of the divergence-seeking judge
+  ("would these two programs print the same output for every stdin?"), selected automatically
+  by `--dataset codehalu`. Same Yes/No/N-A mapping.
+- **AST / CodeBERT — reused, weaker here.** Competitive solutions share heavy I/O boilerplate
+  (`input()`, parsing), which inflates structural and embedding similarity, so both
+  local-similarity methods are expected to degrade further than on the function-call datasets.
+
+Ground truth ships with the data: each test case carries its expected stdout, so correctness
+is labeled directly against it and the reference solution is **never run**. (CodeHaluEval's
+stored `solutions` are often partial fragments or absent, so they are reference-only.)
+Numeric/formatting-sensitive output is compared as exact strings, which can over-count `fail`
+on float-formatting differences — a deferred refinement, noted in the iteration plan.
+
 For each problem we record the consistency score, the correctness label (`is_correct`),
 an error flag (`is_error` — the main raised or timed out on any input, vs ran but gave a
 wrong answer), `count` (a per-input breakdown vs the canonical: `{total, pass, fail,
@@ -271,7 +299,8 @@ python run_codecheck.py evaluate
 
 **`run` parameters**
 
-- `--dataset` — which EvalPlus dataset: `mbpp` (default, MBPP+) or `humaneval` (HumanEval+)
+- `--dataset` — `mbpp` (default, MBPP+), `humaneval` (HumanEval+), or `codehalu`
+  (CodeHaluEval stdin/stdout)
 - `--limit` — how many problems to use (default: the entire dataset)
 - `--index` — run only the single problem at this 0-based dataset position; cannot be
   combined with `--limit`/`--random`/`--seed`

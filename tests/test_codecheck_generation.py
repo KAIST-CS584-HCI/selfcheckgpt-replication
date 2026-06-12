@@ -45,3 +45,17 @@ def test_think_enables_reasoning():
     client = FakeClient()
     CodeGenerator(client, model="m", think=True).generate(PROBLEM, n_samples=2)
     assert all(c["extra_body"] == {"reasoning": {"enabled": True}} for c in client.calls)
+
+
+def test_stdio_prompt_builder_asks_for_a_whole_program():
+    from codecheck.generation.generator import build_stdio_prompt
+    p = build_stdio_prompt(PROBLEM)
+    assert "standard input" in p and "standard output" in p
+    assert PROBLEM.prompt in p
+
+
+def test_generator_uses_injected_prompt_builder():
+    from codecheck.generation.generator import build_stdio_prompt
+    client = FakeClient()
+    CodeGenerator(client, model="m", prompt_builder=build_stdio_prompt).generate(PROBLEM, n_samples=1)
+    assert all("standard input" in c["messages"][0]["content"] for c in client.calls)
