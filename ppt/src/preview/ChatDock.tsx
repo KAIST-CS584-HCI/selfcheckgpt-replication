@@ -5,6 +5,7 @@ type Role = "user" | "assistant" | "error";
 type Message = { role: Role; text: string };
 
 const HEIGHT_MIN = 140;
+const HEIGHT_HIDE_AT = 60; // drag shorter than this and the dock snaps shut
 const HEIGHT_KEY = "ppt.chatHeight";
 
 // Bottom-docked chat that drives the local Claude Code CLI via /api/chat. The
@@ -62,14 +63,24 @@ export function ChatDock() {
     }
   };
 
+  const hidden = height.value === 0;
+
   return (
-    <div className="chat-dock" style={{ height: height.value } as CSSProperties}>
+    <div
+      className={"chat-dock" + (hidden ? " hidden" : "")}
+      style={hidden ? undefined : ({ height: height.value } as CSSProperties)}
+    >
       <div
         className={"chat-resizer" + (height.dragging ? " dragging" : "")}
         role="separator"
         aria-orientation="horizontal"
+        title="Drag to resize — drag fully down to hide"
         onPointerDown={height.onDragStart}
-      />
+      >
+        <span className="resizer-grip resizer-grip-h" aria-hidden="true" />
+      </div>
+      {hidden ? null : (
+        <>
       <div className="chat-log" ref={logRef}>
         {messages.map((m, i) => (
           <div key={i} className={"chat-msg chat-" + m.role}>
@@ -111,12 +122,15 @@ export function ChatDock() {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
 
 // Drag-resizable dock height. The dock sits at the bottom, so dragging the top
-// edge sets height = viewport bottom minus pointer Y. Clamped and persisted.
+// edge sets height = viewport bottom minus pointer Y. Snaps to 0 (hidden) when
+// dragged past the bottom edge, otherwise clamps. Persisted across reloads.
 function useChatHeight() {
   const [value, setValue] = useState(readStoredHeight);
   const [dragging, setDragging] = useState(false);
@@ -128,7 +142,7 @@ function useChatHeight() {
   const onDragStart = (e: ReactPointerEvent) => {
     e.preventDefault();
     setDragging(true);
-    const move = (ev: PointerEvent) => setValue(clampHeight(window.innerHeight - ev.clientY));
+    const move = (ev: PointerEvent) => setValue(snapHeight(window.innerHeight - ev.clientY));
     const up = () => {
       setDragging(false);
       window.removeEventListener("pointermove", move);
@@ -142,11 +156,12 @@ function useChatHeight() {
 }
 
 function readStoredHeight(): number {
-  const stored = Number(localStorage.getItem(HEIGHT_KEY));
-  return stored ? clampHeight(stored) : 280;
+  const raw = localStorage.getItem(HEIGHT_KEY);
+  return raw === null ? 280 : snapHeight(Number(raw));
 }
 
-function clampHeight(px: number): number {
+function snapHeight(px: number): number {
+  if (px < HEIGHT_HIDE_AT) return 0;
   return Math.max(HEIGHT_MIN, Math.min(window.innerHeight * 0.8, px));
 }
 

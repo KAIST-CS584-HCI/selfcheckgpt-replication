@@ -9,6 +9,7 @@ const deck = deckJson as Deck;
 
 const RAIL_MIN = 120;
 const RAIL_MAX = 480;
+const RAIL_HIDE_AT = 60; // drag narrower than this and the rail snaps shut
 const RAIL_KEY = "ppt.railWidth";
 
 export default function App() {
@@ -46,7 +47,7 @@ export default function App() {
   return (
     <div className="app" style={{ "--rail-w": `${railWidth.value}px` } as CSSProperties}>
       <aside className="rail">
-        {slides.map((s, idx) => (
+        {railWidth.value > 0 && slides.map((s, idx) => (
           <div className="thumb-row" key={s.id}>
             {editingId === s.id ? (
               <div className="thumb thumb-editing">
@@ -94,8 +95,11 @@ export default function App() {
         className={"rail-resizer" + (railWidth.dragging ? " dragging" : "")}
         role="separator"
         aria-orientation="vertical"
+        title="Drag to resize — drag fully left to hide"
         onPointerDown={railWidth.onDragStart}
-      />
+      >
+        <span className="resizer-grip resizer-grip-v" aria-hidden="true" />
+      </div>
 
       <main className="main">
         <div className="stage-region">
@@ -118,8 +122,8 @@ export default function App() {
   );
 }
 
-// Drag-resizable rail width, clamped to [RAIL_MIN, RAIL_MAX] and persisted to
-// localStorage so the chosen width survives reloads.
+// Drag-resizable rail width. Snaps to 0 (hidden) when dragged past the left edge,
+// otherwise clamps to [RAIL_MIN, RAIL_MAX]. Persisted across reloads.
 function useRailWidth() {
   const [value, setValue] = useState(readStoredWidth);
   const [dragging, setDragging] = useState(false);
@@ -131,7 +135,7 @@ function useRailWidth() {
   const onDragStart = (e: ReactPointerEvent) => {
     e.preventDefault();
     setDragging(true);
-    const move = (ev: PointerEvent) => setValue(clampWidth(ev.clientX));
+    const move = (ev: PointerEvent) => setValue(snapWidth(ev.clientX));
     const up = () => {
       setDragging(false);
       window.removeEventListener("pointermove", move);
@@ -145,11 +149,12 @@ function useRailWidth() {
 }
 
 function readStoredWidth(): number {
-  const stored = Number(localStorage.getItem(RAIL_KEY));
-  return stored ? clampWidth(stored) : 200;
+  const raw = localStorage.getItem(RAIL_KEY);
+  return raw === null ? 200 : snapWidth(Number(raw));
 }
 
-function clampWidth(px: number): number {
+function snapWidth(px: number): number {
+  if (px < RAIL_HIDE_AT) return 0;
   return Math.max(RAIL_MIN, Math.min(RAIL_MAX, px));
 }
 
