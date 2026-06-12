@@ -193,6 +193,7 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
     the stored main_code + sample_codes (no regeneration, no API). Rewrites in place. By
     default only results lacking a code_bert score are filled (resume a partial pass);
     --recompute rescores every result."""
+    from tqdm import tqdm
     from codecheck.score.codebert import CodeBERTScorer, torch_available
     from codecheck.pipeline import load_results, save_results
 
@@ -206,9 +207,11 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
         sys.exit(f"error: {exc}")
     todo = results if args.recompute else [r for r in results if "code_bert" not in r.scores]
     scorer = CodeBERTScorer()
-    for r in todo:
+    # Embedding 300 problems is silent for a while; show a bar and save each result so a
+    # Ctrl-C keeps the scores done so far (matches the `run`/`prompt` subcommands).
+    for r in tqdm(todo, desc="code_bert"):
         r.scores["code_bert"] = scorer.score(r.main_code, r.sample_codes)
-    save_results(results, args.results)
+        save_results(results, args.results)
     skipped = len(results) - len(todo)
     note = "" if args.recompute else f" ({skipped} already scored, skipped)"
     print(f"Scored code_bert on {len(todo)} results in {args.results}{note}")
