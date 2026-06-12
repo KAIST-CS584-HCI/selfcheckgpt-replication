@@ -279,7 +279,7 @@ def test_score_problem_code_bert_requires_scorer():
 
 def test_score_problem_reports_phase_progress():
     # progress(phase, done, total) must fire for each slow concurrent phase and reach its
-    # total: gen = n+1, exec = n, judge = n.
+    # total: generate = n+1, exec = n, prompt = n.
     gen = StubGen("def f(x):\n    return x + 1\n",
                   ["def f(x):\n    return x + 1\n", "def f(x):\n    return x + 1\n"])
     judge = PromptJudge(FakeJudgeClient(["Yes.", "Yes."]), model="m")
@@ -290,9 +290,9 @@ def test_score_problem_reports_phase_progress():
     maxima = {}
     for phase, done, total in seen:
         maxima[phase] = (max(maxima.get(phase, (0, total))[0], done), total)
-    assert maxima["gen"] == (3, 3)     # main + 2 samples
-    assert maxima["exec"] == (2, 2)    # 2 sample executions
-    assert maxima["judge"] == (2, 2)   # 2 judge calls
+    assert maxima["generate"] == (3, 3)   # main + 2 samples
+    assert maxima["exec"] == (2, 2)       # 2 sample executions
+    assert maxima["prompt"] == (2, 2)     # 2 judge calls
 
 
 def test_score_problem_progress_defaults_to_noop():

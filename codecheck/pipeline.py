@@ -71,9 +71,9 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
                   codebert_scorer=None, progress=None) -> CodeResult:
     methods = methods or {"exec"}
     # progress(phase, done, total): live per-problem worker progress for the slow concurrent
-    # phases (gen = N+1 generations, exec = N sample runs, judge = N judge calls).
+    # phases (generate = N+1 generations, exec = N sample runs, prompt = N judge calls).
     main_code, sample_codes = generator.generate(
-        problem, n_samples, on_unit=_phase_ticker(progress, "gen", n_samples + 1))
+        problem, n_samples, on_unit=_phase_ticker(progress, "generate", n_samples + 1))
     main_outputs = _run_vector(main_code, problem, harness, timeout)
     expected = expected_outputs(problem, harness, timeout)
 
@@ -87,7 +87,7 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
         if judge is None:
             raise ValueError("method 'prompt' requires a judge")
         scores["prompt"], prompt_responses = judge.evaluate(
-            main_code, sample_codes, on_unit=_phase_ticker(progress, "judge", n_samples))
+            main_code, sample_codes, on_unit=_phase_ticker(progress, "prompt", n_samples))
     if "ast" in methods:
         if ast_scorer is None:
             raise ValueError("method 'ast' requires an ast_scorer")
@@ -118,7 +118,7 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
     results: list[CodeResult] = []
     failed: list[str] = []
     with tqdm(problems, desc="codecheck") as bar:
-        # Live per-problem worker progress shown as the bar's postfix (e.g. "judge 9/20").
+        # Live per-problem worker progress shown as the bar's postfix (e.g. "prompt 9/20").
         # Postfix updates the bar's own line, so it coexists with the tqdm.write result lines.
         def progress(phase, done, total_units):
             bar.set_postfix_str(f"{phase} {done}/{total_units}")
