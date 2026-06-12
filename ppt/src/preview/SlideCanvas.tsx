@@ -27,21 +27,29 @@ export function SlideCanvas({ slide, footerText }: { slide: Slide; footerText: s
 
   const elements = resolveSlide(slide, theme, footerText);
 
+  // The CSS transform is visual-only and does not shrink the layout box, so the
+  // sizer reserves the *scaled* footprint. This keeps the stage centered and
+  // overflow-free at any browser zoom (magnitude).
   return (
     <div ref={wrapRef} className="stage-wrap">
       <div
-        className="stage"
-        style={{
-          width: STAGE_W,
-          height: STAGE_H,
-          background: theme.colors.bg,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-        }}
+        className="stage-sizer"
+        style={{ width: STAGE_W * scale, height: STAGE_H * scale }}
       >
-        {elements.map((e, i) => (
-          <ElementView key={i} e={e} />
-        ))}
+        <div
+          className="stage"
+          style={{
+            width: STAGE_W,
+            height: STAGE_H,
+            background: theme.colors.bg,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        >
+          {elements.map((e, i) => (
+            <ElementView key={i} e={e} />
+          ))}
+        </div>
       </div>
     </div>
   );
