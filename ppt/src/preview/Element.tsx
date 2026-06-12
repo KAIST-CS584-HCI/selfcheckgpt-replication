@@ -26,17 +26,14 @@ function EditableText({
   const ref = useRef<HTMLSpanElement>(null);
   const [editing, setEditing] = useState(false);
 
-  const start = () => {
+  const start = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
     setEditing(true);
     requestAnimationFrame(() => {
       const el = ref.current;
       if (!el) return;
       el.focus();
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+      selectWordAt(el, clientX, clientY);
     });
   };
 
@@ -71,6 +68,41 @@ function EditableText({
       {text}
     </span>
   );
+}
+
+// Selects the word under (x, y) — the native double-click behavior, which we
+// have to redo by hand because the element only becomes editable on the same
+// double-click that we want to act on. Falls back to a caret if unsupported.
+function selectWordAt(el: HTMLElement, x: number, y: number): void {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const caret = caretRangeAt(x, y);
+  if (!caret) {
+    const all = document.createRange();
+    all.selectNodeContents(el);
+    sel.removeAllRanges();
+    sel.addRange(all);
+    return;
+  }
+  sel.removeAllRanges();
+  sel.addRange(caret);
+  // Expand the collapsed caret to the surrounding word.
+  sel.modify?.("move", "backward", "word");
+  sel.modify?.("extend", "forward", "word");
+}
+
+function caretRangeAt(x: number, y: number): Range | null {
+  const doc = document as Document & {
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+  };
+  if (doc.caretRangeFromPoint) return doc.caretRangeFromPoint(x, y);
+  const pos = doc.caretPositionFromPoint?.(x, y);
+  if (!pos) return null;
+  const r = document.createRange();
+  r.setStart(pos.offsetNode, pos.offset);
+  r.collapse(true);
+  return r;
 }
 
 // Persists one field edit to deck.json by path; the write triggers Vite HMR.
