@@ -37,6 +37,7 @@ def _finalize(problems: list[CodeProblem], limit: int | None, randomize: bool,
     """Shared tail for every loader: apply index/limit selection, then write the
     write-only debug cache. `index` selects a single problem (limit/randomize/seed
     ignored); otherwise `limit` takes the first/random `limit`."""
+    cache_path = Path(cache_path)   # tolerate a str path from programmatic callers
     if index is not None:
         if not 0 <= index < len(problems):
             raise IndexError(f"--index {index} out of range (dataset has {len(problems)} problems)")

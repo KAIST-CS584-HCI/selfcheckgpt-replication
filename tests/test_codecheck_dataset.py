@@ -80,6 +80,13 @@ def test_index_negative_raises(monkeypatch, tmp_path):
         ds.load_mbpp_plus(index=-1, cache_path=tmp_path / "c.json")
 
 
+def test_cache_path_accepts_str(monkeypatch, tmp_path):
+    monkeypatch.setattr(ds, "get_mbpp_plus", lambda: FAKE)
+    cache = str(tmp_path / "c.json")           # str, not Path
+    problems = ds.load_mbpp_plus(limit=1, cache_path=cache)
+    assert problems and __import__("os").path.exists(cache)
+
+
 # --- HumanEval+ ---
 
 # HumanEval+ splits the reference: `prompt` is the signature+docstring, `canonical_solution`
