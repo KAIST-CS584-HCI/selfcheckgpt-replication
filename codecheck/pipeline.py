@@ -34,7 +34,8 @@ def _run_vectors(codes: list[str], problem: CodeProblem, harness, timeout: float
 
 
 def score_problem(problem, generator, harness, n_samples: int, timeout: float = 5.0,
-                  methods: set[str] | None = None, judge=None, ast_scorer=None) -> CodeResult:
+                  methods: set[str] | None = None, judge=None, ast_scorer=None,
+                  codebert_scorer=None) -> CodeResult:
     methods = methods or {"exec"}
     main_code, sample_codes = generator.generate(problem, n_samples)
     main_outputs = _run_vector(main_code, problem, harness, timeout)
@@ -53,6 +54,10 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
         if ast_scorer is None:
             raise ValueError("method 'ast' requires an ast_scorer")
         scores["ast"], _ = ast_scorer.evaluate(main_code, sample_codes)
+    if "code_bert" in methods:
+        if codebert_scorer is None:
+            raise ValueError("method 'code_bert' requires a codebert_scorer")
+        scores["code_bert"], _ = codebert_scorer.evaluate(main_code, sample_codes)
 
     return CodeResult(
         task_id=problem.task_id,
@@ -69,7 +74,7 @@ def score_problem(problem, generator, harness, n_samples: int, timeout: float = 
 
 def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5.0,
                 methods: set[str] | None = None, judge=None, ast_scorer=None,
-                on_result=None) -> list[CodeResult]:
+                codebert_scorer=None, on_result=None) -> list[CodeResult]:
     problems = list(problems)
     total = len(problems)
     results: list[CodeResult] = []
@@ -77,7 +82,8 @@ def run_dataset(problems, generator, harness, n_samples: int, timeout: float = 5
     for i, problem in enumerate(tqdm(problems, desc="codecheck"), start=1):
         started = time.monotonic()
         try:
-            result = score_problem(problem, generator, harness, n_samples, timeout, methods, judge, ast_scorer)
+            result = score_problem(problem, generator, harness, n_samples, timeout, methods,
+                                   judge, ast_scorer, codebert_scorer)
         except (KeyboardInterrupt, SystemExit):
             raise  # let the user abort the whole run
         except Exception:

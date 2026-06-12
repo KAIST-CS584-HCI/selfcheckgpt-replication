@@ -231,3 +231,28 @@ def test_sample_execution_runs_in_parallel():
     gen = StubGen("def f(x): return x", samples)
     score_problem(PROBLEM, gen, slow_harness, n_samples=5, timeout=5.0, methods={"exec"})
     assert peak >= 2   # samples overlapped, not serialized one-by-one
+
+
+class FakeCodeBert:
+    def __init__(self, value=0.5):
+        self.value = value
+
+    def evaluate(self, main_code, sample_codes):
+        return self.value, [self.value] * len(sample_codes)
+
+
+def test_score_problem_fills_code_bert():
+    gen = StubGen("def f(x):\n    return x + 1\n", ["def f(x):\n    return x + 1\n"])
+    res = score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0,
+                        methods={"code_bert"}, codebert_scorer=FakeCodeBert(0.3))
+    assert res.scores == {"code_bert": 0.3}
+    assert "exec" not in res.scores      # code_bert-only run skips sample execution
+    assert res.is_correct is True         # labeling still runs
+
+
+def test_score_problem_code_bert_requires_scorer():
+    import pytest
+    gen = StubGen("def f(x):\n    return x + 1\n", ["def f(x):\n    return x + 1\n"])
+    with pytest.raises(ValueError):
+        score_problem(PROBLEM, gen, run_batch_in_subprocess, n_samples=1, timeout=5.0,
+                      methods={"code_bert"})
