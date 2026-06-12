@@ -147,6 +147,40 @@ def _judge_template_for_dataset(monkeypatch, tmp_path, dataset):
     return captured["template"]
 
 
+def _gen_think_for_dataset(monkeypatch, tmp_path, dataset, think=False):
+    """Build a run for the given dataset and capture the `think` handed to CodeGenerator."""
+    import codecheck.dataset as ds
+    import codecheck.generation.generator as gen
+    import run_codecheck
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(ds, "load_human_eval_plus", lambda **kw: [])
+    monkeypatch.setattr(ds, "load_mbpp_plus", lambda **kw: [])
+    monkeypatch.setattr(ds, "load_codehalu_eval", lambda **kw: [])
+    monkeypatch.setattr(run_codecheck, "_setup_run_logging", lambda **kw: None)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    captured = {}
+
+    def fake_gen(*a, **kw):
+        captured["think"] = kw.get("think")
+        return object()
+    monkeypatch.setattr(gen, "CodeGenerator", fake_gen)
+    args = SimpleNamespace(dataset=dataset, limit=2, index=None, randomize=False, seed=None,
+                           n=2, timeout=5.0, think=think, verbose=False, method="exec",
+                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+    run_codecheck._cmd_run(args)
+    return captured["think"]
+
+
+def test_codehalu_generation_reasons_by_default(monkeypatch, tmp_path):
+    # CodeHaluEval is whole-program competitive code -> generation thinks even without --think.
+    assert _gen_think_for_dataset(monkeypatch, tmp_path, "codehalu", think=False) is True
+
+
+def test_mbpp_generation_does_not_reason_by_default(monkeypatch, tmp_path):
+    assert _gen_think_for_dataset(monkeypatch, tmp_path, "mbpp", think=False) is False
+
+
 def test_humaneval_run_selects_divergence_judge_template(monkeypatch, tmp_path):
     from codecheck.score.prompt import HUMANEVAL_JUDGE_TEMPLATE
     assert _judge_template_for_dataset(monkeypatch, tmp_path, "humaneval") == HUMANEVAL_JUDGE_TEMPLATE

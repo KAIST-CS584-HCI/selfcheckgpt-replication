@@ -82,7 +82,11 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
     load, harness, prompt_builder, judge_template = _dataset_config(args.dataset)
     client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
-    generator = CodeGenerator(client, model=model, think=args.think, prompt_builder=prompt_builder)
+    # CodeHaluEval is whole-program competitive (Codeforces-style) code, far harder than a
+    # single function, so generation reasons by default to get usable programs; --think still
+    # forces it on for the other datasets.
+    gen_think = args.think or args.dataset == "codehalu"
+    generator = CodeGenerator(client, model=model, think=gen_think, prompt_builder=prompt_builder)
 
     if args.method == "all":
         methods = {"exec", "prompt", "ast", "code_bert"}

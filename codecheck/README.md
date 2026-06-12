@@ -274,6 +274,11 @@ Two pieces differ from the function-call datasets; the four scoring metrics are 
   (`input()`, parsing), which inflates structural and embedding similarity, so both
   local-similarity methods are expected to degrade further than on the function-call datasets.
 
+Because these are whole-program competitive problems (far harder than a single function),
+**generation reasons by default** on `--dataset codehalu` (equivalent to `--think` for the
+main + samples), to produce usable programs; the other datasets stay reasoning-off unless
+`--think` is passed.
+
 Ground truth ships with the data: each test case carries its expected stdout, so correctness
 is labeled directly against it and the reference solution is **never run**. (CodeHaluEval's
 stored `solutions` are often partial fragments or absent, so they are reference-only.)
