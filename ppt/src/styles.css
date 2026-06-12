@@ -66,6 +66,25 @@ body {
   color: #fff;
 }
 
+/* Rename mode reuses the .thumb shell but swaps in a text input. */
+.thumb-editing {
+  padding-right: 10px; /* no × button in edit mode, reclaim the space */
+  border-color: #3b6fd4;
+  cursor: text;
+}
+
+.thumb-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  padding: 0;
+}
+
 .thumb-del {
   position: absolute;
   right: 6px;

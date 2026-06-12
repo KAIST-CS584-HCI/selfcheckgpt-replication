@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import type { Deck } from "./model/deck";
 import { SlideCanvas } from "./preview/SlideCanvas";
@@ -12,9 +12,26 @@ const RAIL_KEY = "ppt.railWidth";
 
 export default function App() {
   const [i, setI] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const cancelEdit = useRef(false);
   const railWidth = useRailWidth();
   const slides = deck.slides;
   const clamp = (n: number) => Math.max(0, Math.min(slides.length - 1, n));
+
+  const startRename = (s: Deck["slides"][number]) => {
+    setEditingId(s.id);
+    setDraft(labelOf(s));
+    cancelEdit.current = false;
+  };
+
+  // Single commit path: Enter and Escape both blur the input, so this fires once.
+  const commitRename = async (s: Deck["slides"][number]) => {
+    setEditingId(null);
+    if (cancelEdit.current) return;
+    if (draft.trim() === labelOf(s)) return; // unchanged
+    await renameSlide(s.id, draft);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -30,20 +47,44 @@ export default function App() {
       <aside className="rail">
         {slides.map((s, idx) => (
           <div className="thumb-row" key={s.id}>
-            <button
-              className={"thumb" + (idx === i ? " active" : "")}
-              onClick={() => setI(idx)}
-            >
-              <span className="thumb-n">{idx + 1}</span>
-              <span className="thumb-label">{labelOf(s)}</span>
-            </button>
-            <button
-              className="thumb-del"
-              title="Delete slide"
-              aria-label={`Delete slide ${idx + 1}`}
-              onClick={() => deleteSlide(s, slides.length)}
-            />
-
+            {editingId === s.id ? (
+              <div className="thumb thumb-editing">
+                <span className="thumb-n">{idx + 1}</span>
+                <input
+                  className="thumb-input"
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Escape") {
+                      cancelEdit.current = true;
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  onBlur={() => commitRename(s)}
+                />
+              </div>
+            ) : (
+              <>
+                <button
+                  className={"thumb" + (idx === i ? " active" : "")}
+                  onClick={() => setI(idx)}
+                  onDoubleClick={() => startRename(s)}
+                  title="Double-click to rename"
+                >
+                  <span className="thumb-n">{idx + 1}</span>
+                  <span className="thumb-label">{labelOf(s)}</span>
+                </button>
+                <button
+                  className="thumb-del"
+                  title="Delete slide"
+                  aria-label={`Delete slide ${idx + 1}`}
+                  onClick={() => deleteSlide(s, slides.length)}
+                />
+              </>
+            )}
           </div>
         ))}
       </aside>
@@ -109,7 +150,18 @@ function clampWidth(px: number): number {
 }
 
 function labelOf(s: Deck["slides"][number]): string {
-  return s.title;
+  return s.navLabel ?? s.title;
+}
+
+// Persists a sidebar-only rename to deck.json; the file write triggers Vite HMR,
+// which reloads the preview with the new label. Does not touch slide content.
+async function renameSlide(id: string, label: string): Promise<void> {
+  const res = await fetch("/api/slides/rename", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id, label }),
+  });
+  if (!res.ok) alert("Rename failed. Is the dev server running?");
 }
 
 // Deletes a slide by persisting to deck.json; the file write triggers Vite HMR,

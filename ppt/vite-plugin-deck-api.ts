@@ -17,6 +17,7 @@ export function deckApi(): Plugin {
     name: "deck-api",
     configureServer(server) {
       server.middlewares.use("/api/slides/delete", handleDeleteSlide);
+      server.middlewares.use("/api/slides/rename", handleRenameSlide);
     },
   };
 }
@@ -32,9 +33,32 @@ async function handleDeleteSlide(req: IncomingMessage, res: ServerResponse, next
   }
 }
 
+async function handleRenameSlide(req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) {
+  if (req.method !== "POST") return next();
+  try {
+    const { id, label } = await readJsonBody(req);
+    await renameSlideById(id, label);
+    sendJson(res, 200, { ok: true });
+  } catch (err) {
+    sendJson(res, 500, { error: String(err) });
+  }
+}
+
 async function deleteSlideById(id: string): Promise<void> {
   const deck = JSON.parse(await readFile(DECK_PATH, "utf8"));
   deck.slides = deck.slides.filter((s: { id: string }) => s.id !== id);
+  await writeFile(DECK_PATH, JSON.stringify(deck, null, 2) + "\n", "utf8");
+}
+
+// Sets the sidebar-only navLabel. A blank label, or one equal to the title,
+// drops the field so the label falls back to the title.
+async function renameSlideById(id: string, label: string): Promise<void> {
+  const deck = JSON.parse(await readFile(DECK_PATH, "utf8"));
+  const slide = deck.slides.find((s: { id: string }) => s.id === id);
+  if (!slide) return;
+  const trimmed = (label ?? "").trim();
+  if (!trimmed || trimmed === slide.title) delete slide.navLabel;
+  else slide.navLabel = trimmed;
   await writeFile(DECK_PATH, JSON.stringify(deck, null, 2) + "\n", "utf8");
 }
 

@@ -22,10 +22,13 @@ export type TableRow = {
   cellColors?: CellColor[];
 };
 
+// navLabel: sidebar-only display name. Never rendered on the slide itself;
+// purely an authoring aid. Falls back to `title` when absent.
 export type Slide =
   | {
       id: string;
       layout: "cover";
+      navLabel?: string;
       kicker?: string;
       title: string;
       citation?: string;
@@ -34,6 +37,7 @@ export type Slide =
   | {
       id: string;
       layout: "body";
+      navLabel?: string;
       kicker?: string;
       title: string;
       bullets: Bullet[];
@@ -42,6 +46,7 @@ export type Slide =
   | {
       id: string;
       layout: "comparison";
+      navLabel?: string;
       kicker?: string;
       title: string;
       cards: Card[]; // 2-3
@@ -50,6 +55,7 @@ export type Slide =
   | {
       id: string;
       layout: "table";
+      navLabel?: string;
       kicker?: string;
       title: string;
       verdict?: string;
@@ -60,6 +66,7 @@ export type Slide =
   | {
       id: string;
       layout: "closing";
+      navLabel?: string;
       title: string;
       subtitle?: string;
     };
