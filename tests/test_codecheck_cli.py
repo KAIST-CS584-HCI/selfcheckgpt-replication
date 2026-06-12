@@ -54,6 +54,44 @@ def test_method_all_is_accepted_by_parser():
     assert args.method == "all"
 
 
+def test_dataset_defaults_to_mbpp():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run"]).dataset == "mbpp"
+
+
+def test_dataset_humaneval_is_accepted():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run", "--dataset", "humaneval"]).dataset == "humaneval"
+
+
+def test_dataset_rejects_unknown():
+    import pytest
+    from run_codecheck import build_parser
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["run", "--dataset", "bogus"])
+
+
+def test_run_dispatches_to_humaneval_loader(monkeypatch, tmp_path):
+    # --dataset humaneval must call load_human_eval_plus, not load_mbpp_plus.
+    import codecheck.dataset as ds
+    import run_codecheck
+    from types import SimpleNamespace
+
+    called = {}
+    monkeypatch.setattr(ds, "load_human_eval_plus", lambda **kw: (called.setdefault("he", kw), [])[1])
+    monkeypatch.setattr(ds, "load_mbpp_plus", lambda **kw: (called.setdefault("mbpp", kw), [])[1])
+    # _setup_run_logging sets propagate=False on the codecheck logger; no-op it so this
+    # test doesn't poison caplog for later logging tests.
+    monkeypatch.setattr(run_codecheck, "_setup_run_logging", lambda **kw: None)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    # stop after loader dispatch: no problems -> "nothing to do" returns before any API call
+    args = SimpleNamespace(dataset="humaneval", limit=2, index=None, randomize=False, seed=None,
+                           n=2, timeout=5.0, think=False, verbose=False, method="exec",
+                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+    run_codecheck._cmd_run(args)
+    assert "he" in called and "mbpp" not in called
+
+
 def test_ast_metric_defaults_to_jaccard():
     from run_codecheck import build_parser
     args = build_parser().parse_args(["run"])

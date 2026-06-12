@@ -154,8 +154,9 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 | 2.5 | Validation run *(gate)* | ✅ done. Post-hashseed-fix run re-established trustworthy Exec + first real Prompt numbers; head-to-head produced. |
 | 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
 | 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
-| 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. **(next)** |
-| 6 | Analysis + report | Four-method × dataset synthesis; the structure/embedding negative result + blind-spot cross-link to Improvement 1. *(light)* |
+| 5 | Second dataset (HumanEval+) | ✅ implemented. `--dataset humaneval` (loader-only, reuses pipeline + all four scorers). CodeHaluEval deferred (stdin/stdout path), Collu-Bench dropped (logit-detection benchmark). |
+| 6 | Analysis + report | Four-method × dataset synthesis (MBPP+, HumanEval+); the structure/embedding negative result + blind-spot cross-link to Improvement 1. **(next)** *(light)* |
+| — | *deferred* | CodeHaluEval via a stdin/stdout whole-program exec path — the real confident-consistent stress test. |
 
 *(No iteration 4: scale is produced manually via a `--limit 300` MBPP+ run, not a
 gated iteration. Leftover small/optional items are parked under "Deferred items"
@@ -334,22 +335,36 @@ and gate nothing — pick them up if they pay off:
    (defensive for weaker/ramblier judges; current data parses clean → low priority).
 4. **Finish gemma `code_bert` coverage** (carried from the CodeBERT variant).
 
-## Iteration 5 — Hallucination-targeted datasets *(now the highest-value direction)*
+## Iteration 5 — Second dataset (HumanEval+) *(implemented)*
 
-- **Goal:** run all **four** variants on CodeHaluEval, then Collu-Bench.
-- **Why promoted:** MBPP+ showed Exec ≈ Prompt (mid-tier) and structure/embedding
-  weak — so MBPP+ does **not** decide the Improvement-2 story. These datasets
-  deliberately surface the **confident-consistent hallucination** case (all samples
-  agree on the same wrong code) that every local-similarity method misses. This is
-  where Prompt (semantic judge) could finally separate from Exec/AST/CodeBERT — the
-  real test of the narrative, not a "light" add-on.
-- **User-facing value:** cross-dataset four-method table; does the variant ranking
-  invert when hallucinations are deliberate and consistent?
+> Status: ✅ implemented (loader + `--dataset` dispatch, tests, small-subset verified).
+> The full HumanEval+ sweep is run manually, like MBPP+.
 
-## Iteration 6 — Analysis + report *(light)*
+- **What shipped:** `load_human_eval_plus` (evalplus, function-call interface identical
+  to MBPP+; HumanEval+ ships `canonical_solution` as the body only, so the loader
+  assembles `prompt + body` to make it runnable) + `run --dataset {mbpp,humaneval}`.
+  The whole pipeline and all four scorers are reused unchanged. Plan
+  `docs/plans/08-codecheck-iteration5-humaneval.md`.
+- **Why HumanEval+ instead of the originally-named datasets** — dataset inspection
+  overturned the plan:
+  - **CodeHaluEval** (`Yuchen111/CodeHaluEval`) is ~98% Codeforces **stdin/stdout**
+    programs; the function-call `fn(*args)` harness can't run it. **Deferred** to a
+    future iteration that adds a whole-program (stdin→stdout) exec path.
+  - **Collu-Bench** (`lt-asset/collu-bench`) is a token-logprob hallucination-*detection*
+    benchmark (pre-generated outputs + token annotations), **not** a generate-and-sample
+    task source. **Dropped** from the roadmap.
+  - HumanEval+ gives a clean second function-call dataset now (loader-only). It is **not**
+    hallucination-targeted, so the deliberate confident-consistent stress test stays on
+    the deferred CodeHaluEval work.
+- **User-facing value:** a second cross-dataset four-method table (MBPP+ vs HumanEval+);
+  does the exec > prompt > ast > code_bert ranking hold on a different problem set?
+- **Deferred follow-up:** CodeHaluEval stdin/stdout exec path — the real
+  confident-consistent stress test, when the whole-program harness is built.
 
-- **Goal:** synthesize Exec vs Prompt vs AST vs CodeBERT across datasets into the
-  Improvement-2 narrative for the final report.
+## Iteration 6 — Analysis + report *(next — light)*
+
+- **Goal:** synthesize Exec vs Prompt vs AST vs CodeBERT across datasets (MBPP+ and
+  HumanEval+) into the Improvement-2 narrative for the final report.
 - **User-facing value:** the written comparison + conclusions, with two threads:
   (a) the structure/embedding **negative result** (AST + CodeBERT add little on
   MBPP+ because they share the blind spot); (b) the cross-link — Exec's

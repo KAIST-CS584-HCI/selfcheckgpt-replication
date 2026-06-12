@@ -46,7 +46,7 @@ def _resolve_selection(args: argparse.Namespace) -> tuple[int | None, int | None
 
 def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
-    from codecheck.dataset import load_mbpp_plus
+    from codecheck.dataset import load_mbpp_plus, load_human_eval_plus
     from codecheck.generation.generator import CodeGenerator
     from codecheck.score.prompt import PromptJudge
     from codecheck.score.ast import ASTScorer
@@ -80,8 +80,9 @@ def _cmd_run(args: argparse.Namespace) -> None:
         sys.exit(f"error: {exc}")
 
     _setup_run_logging(verbose=args.verbose)
+    load = load_human_eval_plus if args.dataset == "humaneval" else load_mbpp_plus
     try:
-        problems = load_mbpp_plus(limit=limit, randomize=args.randomize, seed=args.seed, index=index)
+        problems = load(limit=limit, randomize=args.randomize, seed=args.seed, index=index)
     except IndexError as exc:
         sys.exit(f"error: {exc}")
     # Auto-resume: if the output file exists, skip problems already recorded (by task_id)
@@ -98,7 +99,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
         print(f"resuming: {done_count} done, {len(problems)} remaining in {args.output}")
 
     ast_note = f", ast-metric={args.ast_metric}" if ast_scorer is not None else ""
-    print(f"Running methods={sorted(methods)} on {len(problems)} problems "
+    print(f"Running methods={sorted(methods)} on {len(problems)} {args.dataset} problems "
           f"(n={args.n}, timeout={args.timeout}s, model={model}{ast_note})")
     if not problems:
         print("nothing to do — all selected problems already in the output file")
@@ -203,6 +204,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="enable model chain-of-thought reasoning (much slower; default off)")
     run_p.add_argument("-v", "--verbose", action="store_true",
                        help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
+    run_p.add_argument("--dataset", choices=["mbpp", "humaneval"], default="mbpp",
+                       help="which EvalPlus dataset to run on (default mbpp = MBPP+)")
     run_p.add_argument("--method", choices=["exec", "prompt", "ast", "code_bert", "all"], default="exec",
                        help="which consistency scorer(s) to run")
     run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="jaccard",
