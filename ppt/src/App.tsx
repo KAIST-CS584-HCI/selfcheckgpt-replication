@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import type { Deck } from "./model/deck";
 import { SlideCanvas } from "./preview/SlideCanvas";
 import deckJson from "../deck.json";
 
 const deck = deckJson as Deck;
 
+const RAIL_MIN = 120;
+const RAIL_MAX = 480;
+const RAIL_KEY = "ppt.railWidth";
+
 export default function App() {
   const [i, setI] = useState(0);
+  const railWidth = useRailWidth();
   const slides = deck.slides;
   const clamp = (n: number) => Math.max(0, Math.min(slides.length - 1, n));
 
@@ -20,7 +26,7 @@ export default function App() {
   }, [slides.length]);
 
   return (
-    <div className="app">
+    <div className="app" style={{ "--rail-w": `${railWidth.value}px` } as CSSProperties}>
       <aside className="rail">
         {slides.map((s, idx) => (
           <div className="thumb-row" key={s.id}>
@@ -42,6 +48,13 @@ export default function App() {
         ))}
       </aside>
 
+      <div
+        className={"rail-resizer" + (railWidth.dragging ? " dragging" : "")}
+        role="separator"
+        aria-orientation="vertical"
+        onPointerDown={railWidth.onDragStart}
+      />
+
       <main className="main">
         <SlideCanvas slide={slides[i]} footerText={deck.meta.footer} />
         <div className="hud">
@@ -58,6 +71,41 @@ export default function App() {
       </main>
     </div>
   );
+}
+
+// Drag-resizable rail width, clamped to [RAIL_MIN, RAIL_MAX] and persisted to
+// localStorage so the chosen width survives reloads.
+function useRailWidth() {
+  const [value, setValue] = useState(readStoredWidth);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(RAIL_KEY, String(value));
+  }, [value]);
+
+  const onDragStart = (e: ReactPointerEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    const move = (ev: PointerEvent) => setValue(clampWidth(ev.clientX));
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return { value, dragging, onDragStart };
+}
+
+function readStoredWidth(): number {
+  const stored = Number(localStorage.getItem(RAIL_KEY));
+  return stored ? clampWidth(stored) : 200;
+}
+
+function clampWidth(px: number): number {
+  return Math.max(RAIL_MIN, Math.min(RAIL_MAX, px));
 }
 
 function labelOf(s: Deck["slides"][number]): string {

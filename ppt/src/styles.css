@@ -14,15 +14,27 @@ body {
 .app {
   display: grid;
   /* minmax(0, 1fr): without the 0-min, the track's min-content is the 1280px
-     stage and the column blows out past the viewport (horizontal scrollbar). */
-  grid-template-columns: 200px minmax(0, 1fr);
+     stage and the column blows out past the viewport (horizontal scrollbar).
+     --rail-w drives the rail track; the drag handle writes it live. */
+  grid-template-columns: var(--rail-w, 200px) 5px minmax(0, 1fr);
   height: 100vh;
+}
+
+/* Draggable divider between rail and stage. */
+.rail-resizer {
+  cursor: col-resize;
+  background: #353b48;
+  transition: background 0.12s;
+}
+
+.rail-resizer:hover,
+.rail-resizer.dragging {
+  background: #3b6fd4;
 }
 
 .rail {
   overflow-y: auto;
   background: #1e222b;
-  border-right: 1px solid #353b48;
   padding: 10px;
   display: flex;
   flex-direction: column;
