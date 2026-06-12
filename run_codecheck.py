@@ -47,11 +47,11 @@ def _resolve_selection(args: argparse.Namespace) -> tuple[int | None, int | None
 def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
     from codecheck.dataset import load_mbpp_plus
-    from codecheck.generation import CodeGenerator
-    from codecheck.prompt_score import PromptJudge
-    from codecheck.ast_score import ASTScorer
-    from codecheck.codebert_score import CodeBERTScorer, torch_available
-    from codecheck.execution import run_batch_in_subprocess
+    from codecheck.generation.generator import CodeGenerator
+    from codecheck.score.prompt import PromptJudge
+    from codecheck.score.ast import ASTScorer
+    from codecheck.score.codebert import CodeBERTScorer, torch_available
+    from codecheck.execution.sandbox import run_batch_in_subprocess
     from codecheck.pipeline import run_dataset, load_results, append_result
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
@@ -166,7 +166,7 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
 def _cmd_codebert(args: argparse.Namespace) -> None:
     """Offline: add a `code_bert` consistency score to an existing results file, reusing
     the stored main_code + sample_codes (no regeneration, no API). Rewrites in place."""
-    from codecheck.codebert_score import CodeBERTScorer, torch_available
+    from codecheck.score.codebert import CodeBERTScorer, torch_available
     from codecheck.pipeline import load_results, save_results
 
     if not torch_available():

@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 import pytest
 
-import codecheck.api_retry as api_retry
-from codecheck.api_retry import APIRetriesExhausted, chat_with_retries
+import codecheck.generation.api_retry as api_retry
+from codecheck.generation.api_retry import APIRetriesExhausted, chat_with_retries
 
 
 class FlakyClient:

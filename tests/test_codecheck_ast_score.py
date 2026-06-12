@@ -1,4 +1,4 @@
-from codecheck.ast_score import ast_fingerprint, ast_dissimilarity
+from codecheck.score.ast import ast_fingerprint, ast_dissimilarity
 
 
 def test_fingerprint_is_invariant_to_variable_renaming():
@@ -42,7 +42,7 @@ def test_different_structure_has_positive_dissimilarity():
     assert 0.0 < d <= 1.0
 
 
-from codecheck.ast_score import ast_to_tree, ted_dissimilarity
+from codecheck.score.ast import ast_to_tree, ted_dissimilarity
 
 
 def test_ted_identical_structure_is_zero():
@@ -85,7 +85,7 @@ def test_ast_to_tree_returns_none_on_unparseable_or_bodyless():
     assert ast_to_tree(None) is None
 
 
-from codecheck.ast_score import ASTScorer
+from codecheck.score.ast import ASTScorer
 
 
 def test_scorer_mean_dissimilarity_over_samples():

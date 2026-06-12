@@ -1,4 +1,4 @@
-from codecheck.exec_score import exec_inconsistency
+from codecheck.score.exec import exec_inconsistency
 
 MAIN = [("value", 1), ("value", 2), ("value", 3)]
 

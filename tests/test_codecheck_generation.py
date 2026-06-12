@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from codecheck.generation import CodeGenerator, extract_code
+from codecheck.generation.generator import CodeGenerator, extract_code
 from codecheck.models import CodeProblem
 
 PROBLEM = CodeProblem(task_id="t", prompt="def f(x):\n    'add one'\n", entry_point="f",

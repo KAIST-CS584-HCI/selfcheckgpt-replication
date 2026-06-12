@@ -1,5 +1,5 @@
 from __future__ import annotations
-from codecheck.execution import normalize_output
+from codecheck.execution.sandbox import normalize_output
 
 
 def expected_outputs(problem, harness, timeout: float = 5.0) -> list:

@@ -1,4 +1,4 @@
-from codecheck.prompt_score import build_judge_prompt, parse_judgment
+from codecheck.score.prompt import build_judge_prompt, parse_judgment
 
 
 def test_build_judge_prompt_includes_both_codes():
@@ -35,7 +35,7 @@ def test_parse_empty_is_unmatched_half():
 
 import threading
 from types import SimpleNamespace
-from codecheck.prompt_score import PromptJudge
+from codecheck.score.prompt import PromptJudge
 
 
 class FakeJudgeClient:
@@ -103,7 +103,7 @@ def test_judge_degrades_on_persistent_api_failure(monkeypatch):
     # A judge call that keeps failing (transient API error across all retries) must not
     # crash the run: the sample degrades to a parse failure (N/A) and the run continues.
     import json
-    import codecheck.api_retry as api_retry
+    import codecheck.generation.api_retry as api_retry
     monkeypatch.setattr(api_retry.time, "sleep", lambda *_: None)
 
     class DeadClient:

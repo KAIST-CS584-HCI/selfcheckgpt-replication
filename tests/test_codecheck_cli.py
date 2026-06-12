@@ -156,7 +156,7 @@ def test_codebert_subcommand_parses_results():
 
 
 def test_cmd_codebert_augments_results_in_place(tmp_path, monkeypatch):
-    import codecheck.codebert_score as cbs
+    import codecheck.score.codebert as cbs
     from codecheck.models import CodeResult
     from codecheck.pipeline import save_results, load_results
     import run_codecheck
@@ -178,7 +178,7 @@ def test_cmd_codebert_augments_results_in_place(tmp_path, monkeypatch):
 
 
 def test_cmd_codebert_exits_clean_when_torch_missing(tmp_path, monkeypatch):
-    import codecheck.codebert_score as cbs
+    import codecheck.score.codebert as cbs
     import run_codecheck
     import pytest
 

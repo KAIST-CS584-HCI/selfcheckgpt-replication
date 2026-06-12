@@ -1,8 +1,8 @@
 from __future__ import annotations
 import re
 
-from codecheck.api_retry import chat_with_retries
-from codecheck.concurrency import map_staggered
+from codecheck.generation.api_retry import chat_with_retries
+from codecheck.generation.concurrency import map_staggered
 
 _FENCE = re.compile(r"```(?:python)?\s*(.*?)```", re.S)
 

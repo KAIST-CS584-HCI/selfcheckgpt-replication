@@ -10,9 +10,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 from codecheck.models import CodeProblem, CodeResult
-from codecheck.execution import normalize_output
-from codecheck.exec_score import exec_inconsistency
-from codecheck.labeling import expected_outputs, is_correct, has_error, count_outcomes
+from codecheck.execution.sandbox import normalize_output
+from codecheck.score.exec import exec_inconsistency
+from codecheck.execution.labeling import expected_outputs, is_correct, has_error, count_outcomes
 
 logger = logging.getLogger("codecheck.pipeline")
 

@@ -1,4 +1,4 @@
-from codecheck.execution import run_in_subprocess, run_batch_in_subprocess, normalize_output
+from codecheck.execution.sandbox import run_in_subprocess, run_batch_in_subprocess, normalize_output
 
 ADD = "def f(x):\n    return x + 1\n"
 BOOM = "def f(x):\n    raise ValueError('boom')\n"

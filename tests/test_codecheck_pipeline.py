@@ -1,5 +1,5 @@
 from codecheck.models import CodeProblem, CodeResult
-from codecheck.execution import run_batch_in_subprocess
+from codecheck.execution.sandbox import run_batch_in_subprocess
 from codecheck.pipeline import score_problem, save_results, load_results
 
 PROBLEM = CodeProblem(task_id="t", prompt="", entry_point="f",
@@ -39,7 +39,7 @@ def test_save_and_load_roundtrip(tmp_path):
     assert load_results(path) == results
 
 
-from codecheck.prompt_score import PromptJudge
+from codecheck.score.prompt import PromptJudge
 from tests.test_codecheck_prompt_score import FakeJudgeClient
 
 
@@ -69,7 +69,7 @@ def test_prompt_only_skips_sample_execution():
     assert res.count == {"total": 3, "pass": 3, "fail": 0, "error": 0}
 
 
-from codecheck.ast_score import ASTScorer
+from codecheck.score.ast import ASTScorer
 
 
 def test_score_problem_fills_ast():

@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from codecheck.codebert_score import CodeBERTScorer
+from codecheck.score.codebert import CodeBERTScorer
 
 
 def _stub_scorer(vectors: dict[str, list[float]]) -> CodeBERTScorer:

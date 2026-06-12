@@ -1,6 +1,6 @@
 from codecheck.models import CodeProblem
-from codecheck.execution import run_batch_in_subprocess, normalize_output
-from codecheck.labeling import expected_outputs, is_correct, has_error, count_outcomes
+from codecheck.execution.sandbox import run_batch_in_subprocess, normalize_output
+from codecheck.execution.labeling import expected_outputs, is_correct, has_error, count_outcomes
 
 PROBLEM = CodeProblem(
     task_id="t", prompt="", entry_point="f",

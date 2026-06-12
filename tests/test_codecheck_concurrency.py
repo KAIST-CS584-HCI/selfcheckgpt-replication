@@ -1,6 +1,6 @@
 import time
 
-from codecheck.concurrency import map_staggered, STAGGER_DELAY
+from codecheck.generation.concurrency import map_staggered, STAGGER_DELAY
 
 
 def test_preserves_input_order():
