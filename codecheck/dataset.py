@@ -1,11 +1,14 @@
 from __future__ import annotations
 import json
+import logging
 import random
 from pathlib import Path
 
 from evalplus.data import get_human_eval_plus, get_mbpp_plus
 
 from codecheck.models import CodeProblem
+
+logger = logging.getLogger("codecheck.dataset")
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CACHE = REPO_ROOT / "data" / "mbpp_plus.json"
@@ -170,5 +173,18 @@ def load_codehalu_eval(
     for row in _load_codehalu_rows():
         if _is_stdio(row):
             grouped.setdefault(row["task_id"], []).append(row)
-    problems = [_codehalu_problem(tid, rows, max_cases) for tid, rows in grouped.items()]
+    # A single malformed task (missing field, unparseable `solutions`) must not abort the
+    # whole load: skip it with a warning and keep the rest, the same resilience run_dataset
+    # gives a failing problem.
+    problems: list[CodeProblem] = []
+    skipped: list = []
+    for tid, rows in grouped.items():
+        try:
+            problems.append(_codehalu_problem(tid, rows, max_cases))
+        except (KeyError, ValueError, TypeError) as exc:
+            logger.warning("CodeHaluEval task %s malformed; skipping (%s)", tid, exc)
+            skipped.append(tid)
+    if skipped:
+        logger.warning("%d/%d CodeHaluEval tasks skipped as malformed",
+                       len(skipped), len(grouped))
     return _finalize(problems, limit, randomize, seed, index, cache_path)

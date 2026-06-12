@@ -190,6 +190,24 @@ def test_codehalu_list_typed_input_output_joined_with_newlines(monkeypatch, tmp_
     assert p.expected == [("value", "1337")]
 
 
+def test_codehalu_skips_malformed_task_and_keeps_rest(monkeypatch, tmp_path, caplog):
+    # One task missing `question`, one with unparseable `solutions`, one good -> only the
+    # good one loads; the bad ones are skipped with a warning, not a raised traceback.
+    rows = [
+        {"task_id": 1, "fn_name": None, "solutions": _json.dumps(["pass"]),
+         "input": "a\n", "output": "a\n"},                              # missing 'question'
+        {"task_id": 2, "question": "q", "fn_name": None, "solutions": "{bad json",
+         "input": "a\n", "output": "a\n"},                              # unparseable solutions
+        {"task_id": 3, "question": "q", "fn_name": None, "solutions": _json.dumps(["pass"]),
+         "input": "a\n", "output": "a\n"},                              # good
+    ]
+    monkeypatch.setattr(ds, "_load_codehalu_rows", lambda: rows)
+    with caplog.at_level("WARNING", logger="codecheck.dataset"):
+        problems = ds.load_codehalu_eval(cache_path=tmp_path / "c.json")
+    assert [p.task_id for p in problems] == ["CodeHalu/3"]
+    assert any("malformed" in r.message for r in caplog.records)
+
+
 def test_codehalu_caps_cases_per_task(monkeypatch, tmp_path):
     rows = [
         {"task_id": 7, "question": "q", "fn_name": None,
