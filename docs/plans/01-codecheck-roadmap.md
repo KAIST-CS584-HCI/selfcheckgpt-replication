@@ -135,10 +135,10 @@ now carry a real **four-method** readout. This revision folds that evidence in.
   (could be stolen by the justification), but across 9,640 real judgments: 0 silent
   mis-parses, 1 empty reply. Anchored-regex hardening is *optional/defensive*, not a
   correction — demoted to a small iter-4 robustness item.
-- **Execution batch-ceiling is the live operational risk.** `--timeout` is
-  per-input; a sample that loops on *every* input costs ≈ n_inputs × timeout (one
-  comb-sort sample stalled a run ~55 min). No per-batch K-timeout yet. Promote to a
-  concrete iter-4 deliverable, with `--timeout 2` as the new default.
+- **Execution worst-case cost.** `--timeout` is per-input; a sample that loops on
+  *every* input costs ≈ n_inputs × timeout (one comb-sort sample stalled a run ~55
+  min). Mitigated cheaply by lowering the default to `--timeout 2`; a per-batch
+  ceiling (K-timeout) was considered and **dropped** as unneeded.
 - **Infra that already shipped (enabling, not iterations):** continue-on-failure,
   incremental JSON save + task_id resume, daemon-thread API timeout (clean exit),
   parallel sample execution, torch/NaN/corrupt-file guards, and the flat→subpackage
@@ -154,7 +154,7 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 | 2.5 | Validation run *(gate)* | ✅ done. Post-hashseed-fix run re-established trustworthy Exec + first real Prompt numbers; head-to-head produced. |
 | 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
 | 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
-| 4 | Scale + hardening on MBPP+ | Full set (378), larger N, paper-comparable AUC-PR + correlation for all **four** methods. Concrete: per-batch **K-timeout**, default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser. **(next)** |
+| 4 | Scale + hardening on MBPP+ | Full set (378), larger N, paper-comparable AUC-PR + correlation for all **four** methods. Concrete: default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser. **(next)** |
 | 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. *(light)* |
 | 6 | Analysis + report | Four-method × dataset synthesis; the structure/embedding negative result + blind-spot cross-link to Improvement 1. *(light)* |
 
@@ -323,16 +323,15 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 - **User-facing value:** one full, trustworthy four-method table on MBPP+, with the
   operational stalls and false-positive noise removed.
 - **Concrete deliverables (from cli-user-test + live-run findings):**
-  1. **Per-batch K-timeout / batch ceiling** in the execution sandbox — bound total
-     batch time so one all-inputs-looping sample can't cost ≈ n_inputs × timeout
-     (the comb-sort ~55-min stall). The single highest-value robustness fix.
-  2. **Default `--timeout 2`** (down from 5) — recommended on MBPP+; pairs with #1.
-  3. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
+  1. **Default `--timeout 2`** (down from 5) — recommended on MBPP+; cheaply bounds
+     the all-inputs-looping worst case (per-batch K-timeout was considered and
+     dropped as unneeded).
+  2. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
      `exec_score` on correct mains whose samples differ on edge cases. Decide
      reference-vs-filtered inputs (deferred iter-1 item).
-  4. **Optional:** anchor the Prompt Yes/No/N-A regex to the verdict line (defensive
+  3. **Optional:** anchor the Prompt Yes/No/N-A regex to the verdict line (defensive
      for weaker/ramblier judges; current data parses clean, so low priority).
-  5. Finish gemma `code_bert` coverage (carried from iter 3.5).
+  4. Finish gemma `code_bert` coverage (carried from iter 3.5).
 
 ## Iteration 5 — Hallucination-targeted datasets *(now the highest-value direction)*
 
