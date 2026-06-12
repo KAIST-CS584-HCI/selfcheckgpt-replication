@@ -22,6 +22,7 @@ export function deckApi(): Plugin {
     configureServer(server) {
       server.middlewares.use("/api/slides/delete", handleDeleteSlide);
       server.middlewares.use("/api/slides/rename", handleRenameSlide);
+      server.middlewares.use("/api/slides/edit", handleEditSlide);
       server.middlewares.use("/api/chat/reset", handleChatReset);
       server.middlewares.use("/api/chat", handleChat);
       bindShutdown(server.httpServer);
@@ -185,6 +186,41 @@ function isResultLine(line: string): boolean {
   } catch {
     return false;
   }
+}
+
+// Inline slide text edit: sets one field (by dotted path) on the slide and
+// rewrites deck.json. Path examples: "title", "bullets.2.text",
+// "cards.0.bullets.1.text", "rows.0.cells.2".
+async function handleEditSlide(req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) {
+  if (req.method !== "POST") return next();
+  try {
+    const { id, path, value } = await readJsonBody(req);
+    await editSlideField(id, path, value);
+    sendJson(res, 200, { ok: true });
+  } catch (err) {
+    sendJson(res, 500, { error: String(err) });
+  }
+}
+
+async function editSlideField(id: string, path: string, value: string): Promise<void> {
+  const deck = JSON.parse(await readFile(DECK_PATH, "utf8"));
+  const slide = deck.slides.find((s: { id: string }) => s.id === id);
+  if (!slide) return;
+  setByPath(slide, path, value);
+  await writeFile(DECK_PATH, JSON.stringify(deck, null, 2) + "\n", "utf8");
+}
+
+// Walks a dotted path (numeric segments index arrays) and writes the leaf. Bails
+// if the path doesn't resolve, so a stale path can never create junk keys.
+function setByPath(root: any, path: string, value: unknown): void {
+  const parts = path.split(".");
+  let node = root;
+  for (let i = 0; i < parts.length - 1; i++) {
+    node = node?.[parts[i]];
+    if (node == null) return;
+  }
+  const leaf = parts[parts.length - 1];
+  if (node != null && leaf in node) node[leaf] = value;
 }
 
 async function deleteSlideById(id: string): Promise<void> {

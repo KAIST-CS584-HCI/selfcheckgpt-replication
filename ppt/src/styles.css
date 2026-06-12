@@ -11,6 +11,25 @@ body {
   color: #e7eaf0;
 }
 
+/* Inline-editable slide text. Subtle outline on hover hints it's editable;
+   double-click turns on the contentEditable state (.editing). */
+.slide-editable {
+  border-radius: 3px;
+  outline: 1px dashed transparent;
+  outline-offset: 2px;
+  cursor: text;
+  transition: outline-color 0.12s, background 0.12s;
+}
+
+.slide-editable:hover {
+  outline-color: rgba(59, 111, 212, 0.6);
+}
+
+.slide-editable.editing {
+  outline: 2px solid #3b6fd4;
+  background: rgba(59, 111, 212, 0.08);
+}
+
 .app {
   display: grid;
   /* minmax(0, 1fr): without the 0-min, the track's min-content is the 1280px

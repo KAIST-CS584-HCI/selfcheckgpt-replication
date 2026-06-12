@@ -1,12 +1,87 @@
 // Renders one resolved Element as absolutely-positioned CSS. Inches -> px at 96/in,
 // points -> px at 96/72. This is the ONLY place geometry becomes pixels in the preview.
 
+import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Element, Para, VAlign } from "../layout/element";
 import { PX_PER_IN } from "../theme/theme";
 
 const PT_PX = 96 / 72;
 const inPx = (v: number) => v * PX_PER_IN;
+
+// Double-click a tagged text to edit it in place. Enter/blur commits to deck.json
+// (re-rendered via HMR with all styling reapplied); Escape discards. Single-run
+// only — the deck field, not the rendered styling, is what gets written.
+function EditableText({
+  slideId,
+  path,
+  text,
+  style,
+}: {
+  slideId: string;
+  path: string;
+  text: string;
+  style?: CSSProperties;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [editing, setEditing] = useState(false);
+
+  const start = () => {
+    setEditing(true);
+    requestAnimationFrame(() => {
+      const el = ref.current;
+      if (!el) return;
+      el.focus();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    });
+  };
+
+  const stop = (commit: boolean) => {
+    setEditing(false);
+    const next = ref.current?.textContent ?? "";
+    if (commit && next !== text) commitEdit(slideId, path, next);
+    else if (!commit && ref.current) ref.current.textContent = text; // discard
+  };
+
+  return (
+    <span
+      ref={ref}
+      className={"slide-editable" + (editing ? " editing" : "")}
+      style={style}
+      contentEditable={editing}
+      suppressContentEditableWarning
+      onDoubleClick={start}
+      onKeyDown={(e) => {
+        if (!editing) return;
+        e.stopPropagation(); // don't let typing flip slides
+        if (e.key === "Enter") {
+          e.preventDefault();
+          stop(true);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          stop(false);
+        }
+      }}
+      onBlur={() => editing && stop(true)}
+    >
+      {text}
+    </span>
+  );
+}
+
+// Persists one field edit to deck.json by path; the write triggers Vite HMR.
+async function commitEdit(id: string, path: string, value: string): Promise<void> {
+  const res = await fetch("/api/slides/edit", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id, path, value }),
+  });
+  if (!res.ok) alert("Edit failed. Is the dev server running?");
+}
 
 const justify: Record<VAlign, CSSProperties["justifyContent"]> = {
   top: "flex-start",
@@ -26,12 +101,14 @@ function box(e: { x: number; y: number; w: number; h: number }): CSSProperties {
 
 function Paragraph({
   p,
+  slideId,
   defFont,
   defSize,
   defColor,
   lineHeightPt,
 }: {
   p: Para;
+  slideId: string;
   defFont: string;
   defSize: number;
   defColor: string;
@@ -50,6 +127,29 @@ function Paragraph({
     paddingLeft: p.bullet ? 16 + (p.indentLevel ?? 0) * 18 : 0,
     textIndent: p.bullet ? -16 : 0,
   };
+  const bullet = p.bullet ? <span style={{ color: defColor }}>•&nbsp;</span> : null;
+
+  // Sourced paragraphs are single-run: make just the text editable, keeping the
+  // run's own emphasis (bold/color) on the editable span.
+  if (p.source) {
+    const r = p.runs[0];
+    return (
+      <p style={style}>
+        {bullet}
+        <EditableText
+          slideId={slideId}
+          path={p.source}
+          text={r.text}
+          style={{
+            fontWeight: r.bold ? 700 : undefined,
+            fontStyle: r.italic ? "italic" : undefined,
+            color: r.color,
+          }}
+        />
+      </p>
+    );
+  }
+
   const runs = p.runs.map((r, i) => (
     <span
       key={i}
@@ -64,13 +164,13 @@ function Paragraph({
   ));
   return (
     <p style={style}>
-      {p.bullet ? <span style={{ color: defColor }}>•&nbsp;</span> : null}
+      {bullet}
       {runs}
     </p>
   );
 }
 
-export function ElementView({ e }: { e: Element }) {
+export function ElementView({ e, slideId }: { e: Element; slideId: string }) {
   if (e.kind === "rect") {
     return (
       <div
@@ -115,7 +215,11 @@ export function ElementView({ e }: { e: Element }) {
                   border: `1px solid ${e.borderColor}`,
                 }}
               >
-                {c}
+                {e.columnSources?.[i] ? (
+                  <EditableText slideId={slideId} path={e.columnSources[i]} text={c} />
+                ) : (
+                  c
+                )}
               </th>
             ))}
           </tr>
@@ -135,7 +239,11 @@ export function ElementView({ e }: { e: Element }) {
                     border: `1px solid ${e.borderColor}`,
                   }}
                 >
-                  {cell.text}
+                  {cell.source ? (
+                    <EditableText slideId={slideId} path={cell.source} text={cell.text} />
+                  ) : (
+                    cell.text
+                  )}
                 </td>
               ))}
             </tr>
@@ -160,6 +268,7 @@ export function ElementView({ e }: { e: Element }) {
         <Paragraph
           key={i}
           p={p}
+          slideId={slideId}
           defFont={e.font}
           defSize={e.size}
           defColor={e.color}

@@ -35,7 +35,7 @@ export function resolveComparison(s: Comparison, t: Theme, footerText: string): 
       y: top,
       w: cardW - 0.5,
       h: headerH,
-      paragraphs: [{ runs: [{ text: card.header, bold: true, color: t.colors.white }] }],
+      paragraphs: [{ runs: [{ text: card.header, bold: true, color: t.colors.white }], source: `cards.${i}.header` }],
       font: t.fonts.title,
       size: t.type.body + 2,
       color: t.colors.white,
@@ -44,7 +44,7 @@ export function resolveComparison(s: Comparison, t: Theme, footerText: string): 
     });
 
     // bulleted body
-    const paragraphs: Para[] = card.bullets.map((b) => {
+    const paragraphs: Para[] = card.bullets.map((b, j) => {
       const em = emphasis(b.emphasis, t);
       return {
         runs: [{ text: b.text, bold: em.bold, color: em.color }],
@@ -52,6 +52,7 @@ export function resolveComparison(s: Comparison, t: Theme, footerText: string): 
         indentLevel: b.level ?? 0,
         spaceAfterPt: 6,
         align: "left",
+        source: `cards.${i}.bullets.${j}.text`,
       };
     });
     els.push({

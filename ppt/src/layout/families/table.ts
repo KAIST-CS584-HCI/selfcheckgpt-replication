@@ -24,7 +24,7 @@ export function resolveTable(s: TableSlide, t: Theme, footerText: string): Eleme
       y: top,
       w,
       h,
-      paragraphs: [{ runs: [{ text: s.verdict, bold: true }] }],
+      paragraphs: [{ runs: [{ text: s.verdict, bold: true }], source: "verdict" }],
       font: t.fonts.title,
       size: t.type.body + 4,
       color: t.colors.textPrimary,
@@ -35,8 +35,12 @@ export function resolveTable(s: TableSlide, t: Theme, footerText: string): Eleme
   }
 
   const bottomLimit = CANVAS.h - t.margin.bottom - t.layout.footerH - 0.3;
-  const rows: TableCell[][] = s.rows.map((r) =>
-    r.cells.map((text, ci) => ({ text, color: cellColor(r.cellColors?.[ci], t) }))
+  const rows: TableCell[][] = s.rows.map((r, ri) =>
+    r.cells.map((text, ci) => ({
+      text,
+      color: cellColor(r.cellColors?.[ci], t),
+      source: `rows.${ri}.cells.${ci}`,
+    }))
   );
 
   els.push({
@@ -46,6 +50,7 @@ export function resolveTable(s: TableSlide, t: Theme, footerText: string): Eleme
     w,
     h: bottomLimit - top,
     columns: s.columns,
+    columnSources: s.columns.map((_, i) => `columns.${i}`),
     rows,
     headerFill: t.colors.cardHeader,
     headerColor: t.colors.white,

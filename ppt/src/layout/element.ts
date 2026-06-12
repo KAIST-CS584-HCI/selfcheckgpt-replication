@@ -17,6 +17,9 @@ export type Para = {
   bold?: boolean;
   font?: string;
   spaceAfterPt?: number;
+  // Dotted path (relative to the slide) of the deck field this text came from.
+  // Present => the preview renders it inline-editable. Single-run paragraphs only.
+  source?: string;
 };
 
 export type TextEl = {
@@ -55,7 +58,7 @@ export type ImageEl = {
   path: string;
 };
 
-export type TableCell = { text: string; color?: string };
+export type TableCell = { text: string; color?: string; source?: string };
 
 export type TableEl = {
   kind: "table";
@@ -64,6 +67,7 @@ export type TableEl = {
   w: number;
   h: number;
   columns: string[];
+  columnSources?: string[]; // editable-field path per column header, index-aligned
   rows: TableCell[][];
   headerFill: string;
   headerColor: string;

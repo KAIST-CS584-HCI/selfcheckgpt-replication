@@ -42,7 +42,7 @@ export function header(
       y,
       w,
       h: ptToIn(t.type.kicker) * 1.4,
-      paragraphs: [{ runs: [{ text: kicker }] }],
+      paragraphs: [{ runs: [{ text: kicker }], source: "kicker" }],
       font: t.fonts.body,
       size: t.type.kicker,
       color: t.colors.kicker,
@@ -60,7 +60,7 @@ export function header(
     y,
     w,
     h: titleH,
-    paragraphs: [{ runs: [{ text: title, bold: true }] }],
+    paragraphs: [{ runs: [{ text: title, bold: true }], source: "title" }],
     font: t.fonts.title,
     size: titleSize,
     color: opts?.titleColor ?? t.colors.textPrimary,
@@ -95,10 +95,11 @@ export function bulletsElement(
   bullets: Bullet[],
   t: Theme,
   box: { x: number; y: number; w: number; h: number },
-  opts?: { size?: number }
+  opts?: { size?: number; sourcePrefix?: string }
 ): TextEl {
   const size = opts?.size ?? t.type.body;
-  const paragraphs: Para[] = bullets.map((b) => {
+  const prefix = opts?.sourcePrefix ?? "bullets";
+  const paragraphs: Para[] = bullets.map((b, i) => {
     const em = emphasis(b.emphasis, t);
     return {
       runs: [{ text: b.text, bold: em.bold, color: em.color }],
@@ -106,6 +107,7 @@ export function bulletsElement(
       indentLevel: b.level ?? 0,
       spaceAfterPt: 6,
       align: "left",
+      source: `${prefix}.${i}.text`,
     };
   });
   return {
@@ -135,7 +137,7 @@ export function noteBand(t: Theme, text: string): Element[] {
       y,
       w: w - 0.6,
       h,
-      paragraphs: [{ runs: [{ text, color: t.colors.brand }] }],
+      paragraphs: [{ runs: [{ text, color: t.colors.brand }], source: "note" }],
       font: t.fonts.body,
       size: t.type.body,
       color: t.colors.brand,
