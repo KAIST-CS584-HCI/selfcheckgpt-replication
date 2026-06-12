@@ -64,14 +64,36 @@ body {
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #8b93a3;
-  font-size: 15px;
-  line-height: 1;
   cursor: pointer;
-  display: grid;
-  place-items: center;
   opacity: 0;
   transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+/* The × is drawn as two geometric bars instead of a font glyph, so it stays
+   perfectly centered regardless of which fallback font the browser uses. */
+.thumb-del::before,
+.thumb-del::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 1.5px;
+  background: #8b93a3;
+  border-radius: 1px;
+}
+
+.thumb-del::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.thumb-del::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.thumb-del:hover::before,
+.thumb-del:hover::after {
+  background: #fff;
 }
 
 .thumb-row:hover .thumb-del,

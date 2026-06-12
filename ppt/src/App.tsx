@@ -36,9 +36,8 @@ export default function App() {
               title="Delete slide"
               aria-label={`Delete slide ${idx + 1}`}
               onClick={() => deleteSlide(s, slides.length)}
-            >
-              ×
-            </button>
+            />
+
           </div>
         ))}
       </aside>
