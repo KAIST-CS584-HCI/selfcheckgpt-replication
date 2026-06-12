@@ -91,7 +91,19 @@ method, so the methods are always compared on identical data.
 - `ast` — structural divergence between the main and each sample, rename- and
   literal-invariant, averaged over the N samples. No API cost. The metric is chosen with
   `--ast-metric` (below).
-- `all` — runs exec + prompt + ast; `evaluate` then prints a three-way comparison.
+- `code_bert` — embedding divergence: mean `1 − cosine` of CodeBERT
+  (`microsoft/codebert-base`, mean-pooled) embeddings of the main vs each sample. A
+  learned semantic/lexical similarity (not rename-invariant, unlike `ast`). No API cost,
+  but loads a ~500MB model on first use. Usually run **offline** (see below).
+- `all` — runs exec + prompt + ast + code_bert; `evaluate` prints a per-method comparison.
+
+**Offline `code_bert` (reuse saved results):** results already store `main_code` +
+`sample_codes`, so you can add `code_bert` to an existing file without regenerating:
+
+```bash
+python run_codecheck.py codebert --results results/run.json   # adds code_bert in place
+python run_codecheck.py evaluate --results results/run.json    # now shows a [code_bert] block
+```
 
 **`--ast-metric {jaccard,ted}`** (only used when `--method` includes `ast`):
 
@@ -183,7 +195,7 @@ python run_codecheck.py evaluate
 - `--index` — run only the single problem at this 0-based dataset position; cannot be
   combined with `--limit`/`--random`/`--seed`
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
-- `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, or `all`
+- `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, `code_bert`, or `all`
 - `--ast-metric` — AST metric when `ast` runs: `jaccard` (default) or `ted`
 - `--timeout` — max seconds per code execution before it's killed
 - `--output` — where to save the results (JSON array, rewritten after each problem

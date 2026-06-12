@@ -50,6 +50,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from codecheck.generation import CodeGenerator
     from codecheck.prompt_score import PromptJudge
     from codecheck.ast_score import ASTScorer
+    from codecheck.codebert_score import CodeBERTScorer
     from codecheck.execution import run_batch_in_subprocess
     from codecheck.pipeline import run_dataset, load_results, append_result
 
@@ -64,11 +65,12 @@ def _cmd_run(args: argparse.Namespace) -> None:
     generator = CodeGenerator(client, model=model, think=args.think)
 
     if args.method == "all":
-        methods = {"exec", "prompt", "ast"}
+        methods = {"exec", "prompt", "ast", "code_bert"}
     else:
         methods = {args.method}
     judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
     ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
+    codebert_scorer = CodeBERTScorer() if "code_bert" in methods else None
 
     try:
         limit, index = _resolve_selection(args)
@@ -100,6 +102,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
         results = run_dataset(problems, generator, run_batch_in_subprocess,
                               n_samples=args.n, timeout=args.timeout,
                               methods=methods, judge=judge, ast_scorer=ast_scorer,
+                              codebert_scorer=codebert_scorer,
                               on_result=lambda r: append_result(r, args.output))
     except AuthenticationError:
         sys.exit("error: OpenRouter rejected OPENROUTER_API_KEY (expects an sk-or-v1-… key; see .env.example)")
@@ -153,6 +156,23 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
     print(format_evaluation(results))
 
 
+def _cmd_codebert(args: argparse.Namespace) -> None:
+    """Offline: add a `code_bert` consistency score to an existing results file, reusing
+    the stored main_code + sample_codes (no regeneration, no API). Rewrites in place."""
+    from codecheck.codebert_score import CodeBERTScorer
+    from codecheck.pipeline import load_results, save_results
+
+    try:
+        results = load_results(args.results)
+    except FileNotFoundError:
+        sys.exit(f"error: results file not found: {args.results}")
+    scorer = CodeBERTScorer()
+    for r in results:
+        r.scores["code_bert"] = scorer.score(r.main_code, r.sample_codes)
+    save_results(results, args.results)
+    print(f"Added code_bert to {len(results)} results in {args.results}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="SelfCheck for code (Exec + Prompt) on MBPP+.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -172,7 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
                        help="enable model chain-of-thought reasoning (much slower; default off)")
     run_p.add_argument("-v", "--verbose", action="store_true",
                        help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
-    run_p.add_argument("--method", choices=["exec", "prompt", "ast", "all"], default="exec",
+    run_p.add_argument("--method", choices=["exec", "prompt", "ast", "code_bert", "all"], default="exec",
                        help="which consistency scorer(s) to run")
     run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="jaccard",
                        help="AST structural metric: jaccard (bag-of-node-types, default) or "
@@ -182,6 +202,11 @@ def build_parser() -> argparse.ArgumentParser:
     eval_p = sub.add_parser("evaluate", help="report AUC-PR from a results file")
     eval_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")
     eval_p.set_defaults(func=_cmd_evaluate)
+
+    cb_p = sub.add_parser("codebert", help="add a code_bert score to an existing results file (offline)")
+    cb_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT),
+                      help="results JSON path to augment in place")
+    cb_p.set_defaults(func=_cmd_codebert)
     return parser
 
 

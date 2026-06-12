@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 import json
 import subprocess
 import sys
@@ -141,3 +142,35 @@ def test_resolve_selection_index_with_seed_errors():
     args = build_parser().parse_args(["run", "--index", "0", "--seed", "1"])
     with pytest.raises(ValueError):
         _resolve_selection(args)
+
+
+def test_method_code_bert_is_accepted_by_parser():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run", "--method", "code_bert"]).method == "code_bert"
+
+
+def test_codebert_subcommand_parses_results():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["codebert", "--results", "results/x.json"])
+    assert args.results == "results/x.json"
+
+
+def test_cmd_codebert_augments_results_in_place(tmp_path, monkeypatch):
+    import codecheck.codebert_score as cbs
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results, load_results
+    import run_codecheck
+
+    class FakeScorer:
+        def score(self, main_code, sample_codes):
+            return 0.42
+
+    monkeypatch.setattr(cbs, "CodeBERTScorer", FakeScorer)
+    path = tmp_path / "r.json"
+    save_results([CodeResult("a", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"])], path)
+
+    run_codecheck._cmd_codebert(SimpleNamespace(results=str(path)))
+
+    out = load_results(path)
+    assert out[0].scores["code_bert"] == 0.42
+    assert out[0].scores["exec"] == 0.1   # existing scores preserved
