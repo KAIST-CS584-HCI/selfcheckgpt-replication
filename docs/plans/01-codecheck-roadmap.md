@@ -154,6 +154,7 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 | 2.5 | Validation run *(gate)* | ✅ done. Post-hashseed-fix run re-established trustworthy Exec + first real Prompt numbers; head-to-head produced. |
 | 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
 | 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
+<<<<<<< HEAD
 | 5 | Second dataset (HumanEval+) | ✅ implemented. `--dataset humaneval` (loader-only, reuses pipeline + all four scorers). CodeHaluEval deferred (stdin/stdout path), Collu-Bench dropped (logit-detection benchmark). |
 | 6 | Analysis + report | Four-method × dataset synthesis (MBPP+, HumanEval+); the structure/embedding negative result + blind-spot cross-link to Improvement 1. **(next)** *(light)* |
 | — | *deferred* | CodeHaluEval via a stdin/stdout whole-program exec path — the real confident-consistent stress test. |
@@ -161,6 +162,11 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 *(No iteration 4: scale is produced manually via a `--limit 300` MBPP+ run, not a
 gated iteration. Leftover small/optional items are parked under "Deferred items"
 below — none block iter 5/6.)*
+=======
+| 4 | Hardening backlog *(optional, non-gating)* | Scale is produced manually (`--limit 300`, ≈80% of 378 — sufficient; full set not required). Remaining items are small/optional: default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser, finish gemma `code_bert`. |
+| 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. **(next)** |
+| 6 | Analysis + report | Four-method × dataset synthesis; the structure/embedding negative result + blind-spot cross-link to Improvement 1. *(light)* |
+>>>>>>> efb073e (docs(roadmap): demote iter 4 to optional hardening; scale done manually via --limit 300)
 
 ---
 
