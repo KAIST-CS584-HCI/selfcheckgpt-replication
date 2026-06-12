@@ -138,7 +138,24 @@ python run_codecheck.py evaluate --results output/iter3-all.json
   (`replication/evaluation/metrics.py`). Read AUC-PR against the baseline, not in
   isolation; the histogram exposes tie pile-ups at 0 that make the scalar fragile.
 
-## Dataset in use: MBPP+ (378 problems)
+## Datasets: MBPP+ and HumanEval+
+
+Two EvalPlus benchmarks, selected with `run --dataset {mbpp,humaneval}` (default `mbpp`).
+Both are **function-call** datasets — each problem is a function with a rich suite of test
+inputs that double as the shared inputs we run every implementation on — so they share the
+entire pipeline and all four scorers.
+
+- **MBPP+** (378 problems, default) — detailed below.
+- **HumanEval+** (164 problems) — the EvalPlus extension of HumanEval, same per-problem
+  parts as MBPP+. One internal nuance: HumanEval+ ships its reference as a *body only* with
+  the signature+docstring in the prompt, so the loader assembles `prompt + body` to make the
+  canonical runnable (handled in `codecheck/dataset.py`; transparent to users).
+
+Not used: **CodeHaluEval** (Codeforces stdin/stdout programs — needs a whole-program exec
+path, deferred) and **Collu-Bench** (a token-logprob detection benchmark, not a
+generate-and-sample task source — dropped). See `docs/plans/01-codecheck-roadmap.md`.
+
+### MBPP+ (378 problems)
 
 MBPP+ is a set of 378 Python programming problems, each shipped with a reference solution
 and a rich suite of test inputs (an extended version of the MBPP benchmark). The test inputs
@@ -191,6 +208,7 @@ python run_codecheck.py evaluate
 
 **`run` parameters**
 
+- `--dataset` — which EvalPlus dataset: `mbpp` (default, MBPP+) or `humaneval` (HumanEval+)
 - `--limit` — how many problems to use (default 20)
 - `--index` — run only the single problem at this 0-based dataset position; cannot be
   combined with `--limit`/`--random`/`--seed`
