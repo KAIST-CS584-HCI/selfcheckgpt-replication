@@ -229,18 +229,33 @@ body {
   cursor: default;
 }
 
-/* Bottom-docked chat with the local Claude Code CLI. */
+/* Bottom-docked chat with the local Claude Code CLI. Height is drag-set inline
+   (see ChatDock); the log flexes to fill whatever remains. */
 .chat-dock {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  max-height: 40vh;
+  min-height: 0;
   background: #1e222b;
   border-top: 1px solid #353b48;
 }
 
 .chat-dock.collapsed {
-  max-height: none;
+  height: auto;
+}
+
+/* Drag handle along the dock's top edge. */
+.chat-resizer {
+  height: 5px;
+  cursor: row-resize;
+  background: #353b48;
+  transition: background 0.12s;
+}
+
+.chat-resizer:hover,
+.chat-resizer.dragging {
+  background: #3b6fd4;
 }
 
 .chat-head {
@@ -285,6 +300,8 @@ body {
 }
 
 .chat-log {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 8px 14px;
   display: flex;

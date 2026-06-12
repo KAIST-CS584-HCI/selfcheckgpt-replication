@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 
 type Role = "user" | "assistant" | "error";
 type Message = { role: Role; text: string };
+
+const HEIGHT_MIN = 140;
+const HEIGHT_KEY = "ppt.chatHeight";
 
 // Bottom-docked chat that drives the local Claude Code CLI via /api/chat. The
 // dev server holds one long-lived Claude process and keeps conversation state,
@@ -13,6 +16,7 @@ export function ChatDock() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const height = useChatHeight();
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +62,18 @@ export function ChatDock() {
   };
 
   return (
-    <div className={"chat-dock" + (collapsed ? " collapsed" : "")}>
+    <div
+      className={"chat-dock" + (collapsed ? " collapsed" : "")}
+      style={collapsed ? undefined : ({ height: height.value } as CSSProperties)}
+    >
+      {!collapsed && (
+        <div
+          className={"chat-resizer" + (height.dragging ? " dragging" : "")}
+          role="separator"
+          aria-orientation="horizontal"
+          onPointerDown={height.onDragStart}
+        />
+      )}
       <div className="chat-head">
         <button className="chat-title" onClick={() => setCollapsed((c) => !c)}>
           <span>Chat with Claude Code</span>
@@ -97,6 +112,41 @@ export function ChatDock() {
       )}
     </div>
   );
+}
+
+// Drag-resizable dock height. The dock sits at the bottom, so dragging the top
+// edge sets height = viewport bottom minus pointer Y. Clamped and persisted.
+function useChatHeight() {
+  const [value, setValue] = useState(readStoredHeight);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(HEIGHT_KEY, String(value));
+  }, [value]);
+
+  const onDragStart = (e: ReactPointerEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    const move = (ev: PointerEvent) => setValue(clampHeight(window.innerHeight - ev.clientY));
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return { value, dragging, onDragStart };
+}
+
+function readStoredHeight(): number {
+  const stored = Number(localStorage.getItem(HEIGHT_KEY));
+  return stored ? clampHeight(stored) : 280;
+}
+
+function clampHeight(px: number): number {
+  return Math.max(HEIGHT_MIN, Math.min(window.innerHeight * 0.8, px));
 }
 
 type ChatEvent =
