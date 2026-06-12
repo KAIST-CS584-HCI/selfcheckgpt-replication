@@ -140,20 +140,11 @@ python run_codecheck.py evaluate --results output/iter3-all.json
 
 ## Datasets: MBPP+ and HumanEval+
 
-Two EvalPlus benchmarks, selected with `run --dataset {mbpp,humaneval}` (default `mbpp`).
-Both are **function-call** datasets — each problem is a function with a rich suite of test
-inputs that double as the shared inputs we run every implementation on — so they share the
-entire pipeline and all four scorers.
-
-- **MBPP+** (378 problems, default) — detailed below.
-- **HumanEval+** (164 problems) — the EvalPlus extension of HumanEval, same per-problem
-  parts as MBPP+. One internal nuance: HumanEval+ ships its reference as a *body only* with
-  the signature+docstring in the prompt, so the loader assembles `prompt + body` to make the
-  canonical runnable (handled in `codecheck/dataset.py`; transparent to users).
-
-Not used: **CodeHaluEval** (Codeforces stdin/stdout programs — needs a whole-program exec
-path, deferred) and **Collu-Bench** (a token-logprob detection benchmark, not a
-generate-and-sample task source — dropped). See `docs/plans/01-codecheck-roadmap.md`.
+Two EvalPlus benchmarks, selected with `run --dataset {mbpp,humaneval}` (default `mbpp`):
+**MBPP+** (378 problems) and **HumanEval+** (164 problems). Both are **function-call**
+datasets — each problem is a function with a rich suite of test inputs that double as the
+shared inputs we run every implementation on — so they share the entire pipeline and all
+four scorers.
 
 ### MBPP+ (378 problems)
 
@@ -188,6 +179,61 @@ Example problem (real row `Mbpp/2`):
   - `similar_elements((11, 12, 14, 13), (17, 15, 14, 13))` → expects `(13, 14)`
   - ...plus ~100 more edge-case inputs (empty tuples, large tuples, duplicates)
 - **Tolerance:** `0` (exact match; this problem has no floating-point results)
+
+### HumanEval+ (164 problems)
+
+HumanEval+ is the EvalPlus extension of OpenAI's HumanEval: 164 Python problems, each a
+function with an expanded suite of test inputs. Same function-call shape as MBPP+, with one
+structural difference: the **prompt** is the import block + signature + docstring (the actual
+text shown to the model), and the **reference solution** is the function *body only* — so the
+runnable reference is `prompt + body` (the loader assembles this for grading).
+
+Each problem gives us:
+
+| Part                | What it is                                                       |
+|---------------------|------------------------------------------------------------------|
+| ID                  | a problem identifier (e.g. `HumanEval/0`)                        |
+| Prompt              | imports + function signature + docstring (with doctest examples) |
+| Function name       | the function to call                                             |
+| Reference solution  | the function **body only**; runnable as `prompt + body`         |
+| Inputs              | many argument sets the function is called with                   |
+| Tolerance           | how close floating-point results must be to count as equal       |
+
+Example problem (real row `HumanEval/0`):
+
+> **Task:** Check whether any two numbers in a list are closer than a given threshold.
+
+- **Function name:** `has_close_elements`
+- **Prompt** (shown to the model):
+  ```python
+  from typing import List
+
+
+  def has_close_elements(numbers: List[float], threshold: float) -> bool:
+      """ Check if in given list of numbers, are any two numbers closer to each other than
+      given threshold.
+      >>> has_close_elements([1.0, 2.0, 3.0], 0.5)
+      False
+      >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)
+      True
+      """
+  ```
+- **Reference solution** (body only — the dataset stores just this):
+  ```python
+      sorted_numbers = sorted(numbers)
+      for i in range(len(sorted_numbers) - 1):
+          if sorted_numbers[i + 1] - sorted_numbers[i] < threshold:
+              return True
+      return False
+  ```
+  The runnable canonical used for grading is `prompt + body` — the signature from the prompt
+  plus this body.
+- **Inputs the function is tested on** (a list and a threshold per call):
+  - `has_close_elements([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3)` → expects `True`
+  - `has_close_elements([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05)` → expects `False`
+  - `has_close_elements([1.0, 2.0, 5.9, 4.0, 5.0], 0.95)` → expects `True`
+  - ...plus ~1000 more edge-case inputs (7 base + 999 plus inputs)
+- **Tolerance:** `0` (exact match; the result is a boolean)
 
 For each problem we record the consistency score, the correctness label (`is_correct`),
 an error flag (`is_error` — the main raised or timed out on any input, vs ran but gave a
