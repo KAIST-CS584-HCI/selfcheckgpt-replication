@@ -8,11 +8,13 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DECK_PATH = resolve(HERE, "deck.json");
 const CLAUDE_BIN = process.env.CLAUDE_BIN ?? "claude";
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? "sonnet";
 
 export function deckApi(): Plugin {
   return {
@@ -20,9 +22,26 @@ export function deckApi(): Plugin {
     configureServer(server) {
       server.middlewares.use("/api/slides/delete", handleDeleteSlide);
       server.middlewares.use("/api/slides/rename", handleRenameSlide);
+      server.middlewares.use("/api/chat/reset", handleChatReset);
       server.middlewares.use("/api/chat", handleChat);
+      bindShutdown(server.httpServer);
     },
   };
+}
+
+// The headless session must die with the dev server. Three guards: explicit kill
+// on httpServer close and on process signals/exit, plus stdin-EOF (the child
+// reads from a pipe we own, so a hard parent death closes it and Claude exits).
+function bindShutdown(httpServer: import("node:http").Server | null): void {
+  const stop = () => claude.dispose();
+  httpServer?.once("close", stop);
+  process.once("exit", stop);
+  for (const sig of ["SIGINT", "SIGTERM"] as const) {
+    process.once(sig, () => {
+      stop();
+      process.exit(0);
+    });
+  }
 }
 
 async function handleDeleteSlide(req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) {
@@ -47,51 +66,125 @@ async function handleRenameSlide(req: IncomingMessage, res: ServerResponse, next
   }
 }
 
-// Chats with the local Claude Code CLI. Spawns `claude` headless in this dir as
-// a full agent and streams its NDJSON output to the browser over SSE. Multi-turn
-// continuity is the client's job: it echoes back the session_id it last saw.
+// Chats with the local Claude Code CLI over the shared long-lived session. One
+// HTTP request per user turn: the message goes to the child's stdin and its
+// NDJSON output streams back to the browser over SSE until the turn's `result`.
 async function handleChat(req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) {
   if (req.method !== "POST") return next();
   try {
-    const { message, sessionId } = await readJsonBody(req);
+    const { message } = await readJsonBody(req);
     openEventStream(res);
-    streamClaude(message, sessionId, req, res);
+    await claude.runTurn(message, res);
+    sendEvent(res, "done", "");
+    res.end();
   } catch (err) {
-    sendJson(res, 500, { error: String(err) });
+    sendEvent(res, "error", String(err));
+    res.end();
   }
 }
 
-function streamClaude(message: string, sessionId: string | undefined, req: IncomingMessage, res: ServerResponse) {
-  // stdin 'ignore': the prompt rides in via -p, so the CLI must not wait ~3s for
-  // piped stdin before starting.
-  const child = spawn(CLAUDE_BIN, claudeArgs(message, sessionId), {
-    cwd: HERE,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  pipeLines(child.stdout, (line) => sendEvent(res, "message", line));
-  pipeLines(child.stderr, (line) => sendEvent(res, "stderr", line));
-
-  child.on("error", (err) => {
-    sendEvent(res, "error", String(err));
-    res.end();
-  });
-  child.on("close", () => {
-    sendEvent(res, "done", "");
-    res.end();
-  });
-  req.on("close", () => child.kill());
+// Ends the current conversation: kills the child so the next turn starts fresh.
+function handleChatReset(req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) {
+  if (req.method !== "POST") return next();
+  claude.reset();
+  sendJson(res, 200, { ok: true });
 }
 
-function claudeArgs(message: string, sessionId?: string): string[] {
+// A single persistent `claude` process driven in stream-json mode. Turns are
+// serialized (one conversation, one stdin), so only one is active at a time; its
+// output lines route to that turn's SSE response until the `result` event. The
+// child lazy-starts on first turn and respawns after a reset or crash.
+class ClaudeSession {
+  private child?: ChildProcessWithoutNullStreams;
+  private queue: Promise<void> = Promise.resolve();
+  private activeRes?: ServerResponse;
+  private endTurn?: () => void;
+
+  runTurn(message: string, res: ServerResponse): Promise<void> {
+    const turn = this.queue.then(() => this.execTurn(message, res));
+    this.queue = turn.catch(() => {}); // a failed turn must not wedge the queue
+    return turn;
+  }
+
+  reset(): void {
+    this.child?.kill();
+    this.child = undefined;
+  }
+
+  dispose(): void {
+    this.reset();
+  }
+
+  private execTurn(message: string, res: ServerResponse): Promise<void> {
+    this.ensureStarted();
+    return new Promise<void>((resolve) => {
+      this.activeRes = res;
+      this.endTurn = () => {
+        this.activeRes = undefined;
+        this.endTurn = undefined;
+        resolve();
+      };
+      this.child!.stdin.write(userMessageLine(message) + "\n");
+    });
+  }
+
+  private ensureStarted(): void {
+    if (this.child) return;
+    const child = spawn(CLAUDE_BIN, persistentArgs(), { cwd: HERE, stdio: ["pipe", "pipe", "pipe"] });
+    pipeLines(child.stdout, (line) => this.routeLine(line));
+    pipeLines(child.stderr, (line) => this.send("stderr", line));
+    child.on("error", (err) => this.failTurn(String(err)));
+    child.on("exit", () => this.handleExit());
+    this.child = child;
+  }
+
+  // Forwards an output line to the active turn and ends the turn on `result`.
+  private routeLine(line: string): void {
+    this.send("message", line);
+    if (isResultLine(line)) this.endTurn?.();
+  }
+
+  private handleExit(): void {
+    this.child = undefined;
+    this.failTurn("Claude Code process exited.");
+  }
+
+  private failTurn(reason: string): void {
+    if (!this.endTurn) return;
+    this.send("error", reason);
+    this.endTurn();
+  }
+
+  private send(event: string, data: string): void {
+    if (this.activeRes) sendEvent(this.activeRes, event, data);
+  }
+}
+
+// One long-lived Claude Code process per dev server, shared across chat turns.
+const claude = new ClaudeSession();
+
+function persistentArgs(): string[] {
   return [
-    "-p", message,
+    "-p",
+    "--input-format", "stream-json",
     "--output-format", "stream-json",
     "--verbose",
     "--include-partial-messages",
     "--dangerously-skip-permissions",
-    ...(sessionId ? ["--resume", sessionId] : []),
+    "--model", CLAUDE_MODEL,
   ];
+}
+
+function userMessageLine(message: string): string {
+  return JSON.stringify({ type: "user", message: { role: "user", content: message } });
+}
+
+function isResultLine(line: string): boolean {
+  try {
+    return JSON.parse(line).type === "result";
+  } catch {
+    return false;
+  }
 }
 
 async function deleteSlideById(id: string): Promise<void> {
@@ -144,6 +237,7 @@ function openEventStream(res: ServerResponse): void {
 // One SSE frame per event. `data` is a single line (no embedded newlines from
 // the CLI's NDJSON), so a one-line data payload is sufficient.
 function sendEvent(res: ServerResponse, event: string, data: string): void {
+  if (res.writableEnded) return; // client disconnected mid-turn
   res.write(`event: ${event}\ndata: ${data}\n\n`);
 }
 

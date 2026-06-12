@@ -246,18 +246,42 @@ body {
 .chat-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 8px 14px;
+}
+
+.chat-title {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background: transparent;
   border: none;
   color: #c6ccd8;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  padding: 0;
 }
 
 .chat-caret {
   color: #8b93a3;
+}
+
+.chat-new {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid #353b48;
+  border-radius: 6px;
+  background: #262b35;
+  color: #c6ccd8;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chat-new:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .chat-log {

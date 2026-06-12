@@ -5,14 +5,14 @@ type Role = "user" | "assistant" | "error";
 type Message = { role: Role; text: string };
 
 // Bottom-docked chat that drives the local Claude Code CLI via /api/chat. The
-// server streams the CLI's NDJSON over SSE; we render assistant text live and
-// carry the session_id forward so the conversation is multi-turn.
+// dev server holds one long-lived Claude process and keeps conversation state,
+// so each turn is just a message in and a streamed reply out. "New chat" resets
+// that process.
 export function ChatDock() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const sessionId = useRef<string | undefined>(undefined);
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function ChatDock() {
     setMessages((m) => [...m, { role: "user", text: message }, { role: "assistant", text: "" }]);
     setStreaming(true);
     try {
-      await streamReply(message, sessionId, applyEvent);
+      await streamReply(message, applyEvent);
     } catch (err) {
       applyEvent({ kind: "error", text: String(err) });
     } finally {
@@ -34,11 +34,18 @@ export function ChatDock() {
     }
   };
 
+  // Ends the conversation: tells the server to kill its Claude process and wipes
+  // the local transcript so the next message starts fresh.
+  const newChat = async () => {
+    if (streaming) return;
+    await fetch("/api/chat/reset", { method: "POST" }).catch(() => {});
+    setMessages([]);
+  };
+
   // Folds a parsed SSE event into the message list. Assistant text deltas append
   // to the in-flight (last) message; errors are pushed as their own line.
   const applyEvent = (ev: ChatEvent) => {
-    if (ev.kind === "session") sessionId.current = ev.id;
-    else if (ev.kind === "delta") appendToLast(setMessages, ev.text);
+    if (ev.kind === "delta") appendToLast(setMessages, ev.text);
     else if (ev.kind === "error") setMessages((m) => [...m, { role: "error", text: ev.text }]);
   };
 
@@ -52,10 +59,17 @@ export function ChatDock() {
 
   return (
     <div className={"chat-dock" + (collapsed ? " collapsed" : "")}>
-      <button className="chat-head" onClick={() => setCollapsed((c) => !c)}>
-        <span>Chat with Claude Code</span>
-        <span className="chat-caret">{collapsed ? "▴" : "▾"}</span>
-      </button>
+      <div className="chat-head">
+        <button className="chat-title" onClick={() => setCollapsed((c) => !c)}>
+          <span>Chat with Claude Code</span>
+          <span className="chat-caret">{collapsed ? "▴" : "▾"}</span>
+        </button>
+        {!collapsed && (
+          <button className="chat-new" onClick={newChat} disabled={streaming || messages.length === 0}>
+            New chat
+          </button>
+        )}
+      </div>
       {!collapsed && (
         <>
           <div className="chat-log" ref={logRef}>
@@ -86,21 +100,16 @@ export function ChatDock() {
 }
 
 type ChatEvent =
-  | { kind: "session"; id: string }
   | { kind: "delta"; text: string }
   | { kind: "error"; text: string };
 
 // POSTs the message and reads the SSE response, decoding each frame and handing
 // the caller a normalized ChatEvent. Resolves when the stream ends.
-async function streamReply(
-  message: string,
-  sessionId: React.MutableRefObject<string | undefined>,
-  onEvent: (ev: ChatEvent) => void,
-): Promise<void> {
+async function streamReply(message: string, onEvent: (ev: ChatEvent) => void): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ message, sessionId: sessionId.current }),
+    body: JSON.stringify({ message }),
   });
   if (!res.ok || !res.body) throw new Error(`Chat failed (${res.status}). Is the dev server running?`);
 
@@ -121,8 +130,8 @@ async function streamReply(
   }
 }
 
-// Turns one SSE frame into a ChatEvent. `message`/`stderr` frames carry a line
-// of the CLI's NDJSON; we pull session_id and assistant text deltas out of it.
+// Turns one SSE frame into a ChatEvent. `message` frames carry a line of the
+// CLI's NDJSON; we pull assistant text deltas out of it. `stderr` is ignored.
 function parseFrame(frame: string): ChatEvent | null {
   const event = matchField(frame, "event") ?? "message";
   const data = matchField(frame, "data") ?? "";
@@ -139,15 +148,9 @@ function parseClaudeLine(line: string): ChatEvent | null {
   } catch {
     return null;
   }
-  if (json.type === "system" && json.subtype === "init" && json.session_id) {
-    return { kind: "session", id: json.session_id };
-  }
   if (json.type === "stream_event" && json.event?.type === "content_block_delta") {
     const delta = json.event.delta;
     if (delta?.type === "text_delta") return { kind: "delta", text: delta.text };
-  }
-  if (json.type === "result") {
-    if (json.session_id) return { kind: "session", id: json.session_id };
   }
   return null;
 }
