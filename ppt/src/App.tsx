@@ -23,14 +23,23 @@ export default function App() {
     <div className="app">
       <aside className="rail">
         {slides.map((s, idx) => (
-          <button
-            key={s.id}
-            className={"thumb" + (idx === i ? " active" : "")}
-            onClick={() => setI(idx)}
-          >
-            <span className="thumb-n">{idx + 1}</span>
-            <span className="thumb-label">{labelOf(s)}</span>
-          </button>
+          <div className="thumb-row" key={s.id}>
+            <button
+              className={"thumb" + (idx === i ? " active" : "")}
+              onClick={() => setI(idx)}
+            >
+              <span className="thumb-n">{idx + 1}</span>
+              <span className="thumb-label">{labelOf(s)}</span>
+            </button>
+            <button
+              className="thumb-del"
+              title="Delete slide"
+              aria-label={`Delete slide ${idx + 1}`}
+              onClick={() => deleteSlide(s, slides.length)}
+            >
+              ×
+            </button>
+          </div>
         ))}
       </aside>
 
@@ -54,4 +63,21 @@ export default function App() {
 
 function labelOf(s: Deck["slides"][number]): string {
   return s.title;
+}
+
+// Deletes a slide by persisting to deck.json; the file write triggers Vite HMR,
+// which reloads the preview with the new deck. Blocked on the last slide so the
+// deck is never left empty.
+async function deleteSlide(slide: Deck["slides"][number], count: number): Promise<void> {
+  if (count <= 1) {
+    alert("Cannot delete the last slide.");
+    return;
+  }
+  if (!confirm(`Delete slide "${slide.title}"?`)) return;
+  const res = await fetch("/api/slides/delete", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id: slide.id }),
+  });
+  if (!res.ok) alert("Delete failed. Is the dev server running?");
 }

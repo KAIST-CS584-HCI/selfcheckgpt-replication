@@ -29,12 +29,17 @@ body {
   gap: 8px;
 }
 
+.thumb-row {
+  position: relative;
+}
+
 .thumb {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 30px 8px 10px; /* right pad leaves room for the × */
   border: 1px solid #353b48;
   border-radius: 8px;
   background: #262b35;
@@ -46,6 +51,36 @@ body {
 .thumb.active {
   border-color: #3b6fd4;
   background: #2d3950;
+  color: #fff;
+}
+
+.thumb-del {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #8b93a3;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+.thumb-row:hover .thumb-del,
+.thumb-del:focus-visible {
+  opacity: 1;
+}
+
+.thumb-del:hover {
+  background: #c0392b;
   color: #fff;
 }
 
