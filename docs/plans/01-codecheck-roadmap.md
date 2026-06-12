@@ -2,7 +2,7 @@
 type: plan
 status: draft
 created: 2026-06-10
-revised: 2026-06-10
+revised: 2026-06-12
 source_plan: "[[04-codecheck-methods]]"
 ---
 
@@ -99,17 +99,64 @@ not detailed until a gate run closes it:
   adversarial inputs. Iter-4 hardening should separate the two; the determinism
   half is already closed.
 
+### Revision 3 (2026-06-12) — four variants landed; real multi-method numbers; re-sequence
+
+Iterations 2.5 (validation gate) and 3 (AST) are **done**, an unplanned **fourth
+variant — SelfCheck-CodeBERT** landed (embedding similarity), and a layer of
+robustness/infra work shipped. Two ~250-problem MBPP+ runs (qwen3.5-9b, gemma4-31b)
+now carry a real **four-method** readout. This revision folds that evidence in.
+
+- **Four methods, one consistent ranking.** detect-incorrect AUC-PR, both models
+  (baseline ≈0.24-0.26):
+
+  | method | qwen3.5-9b (n=252) | gemma4-31b (n=254) |
+  |--------|-----|-----|
+  | exec     | **0.68** | **0.73** |
+  | prompt   | 0.67 | 0.58 |
+  | ast      | 0.57 | 0.39 |
+  | code_bert| 0.41 | 0.33 (n=54) |
+
+  Order **exec > prompt > ast > code_bert** holds across both. Spearman tracks it.
+- **Structure/embedding underperform — hypothesis confirmed.** AST and CodeBERT,
+  the two *local-similarity* signals, score weakest; CodeBERT is near-baseline on
+  gemma (pearson 0.05). Consistent with the confident-consistent blind spot:
+  consistently-wrong code is also structurally/embedding-similar to its wrong main,
+  so divergence ≈0 and the error is missed. **CodeBERT is largely a negative
+  result** on MBPP+ (embedding similarity ≠ correctness signal) — keep it for the
+  "what doesn't work" half of the report, not as a headline method.
+- **Prompt does NOT clearly beat Exec on MBPP+** (tied on qwen, worse on gemma). So
+  iter-2's defining question ("does the judge catch Exec's blind spot?") is *not*
+  answered affirmatively here — both are mid-tier. The blind spot needs a dataset
+  where hallucinations are *deliberately consistent* → raises the priority of the
+  targeted-dataset iteration (now iter 5), which becomes the narrative's real test.
+- **AST metric settled:** jaccard default; TED scored marginally worse on MBPP+ and
+  is kept available, not default (`docs/reports/09`).
+- **Prompt parser audited clean.** The Yes/No/N-A regex is first-match-anywhere
+  (could be stolen by the justification), but across 9,640 real judgments: 0 silent
+  mis-parses, 1 empty reply. Anchored-regex hardening is *optional/defensive*, not a
+  correction — demoted to a small iter-4 robustness item.
+- **Execution batch-ceiling is the live operational risk.** `--timeout` is
+  per-input; a sample that loops on *every* input costs ≈ n_inputs × timeout (one
+  comb-sort sample stalled a run ~55 min). No per-batch K-timeout yet. Promote to a
+  concrete iter-4 deliverable, with `--timeout 2` as the new default.
+- **Infra that already shipped (enabling, not iterations):** continue-on-failure,
+  incremental JSON save + task_id resume, daemon-thread API timeout (clean exit),
+  parallel sample execution, torch/NaN/corrupt-file guards, and the flat→subpackage
+  refactor (`score/`, `generation/`, `execution/`). Scale plumbing is ready for the
+  full-set run.
+
 ## Overview
 
-| # | Iteration | User-facing slice |
-|---|-----------|-------------------|
-| 1 | Exec MVP on MBPP+ | ✅ done. Per-impl behavioral-consistency score next to true correctness + first AUC-PR. |
-| 2 | Prompt variant | ✅ built + merged (#4). Score the same data with the LLM-judge; compare Exec vs Prompt AUC-PR — does the judge catch Exec's confident-consistent blind spot? **(Live head-to-head NOT yet run — see iter 2.5.)** |
-| 2.5 | Validation run *(gate)* | One live `--method both` run on a random full-set sample, post-hashseed-fix. Re-establishes the *trustworthy* Exec AUC-PR and produces the *first real* Prompt AUC-PR + head-to-head. Unblocks AST. |
-| 3 | AST variant | Score the same data with AST structural similarity; three-way Exec / Prompt / AST compare. |
-| 4 | Scale + Exec hardening on MBPP+ | Full-set, larger-N, paper-comparable AUC-PR + correlation; fix Exec input-set false positives. *(light)* |
-| 5 | Hallucination-targeted datasets | Run all variants on CodeHaluEval, then Collu-Bench — stress the confident-consistent blind spot Exec misses. *(light)* |
-| 6 | Analysis + report | Synthesize variants × datasets into the Improvement-2 narrative; tie the blind spot to Improvement 1. *(light)* |
+| # | Iteration | Status / slice |
+|---|-----------|----------------|
+| 1 | Exec MVP on MBPP+ | ✅ done. Per-impl behavioral-consistency score + first AUC-PR. |
+| 2 | Prompt variant | ✅ built + merged (#4). LLM-judge consistency on the same data. |
+| 2.5 | Validation run *(gate)* | ✅ done. Post-hashseed-fix run re-established trustworthy Exec + first real Prompt numbers; head-to-head produced. |
+| 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
+| 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
+| 4 | Scale + hardening on MBPP+ | Full set (378), larger N, paper-comparable AUC-PR + correlation for all **four** methods. Concrete: per-batch **K-timeout**, default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser. **(next)** |
+| 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. *(light)* |
+| 6 | Analysis + report | Four-method × dataset synthesis; the structure/embedding negative result + blind-spot cross-link to Improvement 1. *(light)* |
 
 ---
 
@@ -180,8 +227,9 @@ not detailed until a gate run closes it:
 
 ## Iteration 2.5 — Validation run (gate before AST)
 
-> Status: blocking. Closes the feedback loop iterations 1 and 2 left open. Not a
-> new feature — a single live run on existing code (post-`cdc124f`).
+> Status: ✅ done. Closed the feedback loop iterations 1 and 2 left open. Exec
+> survived the label fix as the strongest signal; Prompt landed mid-tier (does not
+> clearly beat Exec on MBPP+ — see Revision 3). AST unblocked and shipped.
 
 - **Goal:** produce trustworthy numbers to slice AST against. Re-establish Exec's
   AUC-PR on corrected labels (post-hashseed-fix) and produce the first real
@@ -212,6 +260,11 @@ not detailed until a gate run closes it:
 ---
 
 ## Iteration 3 — SelfCheck-AST variant
+
+> Status: ✅ done. Jaccard node-type fingerprint (default) + TED (zss) available
+> via `--ast-metric`. Result: AST is the weak structural signal (qwen 0.57 / gemma
+> 0.39 detect-incorrect) — hypothesis that structure shares the blind spot is
+> supported. Reports `docs/reports/07..09`.
 
 - **Goal:** add the structural-consistency signal and complete the three-variant
   set on one dataset. Direct test of the hypothesis that structure shares Exec's
@@ -244,32 +297,61 @@ not detailed until a gate run closes it:
 
 ---
 
-## Iteration 4 — Scale + Exec hardening on MBPP+ *(light — re-plan from feedback)*
+## Iteration 3.5 — SelfCheck-CodeBERT variant *(unplanned; landed)*
 
-- **Goal:** produce paper-comparable numbers on the full MBPP+ set at full N for
-  all three variants, AUC-PR computed consistently with the replication
-  (trapezoidal) plus aggregate correlation (Spearman of score vs correctness);
-  **and** address Exec's false-positive weakness from iteration 1.
-- **User-facing value:** a full, trustworthy results table for all three variants
-  on MBPP+, with the false-positive noise reduced.
-- **Folded-in hardening:** revisit the **input set Exec compares on** — the
-  EvalPlus adversarial inputs inflate `exec_score` on correct mains whose samples
-  legitimately differ on edge cases. Decide reference-vs-filtered inputs (a
-  deferred iteration-1 feedback item).
+> Status: ✅ done. Fourth consistency signal: `1 - cosine` of mean-pooled
+> `microsoft/codebert-base` embeddings, main vs each sample. Runs **offline** over
+> already-saved codes (`run_codecheck.py codebert --results <file>`) — no API,
+> reuses iter-1/2/3 generations. Unlike AST it is not rename-invariant.
 
-## Iteration 5 — Hallucination-targeted datasets *(light)*
+- **Result:** weakest of the four (qwen 0.41 / gemma 0.33 detect-incorrect,
+  near-baseline; gemma pearson 0.05). Embedding similarity does not track
+  correctness on MBPP+ — a **negative result**, valuable as the "what doesn't work"
+  contrast in the report, not a headline method.
+- **Why it matters to the narrative:** CodeBERT joins AST as a *local-similarity*
+  method that shares Exec's confident-consistent blind spot, reinforcing that only
+  behavior (Exec) and semantics-via-judge (Prompt) carry real signal — and even
+  those are mid-tier on MBPP+, motivating iter 5.
+- **Carried gap:** code_bert coverage is full on the qwen file but partial (54/254)
+  on gemma; complete it so the four-way table is uniform before the report.
 
-- **Goal:** run all three variants on CodeHaluEval, then Collu-Bench.
-- **User-facing value:** cross-dataset results. Reframed from the original: not
-  needed to *get* a positive class (MBPP+ already provides one), but to **stress
-  the confident-consistent hallucination case** these datasets are built to
-  surface — exactly Exec's blind spot. Tests whether the variant ranking holds
-  when hallucinations are deliberate and consistent.
+## Iteration 4 — Scale + hardening on MBPP+ *(next — re-plan from feedback)*
+
+- **Goal:** produce paper-comparable numbers on the **full MBPP+ set (378)** at
+  larger N for **all four** variants, AUC-PR consistent with the replication
+  (trapezoidal) + correlation (Pearson/Spearman) — already emitted by `evaluate`.
+- **User-facing value:** one full, trustworthy four-method table on MBPP+, with the
+  operational stalls and false-positive noise removed.
+- **Concrete deliverables (from cli-user-test + live-run findings):**
+  1. **Per-batch K-timeout / batch ceiling** in the execution sandbox — bound total
+     batch time so one all-inputs-looping sample can't cost ≈ n_inputs × timeout
+     (the comb-sort ~55-min stall). The single highest-value robustness fix.
+  2. **Default `--timeout 2`** (down from 5) — recommended on MBPP+; pairs with #1.
+  3. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
+     `exec_score` on correct mains whose samples differ on edge cases. Decide
+     reference-vs-filtered inputs (deferred iter-1 item).
+  4. **Optional:** anchor the Prompt Yes/No/N-A regex to the verdict line (defensive
+     for weaker/ramblier judges; current data parses clean, so low priority).
+  5. Finish gemma `code_bert` coverage (carried from iter 3.5).
+
+## Iteration 5 — Hallucination-targeted datasets *(now the highest-value direction)*
+
+- **Goal:** run all **four** variants on CodeHaluEval, then Collu-Bench.
+- **Why promoted:** MBPP+ showed Exec ≈ Prompt (mid-tier) and structure/embedding
+  weak — so MBPP+ does **not** decide the Improvement-2 story. These datasets
+  deliberately surface the **confident-consistent hallucination** case (all samples
+  agree on the same wrong code) that every local-similarity method misses. This is
+  where Prompt (semantic judge) could finally separate from Exec/AST/CodeBERT — the
+  real test of the narrative, not a "light" add-on.
+- **User-facing value:** cross-dataset four-method table; does the variant ranking
+  invert when hallucinations are deliberate and consistent?
 
 ## Iteration 6 — Analysis + report *(light)*
 
-- **Goal:** synthesize Exec vs AST vs Prompt across datasets into the
+- **Goal:** synthesize Exec vs Prompt vs AST vs CodeBERT across datasets into the
   Improvement-2 narrative for the final report.
-- **User-facing value:** the written comparison + conclusions, including the
-  cross-link: Exec's confident-consistent blind spot is the same high-confidence
-  failure mode **Improvement 1** investigates ([[project-overview]]).
+- **User-facing value:** the written comparison + conclusions, with two threads:
+  (a) the structure/embedding **negative result** (AST + CodeBERT add little on
+  MBPP+ because they share the blind spot); (b) the cross-link — Exec's
+  confident-consistent blind spot is the same high-confidence failure mode
+  **Improvement 1** investigates ([[project-overview]]).
