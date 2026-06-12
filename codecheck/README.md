@@ -87,7 +87,10 @@ method, so the methods are always compared on identical data.
 
 - `exec` (default) — behavioral I/O divergence across samples (described above).
 - `prompt` — LLM-as-judge: per sample, is its behavior consistent with the main
-  implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples.
+  implementation? Yes→0.0 / No→1.0 / N-A→0.5, averaged over the N samples. On HumanEval+ a
+  sharper, still oracle-free judge prompt is used (it makes the judge hunt for an edge-case
+  input on which the two implementations diverge, instead of affirming surface similarity),
+  because a capable model writes near-identical samples on those canonical problems.
 - `ast` — structural divergence between the main and each sample, rename- and
   literal-invariant, averaged over the N samples. No API cost. The metric is chosen with
   `--ast-metric` (below).
@@ -104,6 +107,20 @@ method, so the methods are always compared on identical data.
 python run_codecheck.py codebert --results results/run.json   # adds code_bert in place
 python run_codecheck.py evaluate --results results/run.json    # now shows a [code_bert] block
 ```
+
+**Offline `prompt` (re-score the judge on saved results):** same idea for the Prompt
+variant — recompute `scores["prompt"]` from the stored code without regenerating (useful to
+apply an updated judge template to an existing file). Unlike `codebert` it **calls the API**,
+so it needs `OPENROUTER_API_KEY`. The judge template is chosen per result from the `task_id`
+prefix (HumanEval/* uses the sharper divergence-seeking prompt), or forced with `--dataset`:
+
+```bash
+python run_codecheck.py prompt --results results/run.json                  # auto per task_id
+python run_codecheck.py prompt --results results/run.json --dataset humaneval
+```
+
+It **rewrites the file in place** — point it at a finished or copied results file, not one a
+live run is still writing.
 
 **`--ast-metric {jaccard,ted}`** (only used when `--method` includes `ast`):
 
@@ -138,7 +155,15 @@ python run_codecheck.py evaluate --results output/iter3-all.json
   (`replication/evaluation/metrics.py`). Read AUC-PR against the baseline, not in
   isolation; the histogram exposes tie pile-ups at 0 that make the scalar fragile.
 
-## Dataset in use: MBPP+ (378 problems)
+## Datasets: MBPP+ and HumanEval+
+
+Two EvalPlus benchmarks, selected with `run --dataset {mbpp,humaneval}` (default `mbpp`):
+**MBPP+** (378 problems) and **HumanEval+** (164 problems). Both are **function-call**
+datasets — each problem is a function with a rich suite of test inputs that double as the
+shared inputs we run every implementation on — so they share the entire pipeline and all
+four scorers.
+
+### MBPP+ (378 problems)
 
 MBPP+ is a set of 378 Python programming problems, each shipped with a reference solution
 and a rich suite of test inputs (an extended version of the MBPP benchmark). The test inputs
@@ -172,6 +197,61 @@ Example problem (real row `Mbpp/2`):
   - ...plus ~100 more edge-case inputs (empty tuples, large tuples, duplicates)
 - **Tolerance:** `0` (exact match; this problem has no floating-point results)
 
+### HumanEval+ (164 problems)
+
+HumanEval+ is the EvalPlus extension of OpenAI's HumanEval: 164 Python problems, each a
+function with an expanded suite of test inputs. Same function-call shape as MBPP+, with one
+structural difference: the **prompt** is the import block + signature + docstring (the actual
+text shown to the model), and the **reference solution** is the function *body only* — so the
+runnable reference is `prompt + body` (the loader assembles this for grading).
+
+Each problem gives us:
+
+| Part                | What it is                                                       |
+|---------------------|------------------------------------------------------------------|
+| ID                  | a problem identifier (e.g. `HumanEval/0`)                        |
+| Prompt              | imports + function signature + docstring (with doctest examples) |
+| Function name       | the function to call                                             |
+| Reference solution  | the function **body only**; runnable as `prompt + body`         |
+| Inputs              | many argument sets the function is called with                   |
+| Tolerance           | how close floating-point results must be to count as equal       |
+
+Example problem (real row `HumanEval/0`):
+
+> **Task:** Check whether any two numbers in a list are closer than a given threshold.
+
+- **Function name:** `has_close_elements`
+- **Prompt** (shown to the model):
+  ```python
+  from typing import List
+
+
+  def has_close_elements(numbers: List[float], threshold: float) -> bool:
+      """ Check if in given list of numbers, are any two numbers closer to each other than
+      given threshold.
+      >>> has_close_elements([1.0, 2.0, 3.0], 0.5)
+      False
+      >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)
+      True
+      """
+  ```
+- **Reference solution** (body only — the dataset stores just this):
+  ```python
+      sorted_numbers = sorted(numbers)
+      for i in range(len(sorted_numbers) - 1):
+          if sorted_numbers[i + 1] - sorted_numbers[i] < threshold:
+              return True
+      return False
+  ```
+  The runnable canonical used for grading is `prompt + body` — the signature from the prompt
+  plus this body.
+- **Inputs the function is tested on** (a list and a threshold per call):
+  - `has_close_elements([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3)` → expects `True`
+  - `has_close_elements([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05)` → expects `False`
+  - `has_close_elements([1.0, 2.0, 5.9, 4.0, 5.0], 0.95)` → expects `True`
+  - ...plus ~1000 more edge-case inputs (7 base + 999 plus inputs)
+- **Tolerance:** `0` (exact match; the result is a boolean)
+
 For each problem we record the consistency score, the correctness label (`is_correct`),
 an error flag (`is_error` — the main raised or timed out on any input, vs ran but gave a
 wrong answer), `count` (a per-input breakdown vs the canonical: `{total, pass, fail,
@@ -191,7 +271,8 @@ python run_codecheck.py evaluate
 
 **`run` parameters**
 
-- `--limit` — how many problems to use (default 20)
+- `--dataset` — which EvalPlus dataset: `mbpp` (default, MBPP+) or `humaneval` (HumanEval+)
+- `--limit` — how many problems to use (default: the entire dataset)
 - `--index` — run only the single problem at this 0-based dataset position; cannot be
   combined with `--limit`/`--random`/`--seed`
 - `--n` — sampled implementations per problem (extra tries at temperature 1)
@@ -208,9 +289,10 @@ python run_codecheck.py evaluate
   at DEBUG. Without it, a run still warns on truncated (`finish_reason != stop`) or empty
   responses.
 
-By default the run uses the first `--limit` problems in dataset order. Pass `--random` for
-a random sample (add `--seed` to reproduce it). The saved results record which problems
-were used, so any run is reproducible from its output.
+By default the run uses the **entire dataset** in order; pass `--limit N` to take the first
+`N` in dataset order, and `--random` for a random sample of that size (add `--seed` to
+reproduce it). The saved results record which problems were used, so any run is reproducible
+from its output.
 
 **`evaluate` parameters**
 

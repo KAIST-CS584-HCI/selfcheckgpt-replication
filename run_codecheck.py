@@ -35,20 +35,21 @@ def _setup_run_logging(verbose: bool = False) -> None:
 
 def _resolve_selection(args: argparse.Namespace) -> tuple[int | None, int | None]:
     """Resolve problem selection into (limit, index). `--index` runs a single problem and
-    is mutually exclusive with `--limit`/`--random`/`--seed`; a bare run defaults to the
-    first 20. Raises ValueError on a conflicting combination."""
+    is mutually exclusive with `--limit`/`--random`/`--seed`; a bare run (no `--limit`)
+    selects the **entire dataset** (limit=None). Raises ValueError on a conflicting
+    combination."""
     if args.index is not None:
         if args.limit is not None or args.randomize or args.seed is not None:
             raise ValueError("--index cannot be combined with --limit, --random, or --seed")
         return None, args.index
-    return (args.limit if args.limit is not None else 20), None
+    return args.limit, None   # None -> whole dataset
 
 
 def _cmd_run(args: argparse.Namespace) -> None:
     from openai import AuthenticationError, OpenAI
-    from codecheck.dataset import load_mbpp_plus
+    from codecheck.dataset import load_mbpp_plus, load_human_eval_plus
     from codecheck.generation.generator import CodeGenerator
-    from codecheck.score.prompt import PromptJudge
+    from codecheck.score.prompt import PromptJudge, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
     from codecheck.score.ast import ASTScorer
     from codecheck.score.codebert import CodeBERTScorer, torch_available
     from codecheck.execution.sandbox import run_batch_in_subprocess
@@ -70,7 +71,11 @@ def _cmd_run(args: argparse.Namespace) -> None:
         methods = {args.method}
     if "code_bert" in methods and not torch_available():
         sys.exit("error: method 'code_bert' requires torch — pip install torch")
-    judge = PromptJudge(client, model=model, think=args.think) if "prompt" in methods else None
+    # HumanEval+ uses a sharper, divergence-seeking judge prompt (still oracle-free); MBPP+
+    # keeps the original consistency prompt so its committed numbers stay comparable.
+    judge_template = HUMANEVAL_JUDGE_TEMPLATE if args.dataset == "humaneval" else JUDGE_TEMPLATE
+    judge = (PromptJudge(client, model=model, think=args.think, template=judge_template)
+             if "prompt" in methods else None)
     ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
     codebert_scorer = CodeBERTScorer() if "code_bert" in methods else None
 
@@ -80,8 +85,9 @@ def _cmd_run(args: argparse.Namespace) -> None:
         sys.exit(f"error: {exc}")
 
     _setup_run_logging(verbose=args.verbose)
+    load = load_human_eval_plus if args.dataset == "humaneval" else load_mbpp_plus
     try:
-        problems = load_mbpp_plus(limit=limit, randomize=args.randomize, seed=args.seed, index=index)
+        problems = load(limit=limit, randomize=args.randomize, seed=args.seed, index=index)
     except IndexError as exc:
         sys.exit(f"error: {exc}")
     # Auto-resume: if the output file exists, skip problems already recorded (by task_id)
@@ -98,7 +104,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
         print(f"resuming: {done_count} done, {len(problems)} remaining in {args.output}")
 
     ast_note = f", ast-metric={args.ast_metric}" if ast_scorer is not None else ""
-    print(f"Running methods={sorted(methods)} on {len(problems)} problems "
+    print(f"Running methods={sorted(methods)} on {len(problems)} {args.dataset} problems "
           f"(n={args.n}, timeout={args.timeout}s, model={model}{ast_note})")
     if not problems:
         print("nothing to do — all selected problems already in the output file")
@@ -184,12 +190,62 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
     print(f"Added code_bert to {len(results)} results in {args.results}")
 
 
+def _judge_template_for(task_id: str, override, default_tmpl, humaneval_tmpl):
+    """Pick the judge template for one result. `override` (the --dataset value) forces a
+    template; otherwise auto-detect from the task_id prefix (HumanEval/* uses the sharper
+    divergence-seeking prompt, everything else the default consistency prompt)."""
+    if override == "humaneval":
+        return humaneval_tmpl
+    if override == "mbpp":
+        return default_tmpl
+    return humaneval_tmpl if str(task_id).startswith("HumanEval/") else default_tmpl
+
+
+def _cmd_prompt(args: argparse.Namespace) -> None:
+    """Re-score the `prompt` (LLM-judge) variant on an existing results file, reusing the
+    stored main_code + sample_codes (no regeneration). Unlike `codebert` this calls the API.
+    The judge template is chosen per result (override via --dataset, else by task_id prefix)
+    so the new HumanEval prompt applies to HumanEval results without touching MBPP+ ones.
+    Rewrites in place."""
+    from openai import OpenAI
+    from codecheck.score.prompt import PromptJudge, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
+    from codecheck.pipeline import load_results, save_results
+
+    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        sys.exit("error: missing OPENROUTER_API_KEY (see .env.example)")
+    model = os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.5-9b").strip()
+    base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").strip()
+
+    try:
+        results = load_results(args.results)
+    except FileNotFoundError:
+        sys.exit(f"error: results file not found: {args.results}")
+    except ValueError as exc:
+        sys.exit(f"error: {exc}")
+
+    client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
+    # One judge per distinct template; reuse it across the results that map to it.
+    judges: dict[str, object] = {}
+    parse_failures = 0
+    for r in results:
+        tmpl = _judge_template_for(r.task_id, args.dataset, JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE)
+        if tmpl not in judges:
+            judges[tmpl] = PromptJudge(client, model=model, template=tmpl)
+        r.scores["prompt"] = judges[tmpl].score(r.main_code, r.sample_codes)
+    save_results(results, args.results)
+    parse_failures = sum(getattr(j, "parse_failures", 0) for j in judges.values())
+    print(f"Re-scored prompt on {len(results)} results in {args.results}")
+    print(f"Judge parse failures: {parse_failures}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="SelfCheck for code (Exec, Prompt, AST, CodeBERT) on MBPP+.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     run_p = sub.add_parser("run", help="generate, score, and save")
-    run_p.add_argument("--limit", type=int, default=None, help="number of MBPP+ problems (default 20)")
+    run_p.add_argument("--limit", type=int, default=None,
+                       help="number of problems to use (default: the entire dataset)")
     run_p.add_argument("--index", type=int, default=None,
                        help="run only the single problem at this 0-based dataset position; "
                             "cannot be combined with --limit/--random/--seed")
@@ -203,6 +259,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="enable model chain-of-thought reasoning (much slower; default off)")
     run_p.add_argument("-v", "--verbose", action="store_true",
                        help="log per-call API detail (latency, finish_reason, completion tokens) at DEBUG")
+    run_p.add_argument("--dataset", choices=["mbpp", "humaneval"], default="mbpp",
+                       help="which EvalPlus dataset to run on (default mbpp = MBPP+)")
     run_p.add_argument("--method", choices=["exec", "prompt", "ast", "code_bert", "all"], default="exec",
                        help="which consistency scorer(s) to run")
     run_p.add_argument("--ast-metric", choices=["jaccard", "ted"], default="jaccard",
@@ -218,6 +276,13 @@ def build_parser() -> argparse.ArgumentParser:
     cb_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT),
                       help="results JSON path to augment in place")
     cb_p.set_defaults(func=_cmd_codebert)
+
+    pr_p = sub.add_parser("prompt", help="re-score the prompt (LLM-judge) variant on an existing results file")
+    pr_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT),
+                      help="results JSON path to augment in place")
+    pr_p.add_argument("--dataset", choices=["mbpp", "humaneval"], default=None,
+                      help="force a judge template; default auto-detects per result from the task_id prefix")
+    pr_p.set_defaults(func=_cmd_prompt)
     return parser
 
 

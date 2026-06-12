@@ -12,12 +12,28 @@ JUDGE_TEMPLATE = (
     "Answer Yes / No / N/A with a one-sentence justification."
 )
 
+# A sharper, still oracle-free variant used for HumanEval+: a capable model writes
+# near-identical samples on canonical problems, so the default "consistent?" prompt lazily
+# answers "Yes, identical" and scores 0.0 even for wrong mains. This framing makes the judge
+# hunt for an edge-case input on which the two implementations diverge — same Yes/No/N-A
+# mapping (Yes = identical behavior = consistent = 0.0). Validated to roughly triple the
+# incorrect-vs-correct separation on a real HumanEval+ run; no spec/expected-output is shown.
+HUMANEVAL_JUDGE_TEMPLATE = (
+    "Two Python implementations of the same function:\n\n"
+    "Implementation A:\n{main_code}\n\n"
+    "Implementation B:\n{sample_code}\n\n"
+    "Ignoring comments and docstrings, would A and B return the SAME result on EVERY input, "
+    "including edge cases (empty, zero, negatives, large, duplicates, unusual types)? Look "
+    "hard for any single input on which they would differ or one would error/loop.\n"
+    "Answer Yes (always identical behavior) / No (they can differ) / N/A, with a one-sentence reason."
+)
+
 # Map a matched answer token to an inconsistency score (higher = more likely incorrect).
 _ANSWER = re.compile(r"\b(yes|no|n/?a)\b", re.IGNORECASE)
 
 
-def build_judge_prompt(main_code: str, sample_code: str) -> str:
-    return JUDGE_TEMPLATE.format(main_code=main_code, sample_code=sample_code)
+def build_judge_prompt(main_code: str, sample_code: str, template: str = JUDGE_TEMPLATE) -> str:
+    return template.format(main_code=main_code, sample_code=sample_code)
 
 
 def parse_judgment(text: str | None) -> tuple[float, bool]:
@@ -40,11 +56,13 @@ class PromptJudge:
     """LLM-as-judge consistency scorer. score() returns mean inconsistency
     over the samples; parse_failures accumulates unparseable judgments."""
 
-    def __init__(self, client, model: str, think: bool = False, max_workers: int | None = None) -> None:
+    def __init__(self, client, model: str, think: bool = False, max_workers: int | None = None,
+                 template: str = JUDGE_TEMPLATE) -> None:
         self.client = client
         self.model = model
         self.think = think
         self.max_workers = max_workers
+        self.template = template
         self.parse_failures = 0
 
     def _judge_one(self, main_code: str, sample_code: str) -> str:
@@ -52,7 +70,7 @@ class PromptJudge:
             resp = chat_with_retries(
                 self.client,
                 model=self.model,
-                messages=[{"role": "user", "content": build_judge_prompt(main_code, sample_code)}],
+                messages=[{"role": "user", "content": build_judge_prompt(main_code, sample_code, self.template)}],
                 temperature=0.0,
                 think=self.think,
             )

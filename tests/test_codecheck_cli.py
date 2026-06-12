@@ -54,6 +54,80 @@ def test_method_all_is_accepted_by_parser():
     assert args.method == "all"
 
 
+def test_dataset_defaults_to_mbpp():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run"]).dataset == "mbpp"
+
+
+def test_dataset_humaneval_is_accepted():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run", "--dataset", "humaneval"]).dataset == "humaneval"
+
+
+def test_dataset_rejects_unknown():
+    import pytest
+    from run_codecheck import build_parser
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["run", "--dataset", "bogus"])
+
+
+def test_run_dispatches_to_humaneval_loader(monkeypatch, tmp_path):
+    # --dataset humaneval must call load_human_eval_plus, not load_mbpp_plus.
+    import codecheck.dataset as ds
+    import run_codecheck
+    from types import SimpleNamespace
+
+    called = {}
+    monkeypatch.setattr(ds, "load_human_eval_plus", lambda **kw: (called.setdefault("he", kw), [])[1])
+    monkeypatch.setattr(ds, "load_mbpp_plus", lambda **kw: (called.setdefault("mbpp", kw), [])[1])
+    # _setup_run_logging sets propagate=False on the codecheck logger; no-op it so this
+    # test doesn't poison caplog for later logging tests.
+    monkeypatch.setattr(run_codecheck, "_setup_run_logging", lambda **kw: None)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    # stop after loader dispatch: no problems -> "nothing to do" returns before any API call
+    args = SimpleNamespace(dataset="humaneval", limit=2, index=None, randomize=False, seed=None,
+                           n=2, timeout=5.0, think=False, verbose=False, method="exec",
+                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+    run_codecheck._cmd_run(args)
+    assert "he" in called and "mbpp" not in called
+
+
+def _judge_template_for_dataset(monkeypatch, tmp_path, dataset):
+    """Build a prompt run for the given dataset and capture the template handed to PromptJudge."""
+    import codecheck.dataset as ds
+    import codecheck.score.prompt as ps
+    import run_codecheck
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(ds, "load_human_eval_plus", lambda **kw: [])
+    monkeypatch.setattr(ds, "load_mbpp_plus", lambda **kw: [])
+    monkeypatch.setattr(run_codecheck, "_setup_run_logging", lambda **kw: None)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    captured = {}
+
+    def fake_judge(*a, **kw):
+        captured["template"] = kw.get("template")
+        return object()
+    # _cmd_run does `from codecheck.score.prompt import PromptJudge` at call time, so
+    # patching the attribute on that module is enough.
+    monkeypatch.setattr(ps, "PromptJudge", fake_judge)
+    args = SimpleNamespace(dataset=dataset, limit=2, index=None, randomize=False, seed=None,
+                           n=2, timeout=5.0, think=False, verbose=False, method="prompt",
+                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+    run_codecheck._cmd_run(args)
+    return captured["template"]
+
+
+def test_humaneval_run_selects_divergence_judge_template(monkeypatch, tmp_path):
+    from codecheck.score.prompt import HUMANEVAL_JUDGE_TEMPLATE
+    assert _judge_template_for_dataset(monkeypatch, tmp_path, "humaneval") == HUMANEVAL_JUDGE_TEMPLATE
+
+
+def test_mbpp_run_selects_default_judge_template(monkeypatch, tmp_path):
+    from codecheck.score.prompt import JUDGE_TEMPLATE
+    assert _judge_template_for_dataset(monkeypatch, tmp_path, "mbpp") == JUDGE_TEMPLATE
+
+
 def test_ast_metric_defaults_to_jaccard():
     from run_codecheck import build_parser
     args = build_parser().parse_args(["run"])
@@ -108,10 +182,11 @@ def test_limit_defaults_to_none():
     assert build_parser().parse_args(["run"]).limit is None
 
 
-def test_resolve_selection_bare_run_defaults_to_limit_20():
+def test_resolve_selection_bare_run_is_entire_dataset():
+    # No --limit -> limit=None, which the loaders treat as the whole dataset.
     from run_codecheck import build_parser, _resolve_selection
     args = build_parser().parse_args(["run"])
-    assert _resolve_selection(args) == (20, None)
+    assert _resolve_selection(args) == (None, None)
 
 
 def test_resolve_selection_index_mode():
@@ -186,3 +261,112 @@ def test_cmd_codebert_exits_clean_when_torch_missing(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         run_codecheck._cmd_codebert(SimpleNamespace(results=str(tmp_path / "missing.json")))
     assert "torch" in str(exc.value)   # fails fast with a clear message, not a traceback
+
+
+# --- offline `prompt` subcommand ---
+
+def test_prompt_subcommand_parses_results_and_dataset():
+    from run_codecheck import build_parser
+    args = build_parser().parse_args(["prompt", "--results", "results/x.json", "--dataset", "humaneval"])
+    assert args.results == "results/x.json"
+    assert args.dataset == "humaneval"
+
+
+def test_prompt_subcommand_dataset_defaults_to_none():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["prompt", "--results", "x.json"]).dataset is None
+
+
+def test_prompt_subcommand_rejects_unknown_dataset():
+    import pytest
+    from run_codecheck import build_parser
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["prompt", "--dataset", "bogus"])
+
+
+class _RecordingJudge:
+    """Stand-in for PromptJudge that records the template it was built with and returns a
+    fixed score per (main, samples)."""
+    seen = []
+
+    def __init__(self, client, model, template=None, **kw):
+        self.template = template
+        self.parse_failures = 0
+
+    def score(self, main_code, sample_codes):
+        _RecordingJudge.seen.append(self.template)
+        return 0.77
+
+
+def _prep(monkeypatch):
+    import codecheck.score.prompt as ps
+    monkeypatch.setattr(ps, "PromptJudge", _RecordingJudge)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    _RecordingJudge.seen = []
+
+
+def test_cmd_prompt_rescore_overwrites_prompt_in_place(tmp_path, monkeypatch):
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results, load_results
+    import run_codecheck
+    _prep(monkeypatch)
+    path = tmp_path / "r.json"
+    save_results([CodeResult("HumanEval/0", {"exec": 0.1, "prompt": 0.0}, True, "def m(): pass", ["def s(): pass"])], path)
+
+    run_codecheck._cmd_prompt(SimpleNamespace(results=str(path), dataset=None))
+
+    out = load_results(path)
+    assert out[0].scores["prompt"] == 0.77   # overwritten
+    assert out[0].scores["exec"] == 0.1      # other scores preserved
+
+
+def test_cmd_prompt_auto_detects_template_by_task_id(tmp_path, monkeypatch):
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results
+    from codecheck.score.prompt import JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
+    import run_codecheck
+    _prep(monkeypatch)
+    path = tmp_path / "r.json"
+    save_results([
+        CodeResult("HumanEval/0", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"]),
+        CodeResult("Mbpp/2", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"]),
+    ], path)
+
+    run_codecheck._cmd_prompt(SimpleNamespace(results=str(path), dataset=None))
+
+    # HumanEval result judged with the divergence template, Mbpp with the default.
+    assert HUMANEVAL_JUDGE_TEMPLATE in _RecordingJudge.seen
+    assert JUDGE_TEMPLATE in _RecordingJudge.seen
+
+
+def test_cmd_prompt_dataset_override_forces_template(tmp_path, monkeypatch):
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results
+    from codecheck.score.prompt import JUDGE_TEMPLATE, HUMANEVAL_JUDGE_TEMPLATE
+    import run_codecheck
+    _prep(monkeypatch)
+    path = tmp_path / "r.json"
+    save_results([CodeResult("Mbpp/2", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"])], path)
+
+    run_codecheck._cmd_prompt(SimpleNamespace(results=str(path), dataset="humaneval"))
+
+    # --dataset humaneval forces the HumanEval template even on an Mbpp task_id.
+    assert _RecordingJudge.seen == [HUMANEVAL_JUDGE_TEMPLATE]
+
+
+def test_cmd_prompt_exits_clean_without_api_key(tmp_path, monkeypatch):
+    import pytest
+    import run_codecheck
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    with pytest.raises(SystemExit) as exc:
+        run_codecheck._cmd_prompt(SimpleNamespace(results=str(tmp_path / "x.json"), dataset=None))
+    assert "OPENROUTER_API_KEY" in str(exc.value)
+
+
+def test_cmd_prompt_missing_file_exits_clean(tmp_path, monkeypatch):
+    import pytest
+    import run_codecheck
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-dummy")
+    with pytest.raises(SystemExit) as exc:
+        run_codecheck._cmd_prompt(SimpleNamespace(results=str(tmp_path / "missing.json"), dataset=None))
+    assert "not found" in str(exc.value)

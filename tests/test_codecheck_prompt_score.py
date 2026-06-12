@@ -8,6 +8,15 @@ def test_build_judge_prompt_includes_both_codes():
     assert "Yes" in p and "No" in p
 
 
+def test_humaneval_template_is_divergence_seeking():
+    from codecheck.score.prompt import HUMANEVAL_JUDGE_TEMPLATE
+    p = build_judge_prompt("def f(): return 1", "def f(): return 2", HUMANEVAL_JUDGE_TEMPLATE)
+    assert "def f(): return 1" in p and "def f(): return 2" in p
+    assert "Yes" in p and "No" in p
+    # distinctive edge-case divergence framing (vs the default consistency prompt)
+    assert "every input" in p.lower() and "edge cases" in p.lower()
+
+
 def test_parse_yes_means_consistent_zero():
     score, matched = parse_judgment("Yes, the behavior is identical.")
     assert score == 0.0 and matched is True
@@ -61,6 +70,15 @@ def test_judge_score_is_mean_inconsistency():
     score = judge.score("def f(): return 1", ["a", "b", "c"])
     assert abs(score - (1.0 / 3.0)) < 1e-9
     assert judge.parse_failures == 0
+
+
+def test_judge_uses_custom_template_and_keeps_mapping():
+    from codecheck.score.prompt import HUMANEVAL_JUDGE_TEMPLATE
+    client = FakeJudgeClient(["No."])  # No -> 1.0 under any template
+    judge = PromptJudge(client, model="m", template=HUMANEVAL_JUDGE_TEMPLATE)
+    assert judge.score("def f(): return 1", ["x"]) == 1.0
+    # the custom template's distinctive phrasing reached the API call
+    assert "edge cases" in client.calls[0]["messages"][0]["content"].lower()
 
 
 def test_judge_evaluate_returns_raw_responses():

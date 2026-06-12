@@ -92,7 +92,7 @@ not detailed until a gate run closes it:
   per-main-implementation** in `04-codecheck-methods.md` (only the T=0 main impl
   is a scored unit; the N samples are evidence only). Paper-faithful; applies to
   all three variants incl. AST. Low-positive-count fragility is handled by
-  scaling problem count (iter 4), not by redefining the unit.
+  scaling problem count (the manual `--limit 300` run), not by redefining the unit.
 - **Exec false-positive hardening — partly a determinism artifact.** The
   hashseed bug confirmed part of iter-1's "false positives" was nondeterministic
   ordering (now fixed), the rest is genuine edge-case divergence on EvalPlus
@@ -142,8 +142,8 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 - **Infra that already shipped (enabling, not iterations):** continue-on-failure,
   incremental JSON save + task_id resume, daemon-thread API timeout (clean exit),
   parallel sample execution, torch/NaN/corrupt-file guards, and the flat→subpackage
-  refactor (`score/`, `generation/`, `execution/`). Scale plumbing is ready for the
-  full-set run.
+  refactor (`score/`, `generation/`, `execution/`). Scale is produced manually via a
+  `--limit 300` run; no separate full-set run-iteration is needed.
 
 ## Overview
 
@@ -154,9 +154,13 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 | 2.5 | Validation run *(gate)* | ✅ done. Post-hashseed-fix run re-established trustworthy Exec + first real Prompt numbers; head-to-head produced. |
 | 3 | AST variant | ✅ done. Jaccard (default) + TED metric; three-way compare. Structure is the weak signal. |
 | 3.5 | CodeBERT variant | ✅ done. Offline embedding-similarity scorer reusing saved codes (`codebert` subcommand). Weakest signal — negative result on MBPP+. |
-| 4 | Scale + hardening on MBPP+ | Full set (378), larger N, paper-comparable AUC-PR + correlation for all **four** methods. Concrete: default `--timeout 2`, Exec input-set false-positive fix, optional anchored Prompt parser. **(next)** |
-| 5 | Hallucination-targeted datasets | All four variants on CodeHaluEval, then Collu-Bench — the real stress test of the confident-consistent blind spot. Now the highest-value direction. *(light)* |
-| 6 | Analysis + report | Four-method × dataset synthesis; the structure/embedding negative result + blind-spot cross-link to Improvement 1. *(light)* |
+| 5 | Second dataset (HumanEval+) | ✅ implemented. `--dataset humaneval` (loader-only, reuses pipeline + all four scorers). CodeHaluEval deferred (stdin/stdout path), Collu-Bench dropped (logit-detection benchmark). |
+| 6 | Analysis + report | Four-method × dataset synthesis (MBPP+, HumanEval+); the structure/embedding negative result + blind-spot cross-link to Improvement 1. **(next)** *(light)* |
+| — | *deferred* | CodeHaluEval via a stdin/stdout whole-program exec path — the real confident-consistent stress test. |
+
+*(No iteration 4: scale is produced manually via a `--limit 300` MBPP+ run, not a
+gated iteration. Leftover small/optional items are parked under "Deferred items"
+below — none block iter 5/6.)*
 
 ---
 
@@ -218,7 +222,7 @@ now carry a real **four-method** readout. This revision folds that evidence in.
     and whether judge is affordable on the full set).
   - Whether the judge prompt needs code-specific tuning.
 - **Risks / open decisions:**
-  - Judge cost at full N × full dataset (feeds iteration 4).
+  - Judge cost at full N × full dataset (informed the manual `--limit 300` sizing).
   - OPEN: is the per-problem unit (label = main-impl correctness) the right
     granularity, or should samples be scored as units too? Affects all variants;
     settle in the methods doc, not here.
@@ -315,40 +319,52 @@ now carry a real **four-method** readout. This revision folds that evidence in.
 - **Carried gap:** code_bert coverage is full on the qwen file but partial (54/254)
   on gemma; complete it so the four-way table is uniform before the report.
 
-## Iteration 4 — Scale + hardening on MBPP+ *(next — re-plan from feedback)*
+## Deferred items *(non-blocking — not an iteration)*
 
-- **Goal:** produce paper-comparable numbers on the **full MBPP+ set (378)** at
-  larger N for **all four** variants, AUC-PR consistent with the replication
-  (trapezoidal) + correlation (Pearson/Spearman) — already emitted by `evaluate`.
-- **User-facing value:** one full, trustworthy four-method table on MBPP+, with the
-  operational stalls and false-positive noise removed.
-- **Concrete deliverables (from cli-user-test + live-run findings):**
-  1. **Default `--timeout 2`** (down from 5) — recommended on MBPP+; cheaply bounds
-     the all-inputs-looping worst case (per-batch K-timeout was considered and
-     dropped as unneeded).
-  2. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
-     `exec_score` on correct mains whose samples differ on edge cases. Decide
-     reference-vs-filtered inputs (deferred iter-1 item).
-  3. **Optional:** anchor the Prompt Yes/No/N-A regex to the verdict line (defensive
-     for weaker/ramblier judges; current data parses clean, so low priority).
-  4. Finish gemma `code_bert` coverage (carried from iter 3.5).
+Scale is handled manually (a `--limit 300` MBPP+ run, ≈80% of 378, gives the
+paper-comparable four-method table; `evaluate` already emits trapezoidal AUC-PR +
+Pearson/Spearman), so there is no scale iteration. These small items remain optional
+and gate nothing — pick them up if they pay off:
 
-## Iteration 5 — Hallucination-targeted datasets *(now the highest-value direction)*
+1. **Default `--timeout 2`** (down from 5) — cheaply bounds the all-inputs-looping
+   worst case (per-batch K-timeout was considered and dropped as unneeded).
+2. **Exec input-set false positives** — EvalPlus adversarial inputs inflate
+   `exec_score` on correct mains whose samples differ on edge cases. Decide
+   reference-vs-filtered inputs (deferred iter-1 item).
+3. **Anchored Prompt parser** — pin the Yes/No/N-A regex to the verdict line
+   (defensive for weaker/ramblier judges; current data parses clean → low priority).
+4. **Finish gemma `code_bert` coverage** (carried from the CodeBERT variant).
 
-- **Goal:** run all **four** variants on CodeHaluEval, then Collu-Bench.
-- **Why promoted:** MBPP+ showed Exec ≈ Prompt (mid-tier) and structure/embedding
-  weak — so MBPP+ does **not** decide the Improvement-2 story. These datasets
-  deliberately surface the **confident-consistent hallucination** case (all samples
-  agree on the same wrong code) that every local-similarity method misses. This is
-  where Prompt (semantic judge) could finally separate from Exec/AST/CodeBERT — the
-  real test of the narrative, not a "light" add-on.
-- **User-facing value:** cross-dataset four-method table; does the variant ranking
-  invert when hallucinations are deliberate and consistent?
+## Iteration 5 — Second dataset (HumanEval+) *(implemented)*
 
-## Iteration 6 — Analysis + report *(light)*
+> Status: ✅ implemented (loader + `--dataset` dispatch, tests, small-subset verified).
+> The full HumanEval+ sweep is run manually, like MBPP+.
 
-- **Goal:** synthesize Exec vs Prompt vs AST vs CodeBERT across datasets into the
-  Improvement-2 narrative for the final report.
+- **What shipped:** `load_human_eval_plus` (evalplus, function-call interface identical
+  to MBPP+; HumanEval+ ships `canonical_solution` as the body only, so the loader
+  assembles `prompt + body` to make it runnable) + `run --dataset {mbpp,humaneval}`.
+  The whole pipeline and all four scorers are reused unchanged. Plan
+  `docs/plans/08-codecheck-iteration5-humaneval.md`.
+- **Why HumanEval+ instead of the originally-named datasets** — dataset inspection
+  overturned the plan:
+  - **CodeHaluEval** (`Yuchen111/CodeHaluEval`) is ~98% Codeforces **stdin/stdout**
+    programs; the function-call `fn(*args)` harness can't run it. **Deferred** to a
+    future iteration that adds a whole-program (stdin→stdout) exec path.
+  - **Collu-Bench** (`lt-asset/collu-bench`) is a token-logprob hallucination-*detection*
+    benchmark (pre-generated outputs + token annotations), **not** a generate-and-sample
+    task source. **Dropped** from the roadmap.
+  - HumanEval+ gives a clean second function-call dataset now (loader-only). It is **not**
+    hallucination-targeted, so the deliberate confident-consistent stress test stays on
+    the deferred CodeHaluEval work.
+- **User-facing value:** a second cross-dataset four-method table (MBPP+ vs HumanEval+);
+  does the exec > prompt > ast > code_bert ranking hold on a different problem set?
+- **Deferred follow-up:** CodeHaluEval stdin/stdout exec path — the real
+  confident-consistent stress test, when the whole-program harness is built.
+
+## Iteration 6 — Analysis + report *(next — light)*
+
+- **Goal:** synthesize Exec vs Prompt vs AST vs CodeBERT across datasets (MBPP+ and
+  HumanEval+) into the Improvement-2 narrative for the final report.
 - **User-facing value:** the written comparison + conclusions, with two threads:
   (a) the structure/embedding **negative result** (AST + CodeBERT add little on
   MBPP+ because they share the blind spot); (b) the cross-link — Exec's
