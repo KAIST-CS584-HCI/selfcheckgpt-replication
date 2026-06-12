@@ -1,0 +1,118 @@
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background: #2a2f3a;
+  color: #e7eaf0;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 100vh;
+}
+
+.rail {
+  overflow-y: auto;
+  background: #1e222b;
+  border-right: 1px solid #353b48;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid #353b48;
+  border-radius: 8px;
+  background: #262b35;
+  color: #c6ccd8;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.thumb.active {
+  border-color: #3b6fd4;
+  background: #2d3950;
+  color: #fff;
+}
+
+.thumb-n {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b6fd4;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+
+.thumb-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.main {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.stage-wrap {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.stage {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+}
+
+.hud {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(20, 23, 30, 0.85);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.hud button {
+  background: #3b6fd4;
+  color: #fff;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.hud button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
