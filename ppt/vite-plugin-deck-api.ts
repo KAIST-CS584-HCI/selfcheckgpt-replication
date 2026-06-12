@@ -14,7 +14,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DECK_PATH = resolve(HERE, "deck.json");
 const CLAUDE_BIN = process.env.CLAUDE_BIN ?? "claude";
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? "sonnet";
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? "opus";
 
 export function deckApi(): Plugin {
   return {
