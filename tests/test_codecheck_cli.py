@@ -116,7 +116,7 @@ def test_run_dispatches_to_humaneval_loader(monkeypatch, tmp_path):
     # stop after loader dispatch: no problems -> "nothing to do" returns before any API call
     args = SimpleNamespace(dataset="humaneval", limit=2, index=None, randomize=False, seed=None,
                            n=2, timeout=5.0, think=False, verbose=False, method="exec",
-                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+                           ast_metric="jaccard", api_timeout=None, output=str(tmp_path / "o.json"))
     run_codecheck._cmd_run(args)
     assert "he" in called and "mbpp" not in called
 
@@ -142,13 +142,13 @@ def _judge_template_for_dataset(monkeypatch, tmp_path, dataset):
     monkeypatch.setattr(ps, "PromptJudge", fake_judge)
     args = SimpleNamespace(dataset=dataset, limit=2, index=None, randomize=False, seed=None,
                            n=2, timeout=5.0, think=False, verbose=False, method="prompt",
-                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+                           ast_metric="jaccard", api_timeout=None, output=str(tmp_path / "o.json"))
     run_codecheck._cmd_run(args)
     return captured["template"]
 
 
-def _gen_think_for_dataset(monkeypatch, tmp_path, dataset, think=False):
-    """Build a run for the given dataset and capture the `think` handed to CodeGenerator."""
+def _gen_kwargs_for_run(monkeypatch, tmp_path, dataset, think=False, api_timeout=None):
+    """Build a run and capture the kwargs handed to CodeGenerator (think + call_timeout)."""
     import codecheck.dataset as ds
     import codecheck.generation.generator as gen
     import run_codecheck
@@ -162,14 +162,18 @@ def _gen_think_for_dataset(monkeypatch, tmp_path, dataset, think=False):
     captured = {}
 
     def fake_gen(*a, **kw):
-        captured["think"] = kw.get("think")
+        captured.update(kw)
         return object()
     monkeypatch.setattr(gen, "CodeGenerator", fake_gen)
     args = SimpleNamespace(dataset=dataset, limit=2, index=None, randomize=False, seed=None,
                            n=2, timeout=5.0, think=think, verbose=False, method="exec",
-                           ast_metric="jaccard", output=str(tmp_path / "o.json"))
+                           ast_metric="jaccard", api_timeout=api_timeout, output=str(tmp_path / "o.json"))
     run_codecheck._cmd_run(args)
-    return captured["think"]
+    return captured
+
+
+def _gen_think_for_dataset(monkeypatch, tmp_path, dataset, think=False):
+    return _gen_kwargs_for_run(monkeypatch, tmp_path, dataset, think=think)["think"]
 
 
 def test_codehalu_generation_reasons_by_default(monkeypatch, tmp_path):
@@ -179,6 +183,26 @@ def test_codehalu_generation_reasons_by_default(monkeypatch, tmp_path):
 
 def test_mbpp_generation_does_not_reason_by_default(monkeypatch, tmp_path):
     assert _gen_think_for_dataset(monkeypatch, tmp_path, "mbpp", think=False) is False
+
+
+def test_api_timeout_is_large_when_reasoning_on(monkeypatch, tmp_path):
+    # codehalu reasons by default -> generation gets the long (300s) per-call budget so a slow
+    # reasoning call is not aborted at 60s.
+    assert _gen_kwargs_for_run(monkeypatch, tmp_path, "codehalu")["call_timeout"] == 300.0
+
+
+def test_api_timeout_is_tight_without_reasoning(monkeypatch, tmp_path):
+    assert _gen_kwargs_for_run(monkeypatch, tmp_path, "mbpp")["call_timeout"] == 60.0
+
+
+def test_api_timeout_explicit_override_wins(monkeypatch, tmp_path):
+    assert _gen_kwargs_for_run(monkeypatch, tmp_path, "mbpp", api_timeout=120.0)["call_timeout"] == 120.0
+
+
+def test_api_timeout_arg_parses_and_defaults_none():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["run"]).api_timeout is None
+    assert build_parser().parse_args(["run", "--api-timeout", "150"]).api_timeout == 150.0
 
 
 def test_humaneval_run_selects_divergence_judge_template(monkeypatch, tmp_path):

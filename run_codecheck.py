@@ -81,12 +81,18 @@ def _cmd_run(args: argparse.Namespace) -> None:
     print(f"Model: {model}  (set OPENROUTER_MODEL to change)")
 
     load, harness, prompt_builder, judge_template = _dataset_config(args.dataset)
-    client = OpenAI(base_url=base_url, api_key=api_key, timeout=60.0, max_retries=0)
     # CodeHaluEval is whole-program competitive (Codeforces-style) code, far harder than a
     # single function, so generation reasons by default to get usable programs; --think still
     # forces it on for the other datasets.
     gen_think = args.think or args.dataset == "codehalu"
-    generator = CodeGenerator(client, model=model, think=gen_think, prompt_builder=prompt_builder)
+    # Reasoning calls legitimately take minutes (thousands of hidden tokens), so a 60s cap
+    # aborts every one and the run fails with retried timeouts. Give reasoning runs real
+    # headroom (both the SDK per-request timeout and the wall-clock retry cap); --api-timeout
+    # overrides. Non-reasoning runs keep the tight 60s cap that kills wedged trickle requests.
+    api_timeout = args.api_timeout if args.api_timeout is not None else (300.0 if gen_think or args.think else 60.0)
+    client = OpenAI(base_url=base_url, api_key=api_key, timeout=api_timeout, max_retries=0)
+    generator = CodeGenerator(client, model=model, think=gen_think, prompt_builder=prompt_builder,
+                              call_timeout=api_timeout)
 
     if args.method == "all":
         methods = {"exec", "prompt", "ast", "code_bert"}
@@ -94,7 +100,8 @@ def _cmd_run(args: argparse.Namespace) -> None:
         methods = {args.method}
     if "code_bert" in methods and not torch_available():
         sys.exit("error: method 'code_bert' requires torch — pip install torch")
-    judge = (PromptJudge(client, model=model, think=args.think, template=judge_template)
+    judge = (PromptJudge(client, model=model, think=args.think, template=judge_template,
+                         call_timeout=api_timeout)
              if "prompt" in methods else None)
     ast_scorer = ASTScorer(metric=args.ast_metric) if "ast" in methods else None
     codebert_scorer = CodeBERTScorer() if "code_bert" in methods else None
@@ -281,6 +288,9 @@ def build_parser() -> argparse.ArgumentParser:
                             "cannot be combined with --limit/--random/--seed")
     run_p.add_argument("--n", type=int, default=5, help="samples per problem (T=1)")
     run_p.add_argument("--timeout", type=float, default=5.0, help="per-call execution timeout (s)")
+    run_p.add_argument("--api-timeout", type=float, default=None,
+                       help="per-API-call wall-clock budget in seconds (SDK + retry cap). "
+                            "Default: 300 when reasoning is on (--think or --dataset codehalu), else 60")
     run_p.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="results JSON path")
     run_p.add_argument("--random", dest="randomize", action="store_true",
                        help="take a random sample of --limit problems instead of the first --limit in dataset order")

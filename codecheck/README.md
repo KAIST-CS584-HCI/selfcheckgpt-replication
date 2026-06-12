@@ -316,6 +316,9 @@ python run_codecheck.py evaluate
 - `--method` — consistency scorer: `exec` (default), `prompt`, `ast`, `code_bert`, or `all`
 - `--ast-metric` — AST metric when `ast` runs: `jaccard` (default) or `ted`
 - `--timeout` — max seconds per code execution before it's killed
+- `--api-timeout` — per-API-call wall-clock budget (SDK request + retry cap). Default: 300s
+  when reasoning is on (`--think` or `--dataset codehalu`), else 60s. Reasoning calls
+  legitimately take minutes, so the tight 60s cap would abort every one and fail the run
 - `--output` — where to save the results (JSON array, rewritten after each problem
   finishes so progress is never lost). If the file already exists, the run
   **auto-resumes**: problems whose `task_id` is already recorded are skipped and only the

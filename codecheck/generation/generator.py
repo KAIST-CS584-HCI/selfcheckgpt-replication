@@ -37,13 +37,16 @@ def build_stdio_prompt(problem) -> str:
 
 class CodeGenerator:
     def __init__(self, client, model: str, think: bool = False, max_workers: int | None = None,
-                 prompt_builder=build_prompt) -> None:
+                 prompt_builder=build_prompt, call_timeout: float = 60.0) -> None:
         self.client = client
         self.model = model
         self.think = think          # chain-of-thought reasoning; off = far faster
         self.max_workers = max_workers
         # How a problem becomes a generation prompt; swap for stdin->stdout datasets.
         self.prompt_builder = prompt_builder
+        # Per-call wall-clock budget. Reasoning generations legitimately take minutes, so the
+        # caller raises this when think is on; the default keeps the original 60s cap.
+        self.call_timeout = call_timeout
 
     def _complete(self, prompt: str, temperature: float) -> str:
         # Reasoning off by default (enable with --think): reasoning models otherwise spend
@@ -55,6 +58,7 @@ class CodeGenerator:
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
             think=self.think,
+            call_timeout=self.call_timeout,
         )
         if not resp.choices:
             return ""
