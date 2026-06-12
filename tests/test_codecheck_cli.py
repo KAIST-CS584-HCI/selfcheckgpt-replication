@@ -291,28 +291,64 @@ def test_codebert_subcommand_parses_results():
     from run_codecheck import build_parser
     args = build_parser().parse_args(["codebert", "--results", "results/x.json"])
     assert args.results == "results/x.json"
+    assert args.recompute is False   # default: fill only the missing
 
 
-def test_cmd_codebert_augments_results_in_place(tmp_path, monkeypatch):
+def test_codebert_subcommand_recompute_flag():
+    from run_codecheck import build_parser
+    assert build_parser().parse_args(["codebert", "--results", "x.json", "--recompute"]).recompute is True
+
+
+class _CountingScorer:
+    """Counts score() calls so a test can assert which results were (re)scored."""
+    calls = 0
+    def score(self, main_code, sample_codes):
+        _CountingScorer.calls += 1
+        return 0.42
+
+
+def _prep_codebert(monkeypatch):
     import codecheck.score.codebert as cbs
+    monkeypatch.setattr(cbs, "CodeBERTScorer", _CountingScorer)
+    monkeypatch.setattr(cbs, "torch_available", lambda: True)  # fake scorer stands in for the model
+    _CountingScorer.calls = 0
+
+
+def test_cmd_codebert_fills_only_missing_by_default(tmp_path, monkeypatch):
     from codecheck.models import CodeResult
     from codecheck.pipeline import save_results, load_results
     import run_codecheck
-
-    class FakeScorer:
-        def score(self, main_code, sample_codes):
-            return 0.42
-
-    monkeypatch.setattr(cbs, "CodeBERTScorer", FakeScorer)
-    monkeypatch.setattr(cbs, "torch_available", lambda: True)  # fake scorer stands in for the model
+    _prep_codebert(monkeypatch)
     path = tmp_path / "r.json"
-    save_results([CodeResult("a", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"])], path)
+    save_results([
+        CodeResult("a", {"exec": 0.1, "code_bert": 0.9}, True, "def m(): pass", ["def s(): pass"]),  # has it
+        CodeResult("b", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"]),                     # missing
+    ], path)
 
-    run_codecheck._cmd_codebert(SimpleNamespace(results=str(path)))
+    run_codecheck._cmd_codebert(SimpleNamespace(results=str(path), recompute=False))
 
     out = load_results(path)
-    assert out[0].scores["code_bert"] == 0.42
-    assert out[0].scores["exec"] == 0.1   # existing scores preserved
+    assert _CountingScorer.calls == 1            # only the missing one scored
+    assert out[0].scores["code_bert"] == 0.9     # existing preserved (not overwritten)
+    assert out[1].scores["code_bert"] == 0.42    # missing filled
+
+
+def test_cmd_codebert_recompute_rescores_all(tmp_path, monkeypatch):
+    from codecheck.models import CodeResult
+    from codecheck.pipeline import save_results, load_results
+    import run_codecheck
+    _prep_codebert(monkeypatch)
+    path = tmp_path / "r.json"
+    save_results([
+        CodeResult("a", {"exec": 0.1, "code_bert": 0.9}, True, "def m(): pass", ["def s(): pass"]),
+        CodeResult("b", {"exec": 0.1}, True, "def m(): pass", ["def s(): pass"]),
+    ], path)
+
+    run_codecheck._cmd_codebert(SimpleNamespace(results=str(path), recompute=True))
+
+    out = load_results(path)
+    assert _CountingScorer.calls == 2            # both rescored
+    assert out[0].scores["code_bert"] == 0.42    # existing overwritten
 
 
 def test_cmd_codebert_exits_clean_when_torch_missing(tmp_path, monkeypatch):
@@ -322,7 +358,7 @@ def test_cmd_codebert_exits_clean_when_torch_missing(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cbs, "torch_available", lambda: False)
     with pytest.raises(SystemExit) as exc:
-        run_codecheck._cmd_codebert(SimpleNamespace(results=str(tmp_path / "missing.json")))
+        run_codecheck._cmd_codebert(SimpleNamespace(results=str(tmp_path / "missing.json"), recompute=False))
     assert "torch" in str(exc.value)   # fails fast with a clear message, not a traceback
 
 

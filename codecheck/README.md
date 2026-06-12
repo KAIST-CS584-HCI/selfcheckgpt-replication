@@ -104,9 +104,12 @@ method, so the methods are always compared on identical data.
 `sample_codes`, so you can add `code_bert` to an existing file without regenerating:
 
 ```bash
-python run_codecheck.py codebert --results results/run.json   # adds code_bert in place
+python run_codecheck.py codebert --results results/run.json   # fills missing code_bert in place
 python run_codecheck.py evaluate --results results/run.json    # now shows a [code_bert] block
 ```
+
+By default `codebert` only scores results that lack a `code_bert` value (so a partial pass
+resumes cheaply); pass `--recompute` to rescore every result.
 
 **Offline `prompt` (re-score the judge on saved results):** same idea for the Prompt
 variant — recompute `scores["prompt"]` from the stored code without regenerating (useful to

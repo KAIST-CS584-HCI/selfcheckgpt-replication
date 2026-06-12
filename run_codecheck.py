@@ -190,7 +190,9 @@ def _cmd_evaluate(args: argparse.Namespace) -> None:
 
 def _cmd_codebert(args: argparse.Namespace) -> None:
     """Offline: add a `code_bert` consistency score to an existing results file, reusing
-    the stored main_code + sample_codes (no regeneration, no API). Rewrites in place."""
+    the stored main_code + sample_codes (no regeneration, no API). Rewrites in place. By
+    default only results lacking a code_bert score are filled (resume a partial pass);
+    --recompute rescores every result."""
     from codecheck.score.codebert import CodeBERTScorer, torch_available
     from codecheck.pipeline import load_results, save_results
 
@@ -202,11 +204,14 @@ def _cmd_codebert(args: argparse.Namespace) -> None:
         sys.exit(f"error: results file not found: {args.results}")
     except ValueError as exc:
         sys.exit(f"error: {exc}")
+    todo = results if args.recompute else [r for r in results if "code_bert" not in r.scores]
     scorer = CodeBERTScorer()
-    for r in results:
+    for r in todo:
         r.scores["code_bert"] = scorer.score(r.main_code, r.sample_codes)
     save_results(results, args.results)
-    print(f"Added code_bert to {len(results)} results in {args.results}")
+    skipped = len(results) - len(todo)
+    note = "" if args.recompute else f" ({skipped} already scored, skipped)"
+    print(f"Scored code_bert on {len(todo)} results in {args.results}{note}")
 
 
 def _judge_template_for(task_id: str, override, default_tmpl, humaneval_tmpl):
@@ -298,6 +303,8 @@ def build_parser() -> argparse.ArgumentParser:
     cb_p = sub.add_parser("codebert", help="add a code_bert score to an existing results file (offline)")
     cb_p.add_argument("--results", type=str, default=str(DEFAULT_OUTPUT),
                       help="results JSON path to augment in place")
+    cb_p.add_argument("--recompute", action="store_true",
+                      help="rescore every result; default only fills results lacking a code_bert score")
     cb_p.set_defaults(func=_cmd_codebert)
 
     pr_p = sub.add_parser("prompt", help="re-score the prompt (LLM-judge) variant on an existing results file")
